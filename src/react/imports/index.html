@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DaHorta | DaHorta para o seu prato</title>
+    <meta name="description"
+        content="Bowl proteico, vegano e mediterrâneo feitos com ingredientes orgânicos. Estética editorial, rápido e fresco.">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Lora:ital,wght@1,400;1,500;1,600&display=swap"
+        rel="stylesheet">
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <header id="main-header">
+        <div class="container nav-content">
+            <a href="#" class="logo">
+                <img src="logo.png" alt="DaHorta Logo" style="height: 50px; width: auto;">
+            </a>
+            <nav class="nav-links">
+                <a href="#cardapio">Menu</a>
+                <a href="#diferenciais">Diferenciais</a>
+                <a href="#processo">Qualidade</a>
+                <a href="https://www.figma.com/make/m0grvLNXgFCPN1pHnhhEoA/DaHorta?p=f&t=a4JeMIJJ31lRTuQf-0&fullscreen=1&preview-route=%2Fmenu"
+                    target="_blank" class="btn-cta">Peça Agora</a>
+            </nav>
+            <button class="mobile-menu-btn" style="display: none;">
+                <i data-lucide="menu"></i>
+            </button>
+        </div>
+    </header>
+
+    <main>
+        <!-- Hero Section v2 -->
+        <section class="hero">
+            <div class="container hero-content">
+                <div class="hero-text">
+                    <span class="font-serif">Rápido. Fresco. Orgânico.</span>
+                    <h1>DaHorta para <br>o seu Prato.</h1>
+                    <p>Culinária viva com ingredientes colhidos hoje. Bowls artesanais preparados com rigor técnico para
+                        quem busca performance sem abrir mão do sabor.</p>
+                    <br>
+                    <div class="hero-btns">
+                        <a href="#cardapio" class="btn-cta"
+                            style="padding: 1.2rem 3rem; font-size: 1.1rem; border-radius: 12px;">Explorar Cardápio</a>
+                    </div>
+                </div>
+                <div class="hero-visual">
+                    <img src="hero_fresh_ingredients_1774377408448.png" class="hero-image"
+                        style="clip-path: var(--radius-blob); border-radius: 0;" alt="Salada fresca DaHorta">
+                </div>
+            </div>
+        </section>
+
+        <!-- Diferenciais (Dark Mode) -->
+        <section class="features" id="diferenciais"
+            style="background: var(--background-deep); color: var(--text-cream); padding: 8rem 0;">
+            <div class="container">
+                <div class="section-title">
+                    <h2 style="color: var(--text-cream);">Escolher saúde nunca foi tão fácil.</h2>
+                    <p style="color: rgba(255,255,255,0.7);">Nossa dark kitchen foi projetada para entregar a
+                        experiência de um restaurante de alta gastronomia na agilidade do delivery.</p>
+                </div>
+                <div class="features-grid">
+                    <div class="feature-card"
+                        style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);">
+                        <div class="feature-icon" style="background: var(--primary); color: white;"><i
+                                data-lucide="leaf"></i></div>
+                        <h3 style="color: var(--text-cream);">Higiene Rigorosa</h3>
+                        <p style="color: rgba(255,255,255,0.7);">Processo de sanitização de tripla etapa e ambiente 100%
+                            controlado.</p>
+                    </div>
+                    <div class="feature-card"
+                        style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);">
+                        <div class="feature-icon" style="background: var(--primary); color: white;"><i
+                                data-lucide="chef-hat"></i></div>
+                        <h3 style="color: var(--text-cream);">Cortes de Mestre</h3>
+                        <p style="color: rgba(255,255,255,0.7);">Textura perfeita em cada ingrediente, preservando
+                            nutrientes e frescor.</p>
+                    </div>
+                    <div class="feature-card"
+                        style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);">
+                        <div class="feature-icon" style="background: var(--primary); color: white;"><i
+                                data-lucide="zap"></i></div>
+                        <h3 style="color: var(--text-cream);">Rápido e Fresco</h3>
+                        <p style="color: rgba(255,255,255,0.7);">Preparo imediato pós-pedido. Do corte ao bowl em
+                            minutos.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Storytelling: Do Campo ao Bowl -->
+        <section style="background: var(--background-soft); padding: 8rem 0;">
+            <div class="container"
+                style="display: grid; grid-template-columns: 1fr 1fr; gap: 6rem; align-items: center;">
+                <div style="position: relative;">
+                    <img src="https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=600&auto=format&fit=crop"
+                        style="width: 100%; border-radius: var(--radius-card); box-shadow: var(--shadow-hover);"
+                        alt="Mercado de orgânicos">
+                    <div
+                        style="position: absolute; bottom: -30px; right: -30px; background: var(--accent); padding: 2rem; border-radius: var(--radius-card); box-shadow: var(--shadow-default);">
+                        <span class="font-serif" style="font-size: 2rem; display: block; line-height: 1;">100%</span>
+                        <span style="font-size: 0.8rem; text-transform: uppercase; font-weight: 700;">Orgânico</span>
+                    </div>
+                </div>
+                <div>
+                    <span class="font-serif" style="color: var(--primary); font-size: 1.5rem;">Nossa Essência</span>
+                    <h2 style="font-size: 3rem; margin: 1rem 0; line-height: 1.1;">Do Campo ao Bowl, sem atalhos.</h2>
+                    <p style="color: var(--text-secondary); margin-bottom: 2rem;">Acreditamos que a comida de verdade
+                        não precisa de pressa no cultivo, apenas no preparo. Trabalhamos com pequenos produtores que
+                        respeitam o tempo da terra, para que você receba o máximo de nutrientes e sabor em cada garfada.
+                    </p>
+                    <div style="display: flex; gap: 2rem;">
+                        <div>
+                            <h4 style="color: var(--primary);">Sem Plástico</h4>
+                            <p style="font-size: 0.85rem; opacity: 0.7;">Embalagens 100% biodegradáveis.</p>
+                        </div>
+                        <div>
+                            <h4 style="color: var(--primary);">Higiene Tripla</h4>
+                            <p style="font-size: 0.85rem; opacity: 0.7;">Protocolo rigoroso de segurança.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Cardápio / Bowls -->
+        <section class="bowls" id="cardapio">
+            <div class="container">
+                <div class="section-title">
+                    <h2>Nossos Bowls Assinatura</h2>
+                    <p>Combinações pensadas nutricionalmente para dar energia e leveza ao seu dia.</p>
+                </div>
+                <div class="bowls-grid">
+                    <!-- Bowl Proteico -->
+                    <div class="bowl-card">
+                        <div class="bowl-img-wrapper" style="box-shadow: none; background: transparent;">
+                            <img src="bowl_proteico_1774377359541.png" class="blob-img" alt="Bowl Proteico">
+                        </div>
+                        <div class="bowl-info">
+                            <span class="bowl-tag">Mais Vendido</span>
+                            <h3>Bowl Proteico</h3>
+                            <p class="bowl-ingredients font-serif">Quinoa, frango grelhado orgânico, abacate, tomate
+                                cereja, espinafre e molho tahine.</p>
+                            <div class="bowl-footer">
+                                <strong>R$ 38,90</strong>
+                                <button class="btn-add"><i data-lucide="plus"></i></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bowl Vegano -->
+                    <div class="bowl-card">
+                        <div class="bowl-img-wrapper" style="box-shadow: none; background: transparent;">
+                            <img src="bowl_vegano_power_1774377373737.png" class="blob-img" alt="Bowl Vegano Power">
+                        </div>
+                        <div class="bowl-info">
+                            <span class="bowl-tag">Plant Based</span>
+                            <h3>Bowl Vegano Power</h3>
+                            <p class="bowl-ingredients font-serif">Grão-de-bico, couve massageada, cenoura ralada,
+                                beterraba, hummus e sementes de girassol.</p>
+                            <div class="bowl-footer">
+                                <strong>R$ 34,90</strong>
+                                <button class="btn-add"><i data-lucide="plus"></i></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bowl Mediterrâneo -->
+                    <div class="bowl-card">
+                        <div class="bowl-img-wrapper" style="box-shadow: none; background: transparent;">
+                            <img src="bowl_mediterraneo_1774377387078.png" class="blob-img" alt="Bowl Mediterrâneo">
+                        </div>
+                        <div class="bowl-info">
+                            <span class="bowl-tag">Leveza</span>
+                            <h3>Bowl Mediterrâneo</h3>
+                            <p class="bowl-ingredients font-serif">Arroz integral, salmão grelhado, pepino, azeitonas,
+                                tomate e molho de iogurte.</p>
+                            <div class="bowl-footer">
+                                <strong>R$ 42,90</strong>
+                                <button class="btn-add"><i data-lucide="plus"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sucos e Sobremesas -->
+        <section class="extras" style="background: var(--background-deep); color: var(--text-cream);">
+            <div class="container">
+                <div class="section-title">
+                    <h2 style="color: var(--text-cream);">Para completar o seu dia</h2>
+                </div>
+                <div class="features-grid">
+                    <div class="feature-card"
+                        style="display: flex; gap: 1.5rem; align-items: center; text-align: left; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);">
+                        <i data-lucide="glass-water" style="width: 40px; height: 40px; color: var(--accent);"></i>
+                        <div>
+                            <h3 style="color: var(--text-cream);">Sucos Naturais</h3>
+                            <p style="color: rgba(255,255,255,0.7);">Sucos prensados a frio, sem adição de açúcar em
+                                excesso.</p>
+                        </div>
+                    </div>
+                    <div class="feature-card"
+                        style="display: flex; gap: 1.5rem; align-items: center; text-align: left; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);">
+                        <i data-lucide="apple" style="width: 40px; height: 40px; color: var(--accent);"></i>
+                        <div>
+                            <h3 style="color: var(--text-cream);">Sobremesas Fit</h3>
+                            <p style="color: rgba(255,255,255,0.7);">Doces feitos com frutas e base natural consciente.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Processo -->
+        <section class="process-section" id="processo">
+            <div class="container">
+                <div class="section-title">
+                    <h2>Protocolo de Frescura</h2>
+                    <p>O rigor técnico que garante saúde em cada detalhe.</p>
+                </div>
+                <div class="process-steps">
+                    <div class="step">
+                        <span class="step-num">01</span>
+                        <h3>Sanitização</h3>
+                        <p>Processo de higienização tripla em cozinha de alta tecnologia.</p>
+                    </div>
+                    <div class="step">
+                        <span class="step-num">02</span>
+                        <h3>Artesanato</h3>
+                        <p>Cortes precisos que preservam os nutrientes e o sabor original.</p>
+                    </div>
+                    <div class="step">
+                        <span class="step-num">03</span>
+                        <h3>Last Mile</h3>
+                        <p>Entrega rápida em embalagens térmicas e sustentáveis.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-about">
+                    <img src="logo.png" alt="DaHorta Logo" style="height: 40px; width: auto; margin-bottom: 1rem;">
+                    <p>A revolução da alimentação consciente. Rápido, fresco e transparente.</p>
+                    <div class="footer-socials">
+                        <a href="#" class="social-link"><i data-lucide="instagram"></i></a>
+                        <a href="#" class="social-link"><i data-lucide="facebook"></i></a>
+                    </div>
+                </div>
+                <div>
+                    <h4>Links Rápidos</h4>
+                    <ul style="list-style: none; margin-top: 1rem;">
+                        <li><a href="#cardapio">Menu</a></li>
+                        <li><a href="#diferenciais">Diferenciais</a></li>
+                        <li><a href="#processo">Higiene</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>DaHorta</h4>
+                    <p style="margin-top: 1rem; color: var(--text-secondary);">contato@dahorta.com.br</p>
+                    <p style="color: var(--text-secondary);">(11) 99999-9999</p>
+                </div>
+            </div>
+            <div style="text-align: center; border-top: 1px solid var(--border-light); padding-top: 2rem;">
+                <p style="font-size: 0.8rem; color: var(--text-secondary);">&copy; 2024 DaHorta Dark Kitchen. Todos os
+                    direitos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
