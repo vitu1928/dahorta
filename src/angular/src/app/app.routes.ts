@@ -9,6 +9,11 @@ export const routes: Routes = [
     component: LandingPageComponent,
     title: 'DaHorta | Do campo para o seu prato',
   },
+  {
+    path: 'menu',
+    loadComponent: () => import('../domains/customer/feature-menu/menu-page.component').then(m => m.MenuPageComponent),
+    title: 'DaHorta | Menu',
+  },
   // Catch-all — redirect unknown paths to landing
   { path: '**', redirectTo: 'landing' },
 ];
