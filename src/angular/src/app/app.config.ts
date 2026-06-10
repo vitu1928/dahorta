@@ -9,6 +9,8 @@ import { ProductsService } from '../domains/customer/data-access/products.servic
 import { MockProductsService } from '../domains/customer/data-access/mock-products.service';
 import { OrdersService } from '../domains/customer/data-access/orders.service';
 import { MockOrdersService } from '../domains/customer/data-access/mock-orders.service';
+import { EmployeeService } from '../domains/employee/data-access/employee.service';
+import { MockEmployeeService } from '../domains/employee/data-access/mock-employee.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -17,7 +19,8 @@ export const appConfig: ApplicationConfig = {
     provideHttpClient(),
     { provide: AuthService, useClass: MockAuthService },
     { provide: ProductsService, useClass: MockProductsService },
-    { provide: OrdersService, useClass: MockOrdersService }
+    { provide: OrdersService, useClass: MockOrdersService },
+    { provide: EmployeeService, useClass: MockEmployeeService }
   ]
 };
 

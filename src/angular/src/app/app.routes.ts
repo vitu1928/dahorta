@@ -33,5 +33,11 @@ export const routes: Routes = [
       .then(m => m.LoginComponent),
     title: 'DaHorta | Login',
   },
+  {
+    path: 'employee',
+    loadComponent: () => import('@domain/employee/feature-dashboard/employee-dashboard.component')
+      .then(m => m.EmployeeDashboardComponent),
+    title: 'DaHorta | Painel do Funcionário',
+  },
   { path: '**', redirectTo: 'landing' }
 ];
