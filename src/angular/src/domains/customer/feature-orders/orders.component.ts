@@ -2,7 +2,7 @@ import { Component, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { OrdersService } from '../data-access/orders.service';
-import { AuthService } from '../data-access/auth.service';
+import { AuthService } from '@domain/auth/data-access/auth.service';
 import { Order, OrderStatus } from '../data-access/customer.models';
 
 const STATUS_LABELS: Record<OrderStatus, string> = {

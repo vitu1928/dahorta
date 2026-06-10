@@ -8,6 +8,7 @@ import { ProductCardComponent } from '../ui/product-card.component';
 import { Product } from '../data-access/customer.models';
 import { ProductModalComponent } from './product-modal.component';
 import { MOCK_PLATE_OF_DAY } from '../data-access/mock-data';
+import { CouponsService } from '../data-access/coupons.service';
 
 @Component({
   selector: 'app-menu',
@@ -29,6 +30,35 @@ import { MOCK_PLATE_OF_DAY } from '../data-access/mock-data';
       </div>
 
       <div class="max-w-4xl mx-auto">
+        <!-- Coupons Section -->
+        @if (!searchTerm() && activeCoupons().length > 0) {
+          <div class="px-0 pt-6 mb-2">
+            <div>
+              <h2 class="font-serif text-xl text-[#4C7C59] mb-4 font-bold" style="font-family: 'Poppins', sans-serif">
+                Meus Cupons
+              </h2>
+            </div>
+            <div class="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
+              @for (coupon of activeCoupons(); track coupon.id) {
+                <div class="flex-shrink-0 bg-white shadow-sm border border-[var(--border)] rounded-xl p-2.5 flex items-center gap-3 min-w-[170px] hover:translate-y-[-2px] transition-transform duration-200">
+                  <div class="w-9 h-9 rounded-lg bg-[var(--primary)]/10 flex items-center justify-center text-[var(--primary)]">
+                    <!-- Tag SVG Icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2H2v10l9.29 9.29c.39.39 1.02.39 1.41 0l7.59-7.59c.39-.39.39-1.02 0-1.41L12 2z"/><path d="m7 7-.01.01"/></svg>
+                  </div>
+                  <div>
+                    <p class="font-black text-[11px] uppercase tracking-wider mb-0.5 leading-none" style="color: var(--text-primary);">
+                      {{ coupon.code }}
+                    </p>
+                    <p class="text-[10px] text-muted-foreground font-semibold leading-none">
+                      {{ coupon.type === 'percentage' ? coupon.value + '% OFF' : coupon.type === 'shipping' ? 'Frete Grátis' : 'R$ ' + coupon.value + ' OFF' }}
+                    </p>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
         <!-- Filters -->
         @if (!searchTerm()) {
           <div class="px-0 py-5">
@@ -48,7 +78,6 @@ import { MOCK_PLATE_OF_DAY } from '../data-access/mock-data';
                   [style.background]="selectedCategory() === cat.id ? 'var(--primary)' : 'var(--background-soft)'"
                   [style.color]="selectedCategory() === cat.id ? 'white' : 'var(--text-secondary)'"
                 >
-                  <span>{{ cat.icon }}</span>
                   <span>{{ cat.name | uppercase }}</span>
                 </button>
               }
@@ -113,7 +142,6 @@ import { MOCK_PLATE_OF_DAY } from '../data-access/mock-data';
             @for (group of groupedProducts(); track group.category.id) {
               <div class="mb-10">
                 <div class="flex items-center gap-3 mb-5 pb-2" style="border-bottom: 2px solid var(--secondary)">
-                  <span style="font-size: 24px">{{ group.category.icon }}</span>
                   <h2 style="font-size: 22px; font-weight: 800; color: var(--text-primary); font-family: 'Poppins', sans-serif">
                     {{ group.category.name }}
                   </h2>
@@ -184,6 +212,7 @@ import { MOCK_PLATE_OF_DAY } from '../data-access/mock-data';
 export class MenuComponent {
   private productsService = inject(ProductsService);
   private cartState = inject(CartStateService);
+  private couponsService = inject(CouponsService);
   router = inject(Router);
 
   selectedCategory = signal<string | null>(null);
@@ -193,6 +222,7 @@ export class MenuComponent {
 
   categories = this.productsService.categories;
   products = this.productsService.availableProducts;
+  activeCoupons = computed(() => this.couponsService.coupons().filter(c => c.active).slice(0, 3));
 
   cartCount = this.cartState.count;
   cartTotal = this.cartState.total;

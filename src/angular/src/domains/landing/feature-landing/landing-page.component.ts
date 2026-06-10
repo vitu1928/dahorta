@@ -101,4 +101,11 @@ export class LandingPageComponent {
     // Using Angular Router instead of window.location.href
     this.router.navigate(['/customer/menu']);
   }
+
+  scrollTo(id: string): void {
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
 }

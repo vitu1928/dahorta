@@ -1,10 +1,11 @@
 import { Injectable, signal, computed, WritableSignal, Signal } from '@angular/core';
 import { OrdersService } from './orders.service';
 import { Order, OrderStatus, PaymentMethod, Address, CartItem } from './customer.models';
+import { MOCK_ORDERS } from './mock-data';
 
 @Injectable({ providedIn: 'root' })
 export class MockOrdersService extends OrdersService {
-  override orders = signal<Order[]>([]);
+  override orders = signal<Order[]>(MOCK_ORDERS);
   override activeOrderId = signal<string | null>(null);
 
   override activeOrder = computed(() => {

@@ -2,7 +2,7 @@ import { Component, inject } from '@angular/core';
 import { RouterOutlet, RouterLink, Router, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { CartStateService } from '../data-access/cart.state';
-import { AuthService } from '../data-access/auth.service';
+import { AuthService } from '@domain/auth/data-access/auth.service';
 
 @Component({
   selector: 'app-customer-layout',

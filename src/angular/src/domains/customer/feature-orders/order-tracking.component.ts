@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { OrdersService } from '../data-access/orders.service';
-import { AuthService } from '../data-access/auth.service';
+import { AuthService } from '@domain/auth/data-access/auth.service';
 import { ReviewsService } from '../data-access/reviews.service';
 import { Order, OrderStatus } from '../data-access/customer.models';
 import { MockDeliveryMapComponent } from '../ui/mock-delivery-map.component';

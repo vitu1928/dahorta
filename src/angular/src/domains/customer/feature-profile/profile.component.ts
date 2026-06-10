@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { OrdersService } from '../data-access/orders.service';
-import { AuthService } from '../data-access/auth.service';
+import { AuthService } from '@domain/auth/data-access/auth.service';
 import { Order } from '../data-access/customer.models';
 
 @Component({

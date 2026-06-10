@@ -1,7 +1,7 @@
-import { Injectable, signal, computed, WritableSignal, Signal } from '@angular/core';
+import { Injectable, signal, computed } from '@angular/core';
 import { AuthService } from './auth.service';
-import { User } from './customer.models';
-import { MOCK_USERS } from './mock-data';
+import { User } from './auth.models';
+import { MOCK_USERS } from '../../customer/data-access/mock-data';
 
 @Injectable({ providedIn: 'root' })
 export class MockAuthService extends AuthService {

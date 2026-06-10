@@ -5,7 +5,7 @@ import { Router } from '@angular/router';
 import { CartStateService } from '../data-access/cart.state';
 import { CouponsService } from '../data-access/coupons.service';
 import { OrdersService } from '../data-access/orders.service';
-import { AuthService } from '../data-access/auth.service';
+import { AuthService } from '@domain/auth/data-access/auth.service';
 import { PaymentMethod, Address } from '../data-access/customer.models';
 
 interface PaymentOption {

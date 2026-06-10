@@ -21,6 +21,8 @@
     "paths": {
       "@domain/customer": ["src/domains/customer"],
       "@domain/customer/*": ["src/domains/customer/*"],
+      "@domain/auth": ["src/domains/auth"],
+      "@domain/auth/*": ["src/domains/auth/*"],
       "@shared/ui": ["src/shared/ui"],
       "@shared/ui/*": ["src/shared/ui/*"],
       "@shared/models": ["src/shared/models"],

@@ -1,18 +1,10 @@
-export type UserRole = 'owner' | 'employee' | 'motoboy' | 'customer';
+import type { User, UserRole } from '../../auth/data-access/auth.models';
+export type { User, UserRole };
+
 export type OrderStatus = 'received' | 'preparing' | 'ready' | 'delivering' | 'delivered';
 export type InsumoUnit = 'g' | 'kg' | 'ml' | 'l' | 'un' | 'fatia' | 'folha' | 'colher' | 'porção';
 export type PaymentMethod = 'pix' | 'credit_card' | 'debit_card' | 'meal_voucher' | 'cash';
 export type CouponType = 'percentage' | 'fixed' | 'shipping' | 'inactive';
-
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  password: string;
-  role: UserRole;
-  phone?: string;
-  avatar?: string;
-}
 
 export interface Category {
   id: string;

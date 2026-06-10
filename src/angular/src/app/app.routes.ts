@@ -27,5 +27,11 @@ export const routes: Routes = [
     component: LandingPageComponent,
     title: 'DaHorta | Do campo para o seu prato',
   },
+  {
+    path: 'login',
+    loadComponent: () => import('../domains/auth/feature-login/login.component')
+      .then(m => m.LoginComponent),
+    title: 'DaHorta | Login',
+  },
   { path: '**', redirectTo: 'landing' }
 ];

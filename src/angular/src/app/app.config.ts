@@ -3,8 +3,8 @@ import { provideRouter } from '@angular/router';
 import { routes } from './app.routes';
 import { provideHttpClient } from '@angular/common/http';
 
-import { AuthService } from '../domains/customer/data-access/auth.service';
-import { MockAuthService } from '../domains/customer/data-access/mock-auth.service';
+import { AuthService } from '../domains/auth/data-access/auth.service';
+import { MockAuthService } from '../domains/auth/data-access/mock-auth.service';
 import { ProductsService } from '../domains/customer/data-access/products.service';
 import { MockProductsService } from '../domains/customer/data-access/mock-products.service';
 import { OrdersService } from '../domains/customer/data-access/orders.service';
