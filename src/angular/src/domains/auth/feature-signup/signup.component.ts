@@ -116,7 +116,8 @@ import { AuthService } from '../data-access/auth.service';
               </label>
               <input
                 type="tel"
-                [(ngModel)]="phone"
+                [value]="phone"
+                (input)="onPhoneInput($event)"
                 name="phone"
                 placeholder="(11) 99999-9999"
                 required
@@ -287,6 +288,31 @@ export class SignupComponent {
   error = signal('');
   loading = signal(false);
 
+  onPhoneInput(event: Event) {
+    const input = event.target as HTMLInputElement;
+    let value = input.value.replace(/\D/g, ''); // digits only
+    if (value.length > 11) {
+      value = value.substring(0, 11);
+    }
+    
+    // Formatting: (XX) XXXXX-XXXX
+    if (value.length > 6) {
+      value = `(${value.substring(0, 2)}) ${value.substring(2, 7)}-${value.substring(7)}`;
+    } else if (value.length > 2) {
+      value = `(${value.substring(0, 2)}) ${value.substring(2)}`;
+    } else if (value.length > 0) {
+      value = `(${value}`;
+    }
+    
+    this.phone = value;
+    input.value = value;
+  }
+
+  isValidEmail(email: string): boolean {
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return regex.test(email);
+  }
+
   async handleRegister(event: Event) {
     event.preventDefault();
     this.error.set('');
@@ -298,6 +324,11 @@ export class SignupComponent {
 
     if (!trimmedName || !trimmedEmail || !trimmedPhone || !trimmedPassword) {
       this.error.set('Todos os campos são obrigatórios.');
+      return;
+    }
+
+    if (!this.isValidEmail(trimmedEmail)) {
+      this.error.set('Por favor, insira um e-mail válido.');
       return;
     }
 

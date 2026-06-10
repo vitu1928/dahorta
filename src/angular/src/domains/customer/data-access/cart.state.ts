@@ -1,11 +1,32 @@
-import { Injectable } from '@angular/core';
+import { Injectable, effect } from '@angular/core';
 import { signal, computed } from '@angular/core';
 import { CartItem, Product } from './customer.models';
 
 @Injectable({ providedIn: 'root' })
 export class CartStateService {
-  items = signal<CartItem[]>([]);
+  items = signal<CartItem[]>(this.loadCartFromStorage());
   orderNotes = signal<string>('');
+
+  constructor() {
+    // Save items to localStorage whenever the signal changes
+    effect(() => {
+      try {
+        localStorage.setItem('dahorta_cart', JSON.stringify(this.items()));
+      } catch (e) {
+        console.error('Error saving cart to storage:', e);
+      }
+    });
+  }
+
+  private loadCartFromStorage(): CartItem[] {
+    try {
+      const stored = localStorage.getItem('dahorta_cart');
+      return stored ? JSON.parse(stored) : [];
+    } catch (e) {
+      console.error('Error loading cart from storage:', e);
+      return [];
+    }
+  }
 
   count = computed(() =>
     this.items().reduce((acc, item) => acc + item.quantity, 0)

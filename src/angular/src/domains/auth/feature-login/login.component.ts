@@ -319,12 +319,25 @@ export class LoginComponent {
   async handleLogin(event: Event) {
     event.preventDefault();
     this.error.set('');
+
+    const trimmedEmail = this.email.trim();
+    if (!trimmedEmail) {
+      this.error.set('Por favor, insira o e-mail.');
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      this.error.set('Por favor, insira um e-mail válido.');
+      return;
+    }
+
     this.loading.set(true);
 
     // Simulate API delay
     await new Promise((r) => setTimeout(r, 800));
 
-    const result = this.authService.login(this.email, this.password);
+    const result = this.authService.login(trimmedEmail, this.password);
     this.loading.set(false);
 
     if (result.success) {

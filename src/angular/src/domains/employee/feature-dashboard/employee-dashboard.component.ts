@@ -63,14 +63,12 @@ export class EmployeeDashboardComponent {
 
   readonly nextStatusMap: Partial<Record<OrderStatus, OrderStatus>> = {
     received: 'preparing',
-    preparing: 'ready',
-    ready: 'delivering'
+    preparing: 'ready'
   };
 
   readonly nextLabelsMap: Partial<Record<OrderStatus, string>> = {
     received: 'Iniciar Preparo',
-    preparing: 'Marcar Pronto',
-    ready: 'Aguardando Motoboy'
+    preparing: 'Marcar Pronto'
   };
 
   // Computeds for orders page

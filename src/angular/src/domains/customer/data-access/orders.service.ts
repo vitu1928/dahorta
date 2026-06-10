@@ -1,4 +1,5 @@
 import { Injectable, WritableSignal, Signal } from '@angular/core';
+import { Observable } from 'rxjs';
 import { Order, OrderStatus, PaymentMethod, Address, CartItem } from './customer.models';
 
 @Injectable({ providedIn: 'root' })
@@ -21,5 +22,6 @@ export abstract class OrdersService {
   abstract updateStatus(orderId: string, status: OrderStatus, motoboyId?: string): void;
   abstract getByCustomer(customerId: string): Order[];
   abstract confirmDelivery(orderId: string, code: string): boolean;
+  abstract subscribeToOrder(orderId: string): Observable<Order | null>;
 }
 

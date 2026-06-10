@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ProductsService } from '../data-access/products.service';
 import { CartStateService } from '../data-access/cart.state';
+import { ToastService } from '../../../shared/data-access/toast.service';
 import { ProductCardComponent } from '../ui/product-card.component';
 import { Product } from '../data-access/customer.models';
 import { ProductModalComponent } from './product-modal.component';
@@ -18,7 +19,7 @@ import { CouponsService } from '../data-access/coupons.service';
     <div style="color: var(--foreground)">
       <div class="px-0 py-6" style="background: var(--background)">
         <div class="relative max-w-4xl mx-auto">
-          <span class="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">🔍</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
           <input 
             type="text"
             placeholder="O que vamos comer hoje?"
@@ -213,6 +214,7 @@ export class MenuComponent {
   private productsService = inject(ProductsService);
   private cartState = inject(CartStateService);
   private couponsService = inject(CouponsService);
+  private toastService = inject(ToastService);
   router = inject(Router);
 
   selectedCategory = signal<string | null>(null);
@@ -274,6 +276,7 @@ export class MenuComponent {
 
   addToCart(data: { product: Product; quantity: number; subItems?: any[] }) {
     this.cartState.addItem(data.product, data.quantity, data.subItems);
+    this.toastService.success(`${data.product.name} adicionado ao carrinho!`);
     this.closeModal();
   }
 }

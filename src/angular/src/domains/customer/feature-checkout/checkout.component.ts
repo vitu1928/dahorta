@@ -6,6 +6,8 @@ import { CartStateService } from '../data-access/cart.state';
 import { CouponsService } from '../data-access/coupons.service';
 import { OrdersService } from '../data-access/orders.service';
 import { AuthService } from '@domain/auth/data-access/auth.service';
+import { AddressService } from '../data-access/address.service';
+import { ToastService } from '../../../shared/data-access/toast.service';
 import { PaymentMethod, Address } from '../data-access/customer.models';
 
 interface PaymentOption {
@@ -101,33 +103,81 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
                 Endereço de Entrega
               </h2>
             </div>
+
+            <!-- Selector for Saved Addresses -->
+            @if (savedAddresses().length > 0) {
+              <div class="mb-4">
+                <label class="label-text">Usar Endereço Salvo</label>
+                <select 
+                  [ngModel]="selectedAddressId()" 
+                  (ngModelChange)="onAddressSelect($event)" 
+                  class="input-field"
+                  style="height: 48px; width: 100%;"
+                >
+                  <option value="custom">-- Digitar outro endereço --</option>
+                  @for (addr of savedAddresses(); track addr.id) {
+                    <option [value]="addr.id">{{ addr.label }} ({{ addr.street }}, {{ addr.number }})</option>
+                  }
+                </select>
+              </div>
+            }
+
             <div class="space-y-3">
               <div>
                 <label class="label-text">CEP</label>
-                <input [(ngModel)]="address.zipCode" placeholder="00000-000" class="input-field" />
+                <input [(ngModel)]="address.zipCode" [disabled]="selectedAddressId() !== 'custom'" placeholder="00000-000" class="input-field" />
               </div>
               <div class="grid grid-cols-3 gap-3">
                 <div class="col-span-2">
                   <label class="label-text">Rua / Avenida *</label>
-                  <input required [(ngModel)]="address.street" placeholder="Rua das Flores" class="input-field" />
+                  <input required [(ngModel)]="address.street" [disabled]="selectedAddressId() !== 'custom'" placeholder="Rua das Flores" class="input-field" />
                 </div>
                 <div>
                   <label class="label-text">Número *</label>
-                  <input required [(ngModel)]="address.number" placeholder="123" class="input-field" />
+                  <input required type="number" [(ngModel)]="address.number" (input)="address.number = onlyNumbers(address.number)" [disabled]="selectedAddressId() !== 'custom'" placeholder="123" class="input-field" />
                 </div>
               </div>
               <div>
                 <label class="label-text">Complemento</label>
-                <input [(ngModel)]="address.complement" placeholder="Apto, Bloco, Casa..." class="input-field" />
+                <input [(ngModel)]="address.complement" [disabled]="selectedAddressId() !== 'custom'" placeholder="Apto, Bloco, Casa..." class="input-field" />
               </div>
               <div>
                 <label class="label-text">Bairro *</label>
-                <input required [(ngModel)]="address.neighborhood" placeholder="Jardim Paulista" class="input-field" />
+                <input required [(ngModel)]="address.neighborhood" [disabled]="selectedAddressId() !== 'custom'" placeholder="Jardim Paulista" class="input-field" />
               </div>
               <div>
                 <label class="label-text">Cidade</label>
-                <input [(ngModel)]="address.city" placeholder="São Paulo" class="input-field" />
+                <input [(ngModel)]="address.city" [disabled]="selectedAddressId() !== 'custom'" placeholder="São Paulo" class="input-field" />
               </div>
+ 
+              <!-- Save address checkbox & custom identification input -->
+              @if (selectedAddressId() === 'custom') {
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 16px; padding: 8px 0;">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <input 
+                      type="checkbox" 
+                      [ngModel]="saveNewAddress()" 
+                      (ngModelChange)="saveNewAddress.set($event)"
+                      id="saveNewAddress" 
+                      style="cursor: pointer; width: 16px; height: 16px; margin: 0;"
+                    />
+                    <label for="saveNewAddress" style="cursor: pointer; font-size: 13px; color: var(--text-secondary); font-weight: 500;">
+                      Salvar este endereço para futuras compras
+                    </label>
+                  </div>
+                  <div style="flex: 1; max-width: 200px;">
+                    <input 
+                      type="text" 
+                      [(ngModel)]="customAddressLabel" 
+                      [disabled]="!saveNewAddress()" 
+                      placeholder="Ex: Casa, Trabalho" 
+                      class="input-field"
+                      style="height: 38px; font-size: 12px; margin: 0; width: 100%;"
+                    />
+                  </div>
+                </div>
+              }
+
               <div>
                 <label class="label-text">Observações de ponto de referência (opcional)</label>
                 <textarea [(ngModel)]="addressNotes" placeholder="Ex: Casa verde, portão preto, interfone 2..." rows="2" class="input-field resize-none"></textarea>
@@ -361,6 +411,8 @@ export class CheckoutComponent {
   couponsService = inject(CouponsService);
   ordersService = inject(OrdersService);
   authService = inject(AuthService);
+  addressService = inject(AddressService);
+  toastService = inject(ToastService);
   router = inject(Router);
 
   cartItems = this.cartState.items;
@@ -369,6 +421,11 @@ export class CheckoutComponent {
 
   activeCoupon = this.couponsService.activeCoupon;
   discountAmount = this.couponsService.discountAmount;
+
+  savedAddresses = this.addressService.addresses;
+  selectedAddressId = signal<string>('custom');
+  saveNewAddress = signal<boolean>(false);
+  customAddressLabel = '';
 
   step = signal<'address' | 'payment' | 'confirm'>('address');
   address: Address = {
@@ -407,8 +464,33 @@ export class CheckoutComponent {
     return Math.max(0, total + fee);
   });
 
+  onAddressSelect(id: string) {
+    this.selectedAddressId.set(id);
+    if (id === 'custom') {
+      this.address = {
+        id: 'new',
+        label: 'Novo Endereço',
+        street: '',
+        number: '',
+        complement: '',
+        neighborhood: '',
+        city: 'São Paulo',
+        zipCode: '',
+      };
+    } else {
+      const found = this.savedAddresses().find(a => a.id === id);
+      if (found) {
+        this.address = { ...found };
+      }
+    }
+  }
+
   formatCurrency(value: number): string {
     return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  }
+
+  onlyNumbers(val: string): string {
+    return val.replace(/[^0-9]/g, '');
   }
 
   isStepActive(key: string): boolean {
@@ -456,6 +538,20 @@ export class CheckoutComponent {
       return;
     }
 
+    if (this.selectedAddressId() === 'custom' && this.saveNewAddress()) {
+      const label = this.customAddressLabel.trim() || `Endereço #${this.savedAddresses().length + 1}`;
+      const added = this.addressService.addAddress({
+        label,
+        street: this.address.street,
+        number: this.address.number,
+        complement: this.address.complement || '',
+        neighborhood: this.address.neighborhood,
+        city: this.address.city,
+        zipCode: this.address.zipCode
+      });
+      this.address.id = added.id;
+    }
+
     this.loading.set(true);
     // Simulate API delay
     await new Promise(r => setTimeout(r, 1200));
@@ -475,6 +571,7 @@ export class CheckoutComponent {
     this.loading.set(false);
 
     if (order) {
+      this.toastService.success('Pedido finalizado com sucesso!');
       this.cartState.clear();
       this.couponsService.remove();
       this.router.navigate(['/customer/orders']);

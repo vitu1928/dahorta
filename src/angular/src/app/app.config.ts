@@ -11,6 +11,8 @@ import { OrdersService } from '../domains/customer/data-access/orders.service';
 import { MockOrdersService } from '../domains/customer/data-access/mock-orders.service';
 import { EmployeeService } from '../domains/employee/data-access/employee.service';
 import { MockEmployeeService } from '../domains/employee/data-access/mock-employee.service';
+import { AddressService } from '../domains/customer/data-access/address.service';
+import { MockAddressService } from '../domains/customer/data-access/mock-address.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -20,7 +22,8 @@ export const appConfig: ApplicationConfig = {
     { provide: AuthService, useClass: MockAuthService },
     { provide: ProductsService, useClass: MockProductsService },
     { provide: OrdersService, useClass: MockOrdersService },
-    { provide: EmployeeService, useClass: MockEmployeeService }
+    { provide: EmployeeService, useClass: MockEmployeeService },
+    { provide: AddressService, useClass: MockAddressService }
   ]
 };
 

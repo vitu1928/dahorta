@@ -2,6 +2,7 @@ import { Component, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { OrdersService } from '../data-access/orders.service';
 import { AuthService } from '@domain/auth/data-access/auth.service';
 import { ReviewsService } from '../data-access/reviews.service';
@@ -359,10 +360,7 @@ export class OrderTrackingComponent {
   router = inject(Router);
 
   orderId = signal<string>('');
-  order = computed(() => {
-    const id = this.orderId();
-    return this.ordersService.orders().find(o => o.id === id) || null;
-  });
+  order = signal<Order | null>(null);
 
   isDelivered = computed(() => {
     const o = this.order();
@@ -398,6 +396,9 @@ export class OrderTrackingComponent {
     const idParam = this.route.snapshot.paramMap.get('id');
     if (idParam) {
       this.orderId.set(idParam);
+      this.ordersService.subscribeToOrder(idParam)
+        .pipe(takeUntilDestroyed())
+        .subscribe(o => this.order.set(o));
     }
   }
 

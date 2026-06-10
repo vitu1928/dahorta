@@ -1,6 +1,8 @@
 import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { ImageWithFallbackComponent } from '../../../shared/ui/image-with-fallback/image-with-fallback.component';
+import { CartStateService } from '../../customer/data-access/cart.state';
+import { ProductsService } from '../../customer/data-access/products.service';
 
 interface Feature {
   iconName: string;
@@ -9,6 +11,7 @@ interface Feature {
 }
 
 interface FavoriteBowl {
+  id: string;
   image: string;
   name: string;
   tag: string;
@@ -42,10 +45,15 @@ interface FavoriteBowl {
         font-size: 4.5rem !important;
       }
     }
+    button {
+      cursor: pointer;
+    }
   `]
 })
 export class LandingPageComponent {
   private router = inject(Router);
+  private cartState = inject(CartStateService);
+  private productsService = inject(ProductsService);
 
   readonly features: Feature[] = [
     {
@@ -72,6 +80,7 @@ export class LandingPageComponent {
 
   readonly favoriteBowls: FavoriteBowl[] = [
     {
+      id: 'p1',
       image: '/assets/bowl1.png',
       name: 'Bowl Proteico',
       tag: 'Mais Vendido',
@@ -79,6 +88,7 @@ export class LandingPageComponent {
       description: 'Quinoa, frango grelhado orgânico, abacate, tomate cereja, espinafre e molho tahine.',
     },
     {
+      id: 'p2',
       image: '/assets/bowl2.png',
       name: 'Bowl Vegano Power',
       tag: 'Plant-Based',
@@ -86,6 +96,7 @@ export class LandingPageComponent {
       description: 'Grão-de-bico, couve massageada, cenoura ralada, beterraba, hummus e sementes de girassol.',
     },
     {
+      id: 'p3',
       image: '/assets/bowl3.png',
       name: 'Bowl Mediterrâneo',
       tag: 'Artesanal',
@@ -99,6 +110,14 @@ export class LandingPageComponent {
   handleOrderRedirect(): void {
     // Preserved original behavior: navigate to /customer/menu
     // Using Angular Router instead of window.location.href
+    this.router.navigate(['/customer/menu']);
+  }
+
+  addAndRedirect(bowlId: string): void {
+    const product = this.productsService.getById(bowlId);
+    if (product) {
+      this.cartState.addItem(product, 1);
+    }
     this.router.navigate(['/customer/menu']);
   }
 

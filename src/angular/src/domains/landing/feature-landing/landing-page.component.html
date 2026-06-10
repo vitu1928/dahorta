@@ -222,8 +222,8 @@
               </div>
               <p class="text-[#5F5F5F] mb-8 leading-relaxed font-serif italic text-sm">{{ bowl.description }}</p>
               <button
-                (click)="handleOrderRedirect()"
-                class="w-full py-4 rounded-2xl border-2 border-[#4C7C59] text-[#4C7C59] font-bold text-sm hover:bg-[#4C7C59] hover:text-white transition-all flex items-center justify-center gap-3"
+                (click)="addAndRedirect(bowl.id)"
+                class="w-full py-4 rounded-2xl border-2 border-[#4C7C59] text-[#4C7C59] font-bold text-sm hover:bg-[#4C7C59] hover:text-white transition-all flex items-center justify-center gap-3 cursor-pointer"
               >
                 Adicionar ao pedido
               </button>

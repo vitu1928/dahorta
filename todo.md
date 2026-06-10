@@ -7,10 +7,23 @@ Este arquivo serve como repositório centralizado para planejar tarefas futuras,
 ## 📌 Lista de Tarefas Futuras (Pós-Migração)
 *Espaço para adicionar novos pedidos e refinamentos que serão realizados ao final do projeto.*
 
-- `[ ]` **Integração Real com Firebase / Backend**: Substituir todas as implementações mock pelas conexões reais.
-- `[ ]` **Migração do Painel de Motoboy**: Migrar do React para o Angular as telas de entregas e mapa de motoboys.
-- `[ ]` **Migração do Painel Administrativo (Owner)**: Migrar do React para o Angular a gestão de vendas e cardápios.
-- `[ ]` **Mapear Animações e implementar elas**: Definir e catalogar todas as animações (transições de página, micro-interações, loading states, hover effects) e implementá-las em cada componente.
+- [ ] **Integração Real com Firebase / Backend**: Substituir todas as implementações mock pelas conexões reais.
+  - [ ] *Autenticação Real*: Conectar o `AuthService` ao Firebase Auth.
+  - [ ] *Firestore Realtime Observers*: Substituir a simulação de subscrição de status do pedido por listeners reais do Firestore (`onSnapshot`).
+  - [ ] *CRUD de Endereços Salvos por Usuário*: Persistir a lista de endereços do cliente na subcoleção `addresses` do documento do usuário no Firestore (`users/{userId}/addresses`).
+  - [ ] *Rastreamento de Motoboy no Firestore*: Escutar atualizações do campo `deliveryLocation` na coleção de pedidos (`orders/{orderId}`) e projetar rota no mapa.
+  - [ ] *Notificações FCM*: Configurar Cloud Messaging para notificações Push ao alterar status do pedido.
+  - [ ] *Sincronização de Estoque e Ficha Técnica*: Criar triggers/functions que deduzem ingredientes do estoque do Firestore quando um pedido é concluído e desativam o produto caso falte insumos.
+
+- [ ] **Módulo de Endereços no Perfil (CRUD)**:
+  - [ ] Criar interface visual (modal ou seção) no `ProfileComponent` para gerenciar e editar os endereços utilizando o `AddressService`.
+
+- [ ] **Gestão e Desativação de Produtos**:
+  - [ ] Criar interface no Painel do Funcionário/Dono para listar produtos e alternar sua disponibilidade (desativar produto), refletindo instantaneamente no cardápio do cliente.
+
+- [ ] **Migração do Painel de Motoboy**: Migrar do React para o Angular as telas de entregas e mapa de motoboys.
+- [ ] **Migração do Painel Administrativo (Owner)**: Migrar do React para o Angular a gestão de vendas e cardápios.
+- [ ] **Mapear Animações e implementar elas**: Definir e catalogar todas as animações (transições de página, micro-interações, loading states, hover effects) e implementá-las em cada componente.
 - `[ ]` *Adicione novos itens aqui conforme as necessidades surgirem...*
 
 
