@@ -11,8 +11,6 @@ export default function CustomerLayout() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const isMenuPage = location.pathname === "/menu" || location.pathname === "/";
-
   const handleLogout = () => {
     logout();
     navigate("/login");
@@ -52,8 +50,8 @@ export default function CustomerLayout() {
                 alignItems: "center",
                 justifyContent: "center",
                 padding: 6,
-                boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
-                border: "1px solid var(--border-light)",
+                boxShadow: "0 2px 12px rgba(0,0,0,0.15)",
+                border: "2px solid var(--primary)",
               }}
             >
               <img src={logoImg} alt="DaHorta" style={{ width: "100%", height: "100%", objectFit: "contain", borderRadius: "50%" }} />
@@ -116,15 +114,14 @@ export default function CustomerLayout() {
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0 font-sans">
-        {/* ── Top Header (Mobile only) ── */}
-        {!isMenuPage && (
-          <header
-            className="md:hidden relative overflow-hidden"
-            style={{
-              height: 100,
-              borderBottom: "1px solid var(--border-light)",
-            }}
-          >
+        {/* ── Top Header ── */}
+        <header
+          className="relative overflow-hidden"
+          style={{
+            height: 120,
+            borderBottom: "1px solid var(--border-light)",
+          }}
+        >
             {/* Header Background with Overlay */}
             <img 
               src={heroImg}
@@ -171,11 +168,11 @@ export default function CustomerLayout() {
                 </div>
               </div>
 
-              {/* Cart button */}
+              {/* Cart button (Mobile only) */}
               <motion.button
                 onClick={() => navigate("/cart")}
                 whileTap={{ scale: 0.95 }}
-                className="relative flex items-center gap-2 px-3 py-2 rounded-xl transition-all border-none"
+                className="md:hidden relative flex items-center gap-2 px-3 py-2 rounded-xl transition-all border-none"
                 style={{
                   background:
                     cartCount > 0 ? "var(--primary)" : "rgba(255,255,255,0.2)",
@@ -205,7 +202,7 @@ export default function CustomerLayout() {
               </motion.button>
             </div>
           </header>
-        )}
+        
 
         {/* Main content */}
         <main className="flex-1 pb-24 md:pb-8">

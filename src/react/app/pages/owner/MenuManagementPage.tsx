@@ -675,19 +675,16 @@ export default function MenuManagementPage() {
           <h1 className="display-heading" style={{ fontSize: 32, color: "var(--text-primary)", fontFamily: "'Poppins', sans-serif" }}>Cardápio</h1>
           <p style={{ color: "var(--text-secondary)", fontSize: "14px", marginTop: "4px" }}>Configure seus produtos, preços e fichas técnicas.</p>
         </div>
-        <button onClick={() => { 
-          if (activeTab === "combos") {
-            setEditCombo(undefined);
-            setShowComboModal(true);
-          } else {
+        {activeTab === "menu" && (
+          <button onClick={() => { 
             setEditProduct(undefined); 
             setShowForm(true); 
-          }
-        }}
-          className="flex items-center gap-2 px-6 py-3 rounded-xl transition-all hover:scale-[1.02]"
-          style={{ background: "var(--primary)", color: "white", border: "none", cursor: "pointer", fontSize: "15px", fontWeight: 600, boxShadow: "var(--shadow-default)" }}>
-          <Plus size={20} /> {activeTab === "combos" ? "Adicionar Combo" : "Adicionar Produto"}
-        </button>
+          }}
+            className="flex items-center gap-2 px-6 py-3 rounded-xl transition-all hover:scale-[1.02]"
+            style={{ background: "var(--primary)", color: "white", border: "none", cursor: "pointer", fontSize: "15px", fontWeight: 600, boxShadow: "var(--shadow-default)" }}>
+            <Plus size={20} /> {"Adicionar Produto"}
+          </button>
+        )}
       </div>
 
       {/* Tabs */}

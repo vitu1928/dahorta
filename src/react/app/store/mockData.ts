@@ -10,15 +10,15 @@ export interface User {
   avatar?: string;
 }
 
-import bowlProteico from "figma:asset/bowl_proteico.png";
-import bowlVegano from "figma:asset/bowl_vegano.png";
-import bowlMediterraneo from "figma:asset/bowl_mediterraneo.png";
-import bowlAsiatico from "figma:asset/bowl_oriental.png";
-import bowlFrango from "figma:asset/bowl_low_carb.png";
-import bowlCamarao from "figma:asset/bowl_tropical.png";
-import bowlTropical from "figma:asset/bowl_tropical.png";
-import bowlLowCarb from "figma:asset/bowl_low_carb.png";
-import bowlOriental from "figma:asset/bowl_oriental.png";
+import bowlProteico from "figma:asset/83166462700dea1870b516e830f45e780dcc0fe7.png";
+import bowlVegano from "figma:asset/d5a9c664c8ccbeda2aa2f6f37bc248d10e11da0f.png";
+import bowlMediterraneo from "figma:asset/bdc681e777d9021e1175ba7b5feeb55a27f717ca.png";
+import bowlAsiatico from "figma:asset/8ad3e6588bf4525885450d975c6a2497a36c2f9d.png";
+import bowlFrango from "figma:asset/1053f0ada95a371006ddc6e2ae1a2e261be5433d.png";
+import bowlCamarao from "figma:asset/c6606ca264bf3736015c3111d4eedda454cf3cde.png";
+import bowlTropical from "figma:asset/c6606ca264bf3736015c3111d4eedda454cf3cde.png"; // Fallback/alias if needed
+import bowlLowCarb from "figma:asset/1053f0ada95a371006ddc6e2ae1a2e261be5433d.png"; // Fallback/alias
+import bowlOriental from "figma:asset/8ad3e6588bf4525885450d975c6a2497a36c2f9d.png"; // Fallback/alias
 
 
 export interface Address {
@@ -224,11 +224,11 @@ export const MOCK_USERS: User[] = [
 ];
 
 export const MOCK_CATEGORIES: Category[] = [
-  { id: "c1", name: "Bowls", icon: "🥗" },
-  { id: "c2", name: "Saladas", icon: "🥬" },
-  { id: "c3", name: "Bebidas", icon: "🥤" },
-  { id: "c4", name: "Sobremesas", icon: "🍨" },
-  { id: "c5", name: "Acompanhamentos", icon: "🍞" },
+  { id: "c1", name: "Bowls", icon: "" },
+  { id: "c2", name: "Saladas", icon: "" },
+  { id: "c3", name: "Bebidas", icon: "" },
+  { id: "c4", name: "Sobremesas", icon: "" },
+  { id: "c5", name: "Acompanhamentos", icon: "" },
 ];
 
 export const MOCK_PRODUCTS: Product[] = [

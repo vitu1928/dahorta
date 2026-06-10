@@ -160,7 +160,7 @@ function ProductModal({ product, onClose, onAdd, quantity }: ProductModalProps) 
 
         <div className={`flex flex-col ${product.isCombo ? 'md:flex-row' : ''} h-full`}>
           <div className={`relative ${product.isCombo ? 'md:w-1/2 h-64 md:h-full' : 'h-64 sm:h-72'} flex-shrink-0`}>
-            <ImageWithFallback src={product.image} alt={product.name} className="w-full h-full object-cover" />
+            <ImageWithFallback src={product.image} alt={product.name} className="w-full h-full object-contain" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
             {product.featured && (
               <div className="absolute top-4 left-4 bg-accent text-accent-foreground text-[10px] font-black uppercase px-2 py-1 rounded-md tracking-wider">
@@ -298,7 +298,7 @@ function ProductModal({ product, onClose, onAdd, quantity }: ProductModalProps) 
               <motion.button
                 whileTap={{ scale: 0.95 }}
                 onClick={handleAdd}
-                className="flex-1 h-14 rounded-2xl flex items-center justify-center gap-3 transition-all border-none cursor-pointer"
+                className="flex-1 h-14 rounded-2xl flex items-center justify-center gap-3 px-10 transition-all border-none cursor-pointer"
                 style={{ 
                   background: "var(--primary)", 
                   color: "white", 
@@ -516,46 +516,17 @@ export default function MenuPage() {
 
   return (
     <div style={{ color: "var(--foreground)" }}>
-      {/* ── Hero Banner ── */}
-      <div className="relative overflow-hidden" style={{ minHeight: 180, background: "var(--secondary)", marginTop: -16 }}>
-        <ImageWithFallback src={heroImg} alt="Hero Background" className="absolute inset-0 w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-black/40" />
-        <div className="relative z-10 px-6 pt-12 pb-8 max-w-4xl mx-auto flex justify-between items-start">
-          <div>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="flex items-center gap-2 px-3 py-1 rounded-full" style={{ background: restaurantOpen ? "rgba(58,165,93,0.35)" : "rgba(230,57,70,0.35)", border: "1px solid rgba(255,255,255,0.2)", backdropFilter: "blur(8px)" }}>
-                <div style={{ width: 6, height: 6, borderRadius: "50%", background: restaurantOpen ? "#4CAF50" : "#D64545" }} />
-                <span className="text-white text-[10px] font-black uppercase tracking-wider">{restaurantOpen ? "Aberto" : "Fechado"}</span>
-              </div>
-              <span className="text-white/80 text-xs font-bold">45–60 min • R$ 5,90 entrega</span>
-            </div>
-            <h1 style={{ fontSize: "clamp(36px, 10vw, 56px)", color: "#FFFFFF", marginBottom: 4, fontWeight: 900, fontFamily: "'Poppins', sans-serif", letterSpacing: "-0.04em", lineHeight: 0.95 }}>DaHorta</h1>
-            <p className="text-white/90 text-sm md:text-base mb-6 font-medium">Bowls orgânicos, frescos e cheios de vida.</p>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-0.5">
-                {[1, 2, 3, 4, 5].map((s) => <Star key={s} size={14} color="#E9C46A" fill="#E9C46A" />)}
-              </div>
-              <span className="text-white font-black text-sm">4.9</span>
-              <span className="text-white/60 text-[10px] font-bold uppercase tracking-wider">(1.2k+ avaliações)</span>
-            </div>
-          </div>
-          <motion.button onClick={() => navigate("/cart")} whileTap={{ scale: 0.95 }} className="md:hidden w-12 h-12 rounded-2xl flex items-center justify-center transition-all mt-2 border-none relative" style={{ background: cartCount > 0 ? "var(--primary)" : "rgba(255,255,255,0.2)", border: "1px solid rgba(255,255,255,0.3)", backdropFilter: "blur(12px)", color: "white" }}>
-            <ShoppingBag size={20} />
-            {cartCount > 0 && <span className="absolute -top-1 -right-1 bg-white text-primary text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center border-2 border-primary">{cartCount}</span>}
-          </motion.button>
-        </div>
-      </div>
-
-      <div className="px-6 py-4 sticky z-30" style={{ top: 0, background: "var(--background)", borderBottom: "1px solid var(--border-light)" }}>
+      <div className="px-6 py-6" style={{ background: "var(--background)" }}>
         <div className="relative max-w-4xl mx-auto">
           <Search size={18} color="var(--muted-foreground)" className="absolute left-4 top-1/2 -translate-y-1/2" />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="O que vamos comer hoje?" className="w-full pl-12 pr-4 py-3.5 rounded-2xl outline-none" style={{ background: "var(--background-soft)", border: "1px solid var(--border)", color: "var(--text-primary)", fontSize: "15px" }} />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="O que vamos comer hoje?" className="w-full pl-12 pr-4 py-3.5 rounded-2xl outline-none shadow-sm" style={{ background: "var(--background-soft)", border: "1px solid var(--border)", color: "var(--text-primary)", fontSize: "15px" }} />
         </div>
       </div>
 
       <div className="max-w-4xl mx-auto">
         {!search && activeCoupons.length > 0 && (
           <div className="px-6 pt-6 -mb-2">
+            <div><h2 className="font-serif text-xl text-[#4C7C59] mb-4">Meus Cupons</h2></div>
             <div className="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
               {activeCoupons.map((coupon) => (
                 <motion.div key={coupon.id} whileHover={{ y: -2 }} className="flex-shrink-0 bg-white shadow-sm border border-border rounded-xl p-2.5 flex items-center gap-3 min-w-[170px]">
@@ -585,7 +556,6 @@ export default function MenuPage() {
           <div className="px-6 mb-12">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-[#E9C46A]/20 flex items-center justify-center"><Sparkles size={22} color="#E9C46A" /></div>
                 <h2 style={{ fontSize: 24, fontWeight: 900, color: "var(--text-primary)", fontFamily: "'Poppins', sans-serif" }}>Prato do Dia</h2>
               </div>
               <span className="hidden sm:block text-[10px] font-black uppercase tracking-widest text-[#4C7C59] bg-[#E6F0EA] px-3 py-1 rounded-full">Fresco Hoje</span>
@@ -600,9 +570,14 @@ export default function MenuPage() {
                   <div className="inline-block self-start mb-6 px-4 py-1.5 rounded-full bg-[#E9C46A] text-[#1A2E1F] text-[10px] font-black uppercase tracking-widest">RECOMENDAÇÃO DO CHEF</div>
                   <h3 style={{ fontSize: 32, fontWeight: 900, color: "white", marginBottom: 12, lineHeight: 1.1, fontFamily: "'Poppins', sans-serif" }}>{todaySpecial.name}</h3>
                   <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 16, lineHeight: 1.6, marginBottom: 32, fontWeight: 500 }}>{todaySpecial.description}</p>
-                  <div className="flex items-center justify-between mt-auto">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-auto gap-5">
                     <span style={{ fontSize: 24, fontWeight: 900, color: "#E9C46A" }}>{formatCurrency(todaySpecial.price)}</span>
-                    <button onClick={(e) => { e.stopPropagation(); addToCart(todaySpecial); }} className="bg-[#4C7C59] text-white px-8 py-4 rounded-2xl font-black text-sm transition-all flex items-center gap-2 border-none cursor-pointer"><ShoppingBag size={18} />Pedir Agora</button>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); addToCart(todaySpecial); }} 
+                      className="w-full sm:w-auto bg-[#4C7C59] text-white px-6 py-3 sm:px-8 sm:py-4 rounded-2xl font-black text-sm transition-all flex items-center justify-center gap-2 border-none cursor-pointer shadow-lg shadow-[#4C7C59]/20"
+                    >
+                      <ShoppingBag size={18} />Pedir Agora
+                    </button>
                   </div>
                 </div>
               </div>
