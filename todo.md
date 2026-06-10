@@ -10,7 +10,9 @@ Este arquivo serve como repositório centralizado para planejar tarefas futuras,
 - `[ ]` **Integração Real com Firebase / Backend**: Substituir todas as implementações mock pelas conexões reais.
 - `[ ]` **Migração do Painel de Motoboy**: Migrar do React para o Angular as telas de entregas e mapa de motoboys.
 - `[ ]` **Migração do Painel Administrativo (Owner)**: Migrar do React para o Angular a gestão de vendas e cardápios.
+- `[ ]` **Mapear Animações e implementar elas**: Definir e catalogar todas as animações (transições de página, micro-interações, loading states, hover effects) e implementá-las em cada componente.
 - `[ ]` *Adicione novos itens aqui conforme as necessidades surgirem...*
+
 
 ---
 

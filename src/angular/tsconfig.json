@@ -28,7 +28,8 @@
       "@shared/ui": ["src/shared/ui"],
       "@shared/ui/*": ["src/shared/ui/*"],
       "@shared/models": ["src/shared/models"],
-      "@shared/data-access": ["src/shared/data-access"]
+      "@shared/data-access": ["src/shared/data-access"],
+      "@shared/data-access/*": ["src/shared/data-access/*"]
     }
   },
   "angularCompilerOptions": {

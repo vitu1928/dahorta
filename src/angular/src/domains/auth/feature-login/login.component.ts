@@ -1,7 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../data-access/auth.service';
 
 @Component({
@@ -296,6 +296,7 @@ import { AuthService } from '../data-access/auth.service';
 export class LoginComponent {
   private authService = inject(AuthService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
 
   email = '';
   password = '';
@@ -334,7 +335,8 @@ export class LoginComponent {
       } else if (result.role === 'motoboy') {
         this.router.navigate(['/motoboy']);
       } else {
-        this.router.navigate(['/customer/menu']);
+        const returnUrl = this.route.snapshot.queryParams['returnUrl'];
+        this.router.navigateByUrl(returnUrl || '/customer/menu');
       }
     } else {
       this.error.set(result.message);
