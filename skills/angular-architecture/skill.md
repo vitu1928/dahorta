@@ -56,6 +56,7 @@ Esta skill define a arquitetura oficial, as convenções e os padrões que guiar
   ```
 - **Smart/Dumb Components:** Manter a clara separação entre componentes "Smart" (injetam serviços e gerenciam Signals de estado) e componentes "Dumb" (apenas `@Input()` via `input()` signal API e `@Output()` via `output()` API).
 - **Control Flow:** Utilizar exclusivamente a nova sintaxe de Control Flow (`@if`, `@for`, `@defer`) ao invés de diretivas estruturais antigas (`*ngIf`, `*ngFor`).
+- **Serviços e Abstração de Dados (Dependency Inversion):** Para permitir a substituição transparente de fontes de dados (ex: trocar Mock por Firebase), os serviços de dados devem ser definidos como classes abstratas (`abstract class`). A classe abstrata serve como contrato e como runtime token de DI. As implementações concretas estendem essa classe abstrata, e os provedores são declarados centralizadamente no `app.config.ts` usando `{ provide: AbstractService, useClass: ConcreteService }`. Componentes devem injetar apenas a classe abstrata.
 
 ## Exemplos Práticos
 **Componente Angular Moderno usando Signals:**

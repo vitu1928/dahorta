@@ -32,6 +32,17 @@ interface FavoriteBowl {
   standalone: true,
   imports: [ImageWithFallbackComponent],
   templateUrl: './landing-page.component.html',
+  styles: [`
+    h1 {
+      font-size: 3.75rem !important;
+      line-height: 1 !important;
+    }
+    @media (min-width: 1024px) {
+      h1 {
+        font-size: 4.5rem !important;
+      }
+    }
+  `]
 })
 export class LandingPageComponent {
   private router = inject(Router);
@@ -86,8 +97,8 @@ export class LandingPageComponent {
   readonly pravatarUsers = [1, 2, 3, 4];
 
   handleOrderRedirect(): void {
-    // Preserved original behavior: navigate to /menu
+    // Preserved original behavior: navigate to /customer/menu
     // Using Angular Router instead of window.location.href
-    this.router.navigate(['/menu']);
+    this.router.navigate(['/customer/menu']);
   }
 }

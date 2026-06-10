@@ -19,8 +19,12 @@
     "module": "ES2022",
     "baseUrl": ".",
     "paths": {
-      "@shared/*": ["src/shared/*"],
-      "@domains/*": ["src/domains/*"]
+      "@domain/customer": ["src/domains/customer"],
+      "@domain/customer/*": ["src/domains/customer/*"],
+      "@shared/ui": ["src/shared/ui"],
+      "@shared/ui/*": ["src/shared/ui/*"],
+      "@shared/models": ["src/shared/models"],
+      "@shared/data-access": ["src/shared/data-access"]
     }
   },
   "angularCompilerOptions": {
