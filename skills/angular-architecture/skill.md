@@ -57,6 +57,10 @@ Esta skill define a arquitetura oficial, as convenções e os padrões que guiar
 - **Smart/Dumb Components:** Manter a clara separação entre componentes "Smart" (injetam serviços e gerenciam Signals de estado) e componentes "Dumb" (apenas `@Input()` via `input()` signal API e `@Output()` via `output()` API).
 - **Control Flow:** Utilizar exclusivamente a nova sintaxe de Control Flow (`@if`, `@for`, `@defer`) ao invés de diretivas estruturais antigas (`*ngIf`, `*ngFor`).
 - **Serviços e Abstração de Dados (Dependency Inversion):** Para permitir a substituição transparente de fontes de dados (ex: trocar Mock por Firebase), os serviços de dados devem ser definidos como classes abstratas (`abstract class`). A classe abstrata serve como contrato e como runtime token de DI. As implementações concretas estendem essa classe abstrata, e os provedores são declarados centralizadamente no `app.config.ts` usando `{ provide: AbstractService, useClass: ConcreteService }`. Componentes devem injetar apenas a classe abstrata.
+- **Escopo de Gerenciamento de Estado (Signals):**
+  * *Estado Local:* Utilizar Signals declarados no componente para gerenciar dados específicos daquele componente (ex: modal aberto/fechado, filtros locais).
+  * *Estado do Domínio:* Utilizar serviços singleton (`CartStateService`) injetados onde necessário para compartilhar estados reativos entre múltiplos componentes do mesmo domínio ou domínio compartilhado.
+- **Sanitização e Manipulação de SVGs:** Evitar o uso do binding `[innerHTML]` para injetar caminhos de SVG dinâmicos no template. O mecanismo padrão de segurança do Angular irá sanitizar e remover elementos como `<path>`, `<rect>` e `<line>`, tornando as imagens invisíveis. Em vez disso, use diretivas nativas como `@switch` renderizando SVGs inline completos no template ou, se estritamente necessário, faça o bypass de segurança explicitamente usando `DomSanitizer.bypassSecurityHtml`.
 
 ## Exemplos Práticos
 **Componente Angular Moderno usando Signals:**
