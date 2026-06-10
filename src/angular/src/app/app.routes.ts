@@ -1,19 +1,51 @@
 import { Routes } from '@angular/router';
 import { LandingPageComponent } from '../domains/landing/feature-landing/landing-page.component';
+import { authGuard } from '@shared/data-access/auth.guard';
 
 export const routes: Routes = [
-  // Redirect root to landing (temporary — will expand as domains are migrated)
-  { path: '', redirectTo: 'landing', pathMatch: 'full' },
+  { path: '', redirectTo: '/customer/menu', pathMatch: 'full' },
+  {
+    path: 'customer',
+    loadComponent: () => import('@domain/customer/feature-layout/customer-layout.component')
+      .then(m => m.CustomerLayoutComponent),
+    children: [
+      { path: 'menu', loadComponent: () => import('@domain/customer/feature-menu/menu.component')
+          .then(m => m.MenuComponent) },
+      { path: 'cart', canActivate: [authGuard], loadComponent: () => import('@domain/customer/feature-cart/cart.component')
+          .then(m => m.CartComponent) },
+      { path: 'checkout', canActivate: [authGuard], loadComponent: () => import('@domain/customer/feature-checkout/checkout.component')
+          .then(m => m.CheckoutComponent) },
+      { path: 'orders', canActivate: [authGuard], loadComponent: () => import('@domain/customer/feature-orders/orders.component')
+          .then(m => m.OrdersComponent) },
+      { path: 'orders/:id', canActivate: [authGuard], loadComponent: () => import('@domain/customer/feature-orders/order-tracking.component')
+          .then(m => m.OrderTrackingComponent) },
+      { path: 'profile', canActivate: [authGuard], loadComponent: () => import('@domain/customer/feature-profile/profile.component')
+          .then(m => m.ProfileComponent) },
+    ]
+  },
   {
     path: 'landing',
     component: LandingPageComponent,
     title: 'DaHorta | Do campo para o seu prato',
   },
   {
-    path: 'menu',
-    loadComponent: () => import('../domains/customer/feature-menu/menu-page.component').then(m => m.MenuPageComponent),
-    title: 'DaHorta | Menu',
+    path: 'login',
+    loadComponent: () => import('../domains/auth/feature-login/login.component')
+      .then(m => m.LoginComponent),
+    title: 'DaHorta | Login',
   },
-  // Catch-all — redirect unknown paths to landing
-  { path: '**', redirectTo: 'landing' },
+  {
+    path: 'register',
+    loadComponent: () => import('../domains/auth/feature-signup/signup.component')
+      .then(m => m.SignupComponent),
+    title: 'DaHorta | Criar Conta',
+  },
+  {
+    path: 'employee',
+    canActivate: [authGuard],
+    loadComponent: () => import('@domain/employee/feature-dashboard/employee-dashboard.component')
+      .then(m => m.EmployeeDashboardComponent),
+    title: 'DaHorta | Painel do Funcionário',
+  },
+  { path: '**', redirectTo: 'landing' }
 ];

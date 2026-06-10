@@ -11,7 +11,7 @@ import {
   StockMovement,
   TechnicalSheet,
   User,
-} from './models';
+} from './customer.models';
 
 const bowlProteico = '/assets/bowl_proteico.png';
 const bowlVegano = '/assets/bowl_vegano.png';
