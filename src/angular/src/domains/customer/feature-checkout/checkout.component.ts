@@ -105,27 +105,25 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
             </div>
 
             <!-- Selector for Saved Addresses -->
-            @if (savedAddresses().length > 0) {
-              <div class="mb-4">
-                <label class="label-text">Usar Endereço Salvo</label>
-                <select 
-                  [ngModel]="selectedAddressId()" 
-                  (ngModelChange)="onAddressSelect($event)" 
-                  class="input-field"
-                  style="height: 48px; width: 100%;"
-                >
-                  <option value="custom">-- Digitar outro endereço --</option>
-                  @for (addr of savedAddresses(); track addr.id) {
-                    <option [value]="addr.id">{{ addr.label }} ({{ addr.street }}, {{ addr.number }})</option>
-                  }
-                </select>
-              </div>
-            }
+            <div class="mb-4">
+              <label class="label-text">Usar Endereço Salvo</label>
+              <select 
+                [ngModel]="selectedAddressId()" 
+                (ngModelChange)="onAddressSelect($event)" 
+                class="input-field"
+                style="height: 48px; width: 100%;"
+              >
+                <option value="custom">-- Digitar outro endereço --</option>
+                @for (addr of savedAddresses(); track addr.id) {
+                  <option [value]="addr.id">{{ addr.label }} ({{ addr.street }}, {{ addr.number }})</option>
+                }
+              </select>
+            </div>
 
             <div class="space-y-3">
               <div>
                 <label class="label-text">CEP</label>
-                <input [(ngModel)]="address.zipCode" [disabled]="selectedAddressId() !== 'custom'" placeholder="00000-000" class="input-field" />
+                <input [(ngModel)]="address.zipCode" (ngModelChange)="onCepChange($event)" [disabled]="selectedAddressId() !== 'custom'" placeholder="00000-000" class="input-field" />
               </div>
               <div class="grid grid-cols-3 gap-3">
                 <div class="col-span-2">
@@ -491,6 +489,26 @@ export class CheckoutComponent {
 
   onlyNumbers(val: string): string {
     return val.replace(/[^0-9]/g, '');
+  }
+
+  async onCepChange(cep: string) {
+    if (!cep) return;
+    const cleanCep = cep.replace(/\D/g, '');
+    if (cleanCep.length === 8) {
+      try {
+        const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+        const data = await response.json();
+        if (!data.erro) {
+          this.address.street = data.logradouro || '';
+          this.address.neighborhood = data.bairro || '';
+          this.address.city = data.localidade || '';
+        } else {
+          this.toastService.error('CEP não encontrado.');
+        }
+      } catch (error) {
+        console.error('Error fetching CEP:', error);
+      }
+    }
   }
 
   isStepActive(key: string): boolean {

@@ -8,12 +8,14 @@ import { MOCK_ORDERS, MOCK_TECHNICAL_SHEETS, MOCK_INSUMOS } from './mock-data';
 import { EmployeeService } from '../../employee/data-access/employee.service';
 import { ProductsService } from './products.service';
 import { AuthService } from '@domain/auth/data-access/auth.service';
+import { NotificationService } from './notification.service';
 
 @Injectable({ providedIn: 'root' })
 export class MockOrdersService extends OrdersService {
   private employeeService = inject(EmployeeService);
   private productsService = inject(ProductsService);
   private authService = inject(AuthService);
+  private notificationService = inject(NotificationService);
 
   override orders = signal<Order[]>(MOCK_ORDERS);
   override activeOrderId = signal<string | null>(null);
@@ -101,6 +103,19 @@ export class MockOrdersService extends OrdersService {
       if (motoboyId) order.motoboyId = motoboyId;
       this.orders.set([...this.orders()]);
 
+      // Trigger notification based on status
+      const cleanId = orderId.startsWith('order-') ? orderId.substring(6) : orderId;
+      if (status === 'preparing') {
+        this.notificationService.sendNotification('Pedido em Preparo 🥗', `Seu pedido #${cleanId} está sendo preparado com muito carinho!`, 'orderStatus');
+      } else if (status === 'ready') {
+        this.notificationService.sendNotification('Pedido Pronto! 😋', `Seu pedido #${cleanId} está pronto e aguardando o entregador.`, 'orderStatus');
+      } else if (status === 'delivering') {
+        this.notificationService.sendNotification('Pedido a Caminho! 🛵', `Seu pedido #${cleanId} saiu para entrega!`, 'orderStatus');
+        this.notificationService.sendNotification('Entregador se Aproximando 📍', 'O entregador já está a caminho do seu endereço.', 'motoboyApproaching');
+      } else if (status === 'delivered') {
+        this.notificationService.sendNotification('Pedido Entregue! 🎉', 'Seu pedido foi entregue com sucesso. Bom apetite!', 'orderStatus');
+      }
+
       // If marked as 'ready', simulate Motoboy picking it up 10 seconds later
       if (status === 'ready') {
         setTimeout(() => {
@@ -123,6 +138,10 @@ export class MockOrdersService extends OrdersService {
       order.status = 'delivered';
       order.updatedAt = new Date();
       this.orders.set([...this.orders()]);
+      
+      const cleanId = orderId.startsWith('order-') ? orderId.substring(6) : orderId;
+      this.notificationService.sendNotification('Pedido Entregue! 🎉', `Seu pedido #${cleanId} foi entregue com sucesso. Bom apetite!`, 'orderStatus');
+      
       return true;
     }
     return false;
