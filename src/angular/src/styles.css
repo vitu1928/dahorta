@@ -69,6 +69,49 @@
   --shadow-card: 0px 4px 16px rgba(0,0,0,0.04);
 }
 
+/* === THEME SELECTORS === */
+.owner {
+  --sidebar: #152415;
+  --sidebar-foreground: #FFFFFF;
+  --sidebar-active: #5E8F6A;
+  --background: #F7F9F7;
+  --foreground: #1F1F1F;
+  --card: #FFFFFF;
+  --card-foreground: #1F1F1F;
+  --border: #DADADA;
+  --muted: #EEF2EE;
+  --muted-foreground: #5F5F5F;
+}
+
+.employee {
+  --sidebar: #4C7C59;
+  --sidebar-foreground: #FFFFFF;
+  --sidebar-active: rgba(255,255,255,0.1);
+  --sidebar-active-border: #FFFFFF;
+  --background: #F7F9F7;
+  --foreground: #1F1F1F;
+  --card: #FFFFFF;
+  --card-foreground: #1F1F1F;
+  --border: #DADADA;
+  --muted: #EEF2EE;
+  --muted-foreground: #5F5F5F;
+}
+
+.motoboy {
+  --sidebar: #4C7C59;
+  --sidebar-foreground: #FFFFFF;
+  --sidebar-active: rgba(255,255,255,0.1);
+  --sidebar-active-border: #FFFFFF;
+  --background: #F7F9F7;
+  --foreground: #1F1F1F;
+  --card: #FFFFFF;
+  --card-foreground: #1F1F1F;
+  --border: #DADADA;
+  --muted: #EEF2EE;
+  --muted-foreground: #5F5F5F;
+}
+
+
 /* =========================================
    🎨 TAILWIND THEME CUSTOMIZATIONS
 ========================================= */

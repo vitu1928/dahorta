@@ -6,4 +6,6 @@ export interface StockItem {
   currentQuantity: number;
   maxCapacity: number;
   minQuantity: number;
+  minAlert: number;
+  yieldRule?: any;
 }

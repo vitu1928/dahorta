@@ -13,6 +13,8 @@ import { EmployeeService } from '../domains/employee/data-access/employee.servic
 import { MockEmployeeService } from '../domains/employee/data-access/mock-employee.service';
 import { AddressService } from '../domains/customer/data-access/address.service';
 import { MockAddressService } from '../domains/customer/data-access/mock-address.service';
+import { OwnerService } from '../domains/owner/data-access/owner.service';
+import { MockOwnerService } from '../domains/owner/data-access/mock-owner.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -23,7 +25,8 @@ export const appConfig: ApplicationConfig = {
     { provide: ProductsService, useClass: MockProductsService },
     { provide: OrdersService, useClass: MockOrdersService },
     { provide: EmployeeService, useClass: MockEmployeeService },
-    { provide: AddressService, useClass: MockAddressService }
+    { provide: AddressService, useClass: MockAddressService },
+    { provide: OwnerService, useClass: MockOwnerService }
   ]
 };
 

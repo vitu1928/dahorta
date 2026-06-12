@@ -11,6 +11,8 @@ import {
   StockMovement,
   TechnicalSheet,
   User,
+  PriceRecord,
+  Supplier,
 } from './customer.models';
 
 const bowlProteico = '/assets/bowl_proteico.png';
@@ -504,6 +506,76 @@ export const MOCK_REVIEWS: Review[] = [
   { id: 'rev3', orderId: 'ORD-088', stars: 5, comment: 'Adorei o bowl vegano! Tudo muito fresco e bem temperado.', createdAt: daysAgo(5), customerId: 'u7', customerName: 'Pedro Alves' },
 ];
 
+export const MOCK_PRICE_RECORDS: PriceRecord[] = [
+  { id: 'pr1', insumoId: 'ins1', supplierId: 'sup2', value: 0.042, date: daysAgo(5), observation: 'Quinoa orgânica certificada' },
+  { id: 'pr2', insumoId: 'ins1', supplierId: 'sup2', value: 0.045, date: daysAgo(35) },
+  { id: 'pr3', insumoId: 'ins2', supplierId: 'sup3', value: 0.055, date: daysAgo(3), observation: 'Frango caipira orgânico' },
+  { id: 'pr4', insumoId: 'ins2', supplierId: 'sup3', value: 0.058, date: daysAgo(33) },
+  { id: 'pr5', insumoId: 'ins3', supplierId: 'sup1', value: 0.028, date: daysAgo(2) },
+  { id: 'pr6', insumoId: 'ins4', supplierId: 'sup1', value: 4.5, date: daysAgo(4), observation: 'Abacate médio' },
+  { id: 'pr7', insumoId: 'ins5', supplierId: 'sup1', value: 0.035, date: daysAgo(1) },
+  { id: 'pr8', insumoId: 'ins6', supplierId: 'sup2', value: 0.08, date: daysAgo(10) },
+  { id: 'pr9', insumoId: 'ins9', supplierId: 'sup3', value: 0.095, date: daysAgo(1), observation: 'Salmão do Chile' },
+];
+
+export const MOCK_SUPPLIERS: Supplier[] = [
+  { id: 'sup1', name: 'Horta Orgânica Vale Verde', cnpj: '12.345.678/0001-99', phone: '(11) 3333-4444', email: 'compras@valeverde.com.br', address: 'Estrada da Colheita, 890 - Zona Rural, Ibiúna' },
+  { id: 'sup2', name: 'Distribuidora Saúde & Sabor', cnpj: '98.765.432/0001-11', phone: '(11) 2222-5555', email: 'vendas@saudesabor.com.br', address: 'Av. dos Orgânicos, 244 - Pinheiros, São Paulo' },
+  { id: 'sup3', name: 'Proteínas Naturais Premium', cnpj: '55.123.456/0001-77', phone: '(11) 4444-6666', email: 'comercial@proteinaspremium.com.br', address: 'Rod. Raposo Tavares, km 28 - Cotia, SP' },
+];
+
 export const FEATURED_HERO_IMAGE = '/assets/6a6cb4394cfe8dac99d70ae300042099f5cbd856.png';
 export const LOGO_IMAGE = '/assets/db23158a97674c4fe48dc9d4281a185fc5cf6a4b.png';
 export const TROPICAL_BOWL_IMAGE = bowlTropical;
+
+export const SALES_DATA = [
+  { day: 'Seg', vendas: 15, faturamento: 423.5 },
+  { day: 'Ter', vendas: 22, faturamento: 618.8 },
+  { day: 'Qua', vendas: 18, faturamento: 506.2 },
+  { day: 'Qui', vendas: 28, faturamento: 788.4 },
+  { day: 'Sex', vendas: 42, faturamento: 1182.6 },
+  { day: 'Sáb', vendas: 48, faturamento: 1351.2 },
+  { day: 'Dom', vendas: 35, faturamento: 985.5 },
+];
+
+export const TOP_PRODUCTS_DATA = [
+  { name: 'Bowl Proteico', pedidos: 132, color: '#4C7C59' },
+  { name: 'Bowl Vegano Power', pedidos: 98, color: '#7FA652' },
+  { name: 'Bowl Mediterrâneo', pedidos: 87, color: '#E9C46A' },
+  { name: 'Smoothie Detox', pedidos: 76, color: '#F4A261' },
+  { name: 'Bowl de Açaí', pedidos: 54, color: '#E76F51' },
+];
+
+export const ORDER_STATUS_DATA = [
+  { name: 'Entregues', value: 78, color: '#22c55e' },
+  { name: 'Preparando', value: 12, color: '#4C7C59' },
+  { name: 'A Caminho', value: 6, color: '#3b82f6' },
+  { name: 'Recebidos', value: 4, color: '#a855f7' },
+];
+
+export const MONTHLY_DATA = [
+  { month: 'Set', faturamento: 16420, lucro: 7890 },
+  { month: 'Out', faturamento: 19310, lucro: 9240 },
+  { month: 'Nov', faturamento: 17850, lucro: 8530 },
+  { month: 'Dez', faturamento: 28200, lucro: 13540 },
+  { month: 'Jan', faturamento: 24780, lucro: 11850 },
+  { month: 'Fev', faturamento: 26940, lucro: 12920 },
+];
+
+export const PRODUCT_COST_DATA = [
+  { name: 'Bowl Proteico', custo: 15.89, preco: 28.9, margem: 45.0, vendas: 132 },
+  { name: 'Bowl Vegano', custo: 12.95, preco: 24.9, margem: 48.0, vendas: 98 },
+  { name: 'Bowl Mediterrâneo', custo: 19.08, preco: 32.9, margem: 42.0, vendas: 87 },
+  { name: 'Salada Caesar', custo: 11.45, preco: 22.9, margem: 50.0, vendas: 64 },
+  { name: 'Smoothie Detox', custo: 7.61, preco: 16.9, margem: 55.0, vendas: 76 },
+  { name: 'Bowl Açaí', custo: 14.77, preco: 26.9, margem: 45.1, vendas: 54 },
+];
+
+export const INSUMO_PRICE_TREND = [
+  { month: 'Set', proteinas: 0.052, graos: 0.038, hortifruti: 0.025 },
+  { month: 'Out', proteinas: 0.055, graos: 0.040, hortifruti: 0.028 },
+  { month: 'Nov', proteinas: 0.058, graos: 0.042, hortifruti: 0.026 },
+  { month: 'Dez', proteinas: 0.062, graos: 0.045, hortifruti: 0.032 },
+  { month: 'Jan', proteinas: 0.057, graos: 0.041, hortifruti: 0.024 },
+  { month: 'Fev', proteinas: 0.055, graos: 0.042, hortifruti: 0.028 },
+];

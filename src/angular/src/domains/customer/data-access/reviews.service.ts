@@ -1,10 +1,11 @@
 import { Injectable } from '@angular/core';
 import { signal } from '@angular/core';
 import { Review } from './customer.models';
+import { MOCK_REVIEWS } from './mock-data';
 
 @Injectable({ providedIn: 'root' })
 export class ReviewsService {
-  reviews = signal<Review[]>([]);
+  reviews = signal<Review[]>(MOCK_REVIEWS);
 
   addReview(review: Omit<Review, 'id'>) {
     const newReview: Review = {

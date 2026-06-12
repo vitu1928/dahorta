@@ -47,5 +47,62 @@ export const routes: Routes = [
       .then(m => m.EmployeeDashboardComponent),
     title: 'DaHorta | Painel do Funcionário',
   },
+  {
+    path: 'motoboy',
+    canActivate: [authGuard],
+    loadComponent: () => import('@domain/motoboy/feature-dashboard/motoboy-dashboard.component')
+      .then(m => m.MotoboyDashboardComponent),
+    title: 'DaHorta | Painel do Motoboy',
+  },
+  {
+    path: 'owner',
+    canActivate: [authGuard],
+    loadComponent: () => import('@domain/owner/feature-layout/owner-layout.component')
+      .then(m => m.OwnerLayoutComponent),
+    children: [
+      {
+        path: '',
+        loadComponent: () => import('@domain/owner/feature-analytics/analytics.component')
+          .then(m => m.AnalyticsComponent),
+        title: 'DaHorta | Analytics'
+      },
+      {
+        path: 'menu',
+        loadComponent: () => import('@domain/owner/feature-menu/menu.component')
+          .then(m => m.MenuComponent),
+        title: 'DaHorta | Cardápio'
+      },
+      {
+        path: 'cupons',
+        loadComponent: () => import('@domain/owner/feature-coupons/coupons.component')
+          .then(m => m.CouponsComponent),
+        title: 'DaHorta | Cupons e Promoções'
+      },
+      {
+        path: 'estoque',
+        loadComponent: () => import('@domain/owner/feature-stock/stock.component')
+          .then(m => m.StockComponent),
+        title: 'DaHorta | Estoque'
+      },
+      {
+        path: 'insumos',
+        loadComponent: () => import('@domain/owner/feature-insumos/insumos.component')
+          .then(m => m.InsumosComponent),
+        title: 'DaHorta | Insumos'
+      },
+      {
+        path: 'fornecedores',
+        loadComponent: () => import('@domain/owner/feature-suppliers/suppliers.component')
+          .then(m => m.SuppliersComponent),
+        title: 'DaHorta | Fornecedores'
+      },
+      {
+        path: 'settings',
+        loadComponent: () => import('@domain/owner/feature-settings/settings.component')
+          .then(m => m.SettingsComponent),
+        title: 'DaHorta | Configurações'
+      }
+    ]
+  },
   { path: '**', redirectTo: 'landing' }
 ];

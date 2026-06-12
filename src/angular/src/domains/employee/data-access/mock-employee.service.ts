@@ -15,7 +15,9 @@ export class MockEmployeeService extends EmployeeService {
       unit: item.unit,
       currentQuantity: item.currentQuantity,
       maxCapacity: item.maxCapacity,
-      minQuantity: item.minAlert
+      minQuantity: item.minAlert,
+      minAlert: item.minAlert,
+      yieldRule: item.yieldRule
     }))
   );
 

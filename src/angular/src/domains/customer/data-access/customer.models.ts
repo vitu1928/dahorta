@@ -127,6 +127,24 @@ export interface Insumo {
   allergens?: string[];
 }
 
+export interface PriceRecord {
+  id: string;
+  insumoId: string;
+  supplierId: string;
+  value: number;
+  date: Date;
+  observation?: string;
+}
+
+export interface Supplier {
+  id: string;
+  name: string;
+  cnpj?: string;
+  phone: string;
+  email: string;
+  address: string;
+}
+
 export type PlateOfDayConfig = Record<number, string>;
 
 export interface StockItem {
@@ -149,6 +167,16 @@ export interface StockMovement {
   userName: string;
   timestamp: Date;
   notes?: string;
+  orderId?: string;
+}
+
+export interface TechnicalSheetIngredient {
+  id: string;
+  insumoId: string;
+  quantity: number;
+  unit: string;
+  supplierId?: string;
+  stockItemId?: string;
 }
 
 export interface TechnicalSheet {
@@ -156,5 +184,5 @@ export interface TechnicalSheet {
   productId: string;
   internalName: string;
   desiredMargin: number;
-  ingredients: { id: string; insumoId: string; quantity: number; unit: string }[];
+  ingredients: TechnicalSheetIngredient[];
 }

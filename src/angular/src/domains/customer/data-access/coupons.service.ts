@@ -62,4 +62,22 @@ export class CouponsService {
     }
     return 0;
   }
+
+  add(coupon: Omit<Coupon, 'id' | 'usedCount' | 'totalSalesVolume'>): void {
+    const newCoupon: Coupon = {
+      ...coupon,
+      id: `coup${Date.now()}`,
+      usedCount: 0,
+      totalSalesVolume: 0
+    };
+    this.coupons.update(list => [...list, newCoupon]);
+  }
+
+  update(id: string, coupon: Partial<Coupon>): void {
+    this.coupons.update(list => list.map(c => c.id === id ? { ...c, ...coupon } as Coupon : c));
+  }
+
+  delete(id: string): void {
+    this.coupons.update(list => list.filter(c => c.id !== id));
+  }
 }
