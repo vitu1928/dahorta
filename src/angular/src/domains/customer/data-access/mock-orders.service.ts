@@ -133,4 +133,17 @@ export class MockOrdersService extends OrdersService {
       map(list => list.find(o => o.id === orderId) ?? null)
     );
   }
+
+  private mockMotoboyLocations = new Map<string, { lat: number; lng: number }>();
+
+  override updateMotoboyLocation(motoboyId: string, lat: number, lng: number): void {
+    this.mockMotoboyLocations.set(motoboyId, { lat, lng });
+  }
+
+  override getMotoboyLocation(motoboyId: string): Observable<{ lat: number; lng: number } | null> {
+    // Simulando retorno de coordenadas para manter compatibilidade no mock
+    return toObservable(this.orders).pipe(
+      map(() => this.mockMotoboyLocations.get(motoboyId) ?? { lat: -23.5615, lng: -46.6559 })
+    );
+  }
 }

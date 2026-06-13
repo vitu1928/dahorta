@@ -346,7 +346,7 @@ export class SignupComponent {
     // Simulate API delay
     await new Promise((r) => setTimeout(r, 1000));
 
-    const result = this.authService.register(trimmedName, trimmedEmail, trimmedPassword, trimmedPhone);
+    const result = await this.authService.register(trimmedName, trimmedEmail, trimmedPassword, trimmedPhone);
     this.loading.set(false);
 
     if (result.success) {

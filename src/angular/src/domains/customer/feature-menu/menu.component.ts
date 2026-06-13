@@ -8,7 +8,6 @@ import { ToastService } from '../../../shared/data-access/toast.service';
 import { ProductCardComponent } from '../ui/product-card.component';
 import { Product } from '../data-access/customer.models';
 import { ProductModalComponent } from './product-modal.component';
-import { MOCK_PLATE_OF_DAY } from '../data-access/mock-data';
 import { CouponsService } from '../data-access/coupons.service';
 
 @Component({
@@ -235,7 +234,8 @@ export class MenuComponent {
 
   todaySpecial = computed(() => {
     const currentDay = new Date().getDay();
-    const plateOfDayId = MOCK_PLATE_OF_DAY[currentDay];
+    const plateOfDayConfig = this.productsService.plateOfDay();
+    const plateOfDayId = plateOfDayConfig[currentDay];
     return this.products().find(p => p.id === plateOfDayId && p.available);
   });
 

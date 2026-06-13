@@ -128,6 +128,7 @@ const ETA_VALUES: Record<OrderStatus, string> = {
             <app-mock-delivery-map
               motoboyName="Diego"
               [customerAddress]="getAddressString(order()!.deliveryAddress || order()!.address)"
+              [motoboyLocation]="motoboyLocation()"
             ></app-mock-delivery-map>
           }
 
@@ -369,6 +370,9 @@ export class OrderTrackingComponent {
 
   copiedCode = signal(false);
   reviewSubmitted = signal(false);
+  
+  motoboyLocation = signal<{ lat: number; lng: number } | null>(null);
+  private locationSub: any = null;
 
   // Review states
   stars = signal(0);
@@ -398,7 +402,22 @@ export class OrderTrackingComponent {
       this.orderId.set(idParam);
       this.ordersService.subscribeToOrder(idParam)
         .pipe(takeUntilDestroyed())
-        .subscribe(o => this.order.set(o));
+        .subscribe(o => {
+          this.order.set(o);
+          
+          if (o && o.status === 'delivering' && o.motoboyId) {
+            if (!this.locationSub) {
+              this.locationSub = this.ordersService.getMotoboyLocation(o.motoboyId)
+                .subscribe(loc => this.motoboyLocation.set(loc));
+            }
+          } else {
+            if (this.locationSub) {
+              this.locationSub.unsubscribe();
+              this.locationSub = null;
+            }
+            this.motoboyLocation.set(null);
+          }
+        });
     }
   }
 

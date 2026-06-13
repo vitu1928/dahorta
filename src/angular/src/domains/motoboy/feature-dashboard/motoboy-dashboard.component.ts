@@ -343,9 +343,14 @@ export class MotoboyDashboardComponent implements OnInit, OnDestroy {
 
       if (status === 'granted' && hasActiveDelivery) {
         this.watchId = navigator.geolocation.watchPosition(
-          () => this.showLocationWarning.set(false),
+          (pos) => {
+            this.showLocationWarning.set(false);
+            if (user) {
+              this.ordersService.updateMotoboyLocation(user.id, pos.coords.latitude, pos.coords.longitude);
+            }
+          },
           () => this.showLocationWarning.set(true),
-          { timeout: 15000 }
+          { timeout: 15000, enableHighAccuracy: true }
         );
       }
     });

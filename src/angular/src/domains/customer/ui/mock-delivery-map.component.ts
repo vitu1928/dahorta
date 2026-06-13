@@ -233,7 +233,31 @@ export class MockDeliveryMapComponent {
 
   readonly motoboyName = input('Diego');
   readonly customerAddress = input<string | undefined>();
-  readonly progress = signal(0.15);
+  readonly motoboyLocation = input<{ lat: number; lng: number } | null>(null);
+
+  readonly mockProgress = signal(0.15);
+  
+  readonly progress = computed(() => {
+    const loc = this.motoboyLocation();
+    if (!loc) return this.mockProgress();
+
+    // Coordenadas GPS de referência
+    const rLat = -23.5615; // Restaurante
+    const rLng = -46.6559;
+    const cLat = -23.5505; // Cliente
+    const cLng = -46.6333;
+
+    // Distância total
+    const totalDist = Math.sqrt(Math.pow(cLat - rLat, 2) + Math.pow(cLng - rLng, 2));
+    if (totalDist === 0) return 0.5;
+
+    // Distância atual percorrida em relação ao cliente (projeção linear simples)
+    const currentDist = Math.sqrt(Math.pow(loc.lat - rLat, 2) + Math.pow(loc.lng - rLng, 2));
+    const remainingDist = Math.sqrt(Math.pow(cLat - loc.lat, 2) + Math.pow(cLng - loc.lng, 2));
+
+    const p = currentDist / (currentDist + remainingDist);
+    return Math.min(Math.max(p, 0.05), 0.95); // Clampa para manter na linha visual do mapa
+  });
 
   readonly restaurantPos = RESTAURANT_POS;
   readonly customerPos = CUSTOMER_POS;
@@ -257,7 +281,7 @@ export class MockDeliveryMapComponent {
 
   constructor() {
     const intervalId = window.setInterval(() => {
-      this.progress.update((current) => {
+      this.mockProgress.update((current) => {
         const next = current + 0.003;
         return next >= 0.95 ? 0.95 : next;
       });

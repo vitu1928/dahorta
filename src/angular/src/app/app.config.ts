@@ -3,30 +3,50 @@ import { provideRouter } from '@angular/router';
 import { routes } from './app.routes';
 import { provideHttpClient } from '@angular/common/http';
 
+// Firebase Modules
+import { initializeApp, provideFirebaseApp } from '@angular/fire/app';
+import { getAuth, provideAuth } from '@angular/fire/auth';
+import { getFirestore, provideFirestore } from '@angular/fire/firestore';
+import { getDatabase, provideDatabase } from '@angular/fire/database';
+import { environment } from '../environments/environment';
+
+// Abstractions
 import { AuthService } from '../domains/auth/data-access/auth.service';
-import { MockAuthService } from '../domains/auth/data-access/mock-auth.service';
 import { ProductsService } from '../domains/customer/data-access/products.service';
-import { MockProductsService } from '../domains/customer/data-access/mock-products.service';
 import { OrdersService } from '../domains/customer/data-access/orders.service';
-import { MockOrdersService } from '../domains/customer/data-access/mock-orders.service';
 import { EmployeeService } from '../domains/employee/data-access/employee.service';
-import { MockEmployeeService } from '../domains/employee/data-access/mock-employee.service';
 import { AddressService } from '../domains/customer/data-access/address.service';
-import { MockAddressService } from '../domains/customer/data-access/mock-address.service';
 import { OwnerService } from '../domains/owner/data-access/owner.service';
-import { MockOwnerService } from '../domains/owner/data-access/mock-owner.service';
+import { ReviewsService } from '../domains/customer/data-access/reviews.service';
+
+// Firebase Concrete Implementations
+import { FirebaseAuthService } from '../domains/auth/data-access/firebase-auth.service';
+import { FirebaseProductsService } from '../domains/customer/data-access/firebase-products.service';
+import { FirebaseOrdersService } from '../domains/customer/data-access/firebase-orders.service';
+import { FirebaseEmployeeService } from '../domains/employee/data-access/firebase-employee.service';
+import { FirebaseAddressService } from '../domains/customer/data-access/firebase-address.service';
+import { FirebaseOwnerService } from '../domains/owner/data-access/firebase-owner.service';
+import { FirebaseReviewsService } from '../domains/customer/data-access/firebase-reviews.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes),
     provideHttpClient(),
-    { provide: AuthService, useClass: MockAuthService },
-    { provide: ProductsService, useClass: MockProductsService },
-    { provide: OrdersService, useClass: MockOrdersService },
-    { provide: EmployeeService, useClass: MockEmployeeService },
-    { provide: AddressService, useClass: MockAddressService },
-    { provide: OwnerService, useClass: MockOwnerService }
+    
+    // Inicialização do Firebase real
+    provideFirebaseApp(() => initializeApp(environment.firebase)),
+    provideAuth(() => getAuth()),
+    provideFirestore(() => getFirestore()),
+    provideDatabase(() => getDatabase()),
+
+    // Injeções de Dependência das Classes Firebase Reais (Sem fallbacks locais)
+    { provide: AuthService, useClass: FirebaseAuthService },
+    { provide: ProductsService, useClass: FirebaseProductsService },
+    { provide: OrdersService, useClass: FirebaseOrdersService },
+    { provide: EmployeeService, useClass: FirebaseEmployeeService },
+    { provide: AddressService, useClass: FirebaseAddressService },
+    { provide: OwnerService, useClass: FirebaseOwnerService },
+    { provide: ReviewsService, useClass: FirebaseReviewsService }
   ]
 };
-

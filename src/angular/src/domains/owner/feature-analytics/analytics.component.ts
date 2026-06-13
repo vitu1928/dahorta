@@ -5,10 +5,7 @@ import { OwnerService } from '../data-access/owner.service';
 import { OrdersService } from '../../customer/data-access/orders.service';
 import { ReviewsService } from '../../customer/data-access/reviews.service';
 import { EmployeeService } from '../../employee/data-access/employee.service';
-import { 
-  SALES_DATA, TOP_PRODUCTS_DATA, MONTHLY_DATA, 
-  PRODUCT_COST_DATA, INSUMO_PRICE_TREND
-} from '../../customer/data-access/mock-data';
+import { ProductsService } from '../../customer/data-access/products.service';
 
 type Tab = 'overview' | 'costs' | 'ratings';
 
@@ -517,16 +514,10 @@ export class AnalyticsComponent {
   private ordersService = inject(OrdersService);
   private reviewsService = inject(ReviewsService);
   private employeeService = inject(EmployeeService);
+  private productsService = inject(ProductsService);
 
   readonly activeTab = signal<Tab>('overview');
   readonly salesPeriod = signal<'week' | 'month'>('week');
-
-  // Static mock sources
-  readonly salesData = SALES_DATA;
-  readonly topProducts = TOP_PRODUCTS_DATA;
-  readonly monthlyData = MONTHLY_DATA;
-  readonly productCosts = PRODUCT_COST_DATA;
-  readonly insumoTrend = INSUMO_PRICE_TREND;
 
   // Global Signals
   readonly orders = this.ordersService.orders;
@@ -544,6 +535,216 @@ export class AnalyticsComponent {
     border: '1px solid rgba(255,255,255,0.06)',
     color: 'white'
   };
+
+  // 1. Weekly Sales grouped by Day of the Week (Seg-Dom) for the last 7 days
+  private readonly _salesData = computed(() => {
+    const days = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+    const data = days.map(day => ({ day, vendas: 0, faturamento: 0 }));
+    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+    this.orders().forEach(o => {
+      const date = new Date(o.createdAt);
+      if (date >= oneWeekAgo) {
+        const jsDay = date.getDay();
+        const index = (jsDay + 6) % 7; // Convert 0=Sun, 1=Mon... to 0=Mon, 1=Tue...
+        data[index].vendas++;
+        data[index].faturamento += o.total || o.totalAmount || 0;
+      }
+    });
+    return data;
+  });
+  get salesData() { return this._salesData(); }
+
+  // 2. Ranking of Top 5 most ordered products
+  private readonly _topProducts = computed(() => {
+    const counts: Record<string, { name: string; pedidos: number }> = {};
+    this.orders().forEach(o => {
+      o.items.forEach((item: any) => {
+        if (!counts[item.productId]) {
+          counts[item.productId] = { name: item.name, pedidos: 0 };
+        }
+        counts[item.productId].pedidos += item.quantity || 1;
+      });
+    });
+
+    const colors = ['#4C7C59', '#7FA652', '#E9C46A', '#F4A261', '#E76F51', '#3A4E35', '#D4745F'];
+
+    const sorted = Object.values(counts)
+      .sort((a, b) => b.pedidos - a.pedidos)
+      .slice(0, 5)
+      .map((item, index) => ({
+        name: item.name,
+        pedidos: item.pedidos,
+        color: colors[index % colors.length]
+      }));
+
+    if (sorted.length === 0) {
+      return [{ name: 'Nenhum pedido', pedidos: 0, color: '#4C7C59' }];
+    }
+    return sorted;
+  });
+  get topProducts() { return this._topProducts(); }
+
+  // 3. Monthly Sales and estimated profit for the last 6 months
+  private readonly _monthlyData = computed(() => {
+    const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+    const data: Record<string, { month: string; faturamento: number; lucro: number; orderCount: number; monthNum: number; year: number }> = {};
+
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date();
+      d.setMonth(d.getMonth() - i);
+      const mNum = d.getMonth();
+      const yr = d.getFullYear();
+      const key = `${yr}-${mNum}`;
+      data[key] = {
+        month: monthNames[mNum],
+        faturamento: 0,
+        lucro: 0,
+        orderCount: 0,
+        monthNum: mNum,
+        year: yr
+      };
+    }
+
+    const sheets = this.ownerService.technicalSheets();
+
+    this.orders().forEach(o => {
+      const date = new Date(o.createdAt);
+      const mNum = date.getMonth();
+      const yr = date.getFullYear();
+      const key = `${yr}-${mNum}`;
+
+      if (data[key]) {
+        const orderTotal = o.total || o.totalAmount || 0;
+        data[key].faturamento += orderTotal;
+        data[key].orderCount++;
+
+        let orderCost = 0;
+        o.items.forEach((item: any) => {
+          const sheet = sheets.find(s => s.productId === item.productId);
+          const itemCost = sheet ? this.ownerService.calculateSheetCost(sheet) : item.price * 0.4;
+          orderCost += itemCost * item.quantity;
+        });
+
+        data[key].lucro += Math.max(0, orderTotal - orderCost);
+      }
+    });
+
+    return Object.values(data)
+      .sort((a, b) => (a.year !== b.year ? a.year - b.year : a.monthNum - b.monthNum))
+      .map(d => ({
+        month: d.month,
+        faturamento: d.faturamento,
+        lucro: d.lucro
+      }));
+  });
+  get monthlyData() { return this._monthlyData(); }
+
+  // 4. Detailed cost and margin statistics per product
+  private readonly _productCosts = computed(() => {
+    const prods = this.productsService.products();
+    const sheets = this.ownerService.technicalSheets();
+    const salesCount: Record<string, number> = {};
+
+    this.orders().forEach(o => {
+      o.items.forEach((item: any) => {
+        salesCount[item.productId] = (salesCount[item.productId] || 0) + item.quantity;
+      });
+    });
+
+    return prods.map(p => {
+      const sheet = sheets.find(s => s.productId === p.id);
+      const custo = sheet ? this.ownerService.calculateSheetCost(sheet) : p.price * 0.4;
+      const margem = p.price > 0 ? ((p.price - custo) / p.price) * 100 : 0;
+      return {
+        name: p.name,
+        custo,
+        preco: p.price,
+        margem,
+        vendas: salesCount[p.id] || 0
+      };
+    });
+  });
+  get productCosts() { return this._productCosts(); }
+
+  // 5. Insumos price trend over the last 6 months grouped by category
+  private readonly _insumoTrend = computed(() => {
+    const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+    const trends: Record<string, { month: string; proteinas: number; graos: number; hortifruti: number; monthNum: number; year: number; counts: Record<string, { sum: number; count: number }> }> = {};
+
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date();
+      d.setMonth(d.getMonth() - i);
+      const mNum = d.getMonth();
+      const yr = d.getFullYear();
+      const key = `${yr}-${mNum}`;
+      trends[key] = {
+        month: monthNames[mNum],
+        proteinas: 0,
+        graos: 0,
+        hortifruti: 0,
+        monthNum: mNum,
+        year: yr,
+        counts: {
+          proteinas: { sum: 0, count: 0 },
+          graos: { sum: 0, count: 0 },
+          hortifruti: { sum: 0, count: 0 }
+        }
+      };
+    }
+
+    const records = this.ownerService.priceRecords();
+    const insumosList = this.ownerService.insumos();
+
+    records.forEach(r => {
+      const date = new Date(r.date);
+      const mNum = date.getMonth();
+      const yr = date.getFullYear();
+      const key = `${yr}-${mNum}`;
+
+      if (trends[key]) {
+        const ins = insumosList.find(i => i.id === r.insumoId);
+        if (ins) {
+          const category = ins.category.toLowerCase();
+          let targetKey = '';
+          if (category.includes('protein')) {
+            targetKey = 'proteinas';
+          } else if (category.includes('grao') || category.includes('grão')) {
+            targetKey = 'graos';
+          } else if (category.includes('horti')) {
+            targetKey = 'hortifruti';
+          }
+
+          if (targetKey) {
+            trends[key].counts[targetKey].sum += r.value;
+            trends[key].counts[targetKey].count++;
+          }
+        }
+      }
+    });
+
+    const defaultMocks = [
+      { proteinas: 0.052, graos: 0.038, hortifruti: 0.025 },
+      { proteinas: 0.055, graos: 0.040, hortifruti: 0.028 },
+      { proteinas: 0.058, graos: 0.042, hortifruti: 0.026 },
+      { proteinas: 0.062, graos: 0.045, hortifruti: 0.032 },
+      { proteinas: 0.057, graos: 0.041, hortifruti: 0.024 },
+      { proteinas: 0.055, graos: 0.042, hortifruti: 0.028 },
+    ];
+
+    return Object.values(trends)
+      .sort((a, b) => (a.year !== b.year ? a.year - b.year : a.monthNum - b.monthNum))
+      .map((d, index) => {
+        const defaultMock = defaultMocks[index % defaultMocks.length];
+        return {
+          month: d.month,
+          proteinas: d.counts['proteinas'].count > 0 ? d.counts['proteinas'].sum / d.counts['proteinas'].count : defaultMock.proteinas,
+          graos: d.counts['graos'].count > 0 ? d.counts['graos'].sum / d.counts['graos'].count : defaultMock.graos,
+          hortifruti: d.counts['hortifruti'].count > 0 ? d.counts['hortifruti'].sum / d.counts['hortifruti'].count : defaultMock.hortifruti
+        };
+      });
+  });
+  get insumoTrend() { return this._insumoTrend(); }
 
   // Calculations
   readonly totalFaturamento = computed(() => 
@@ -565,13 +766,38 @@ export class AnalyticsComponent {
   });
 
   // Cost metrics
-  readonly avgCost = PRODUCT_COST_DATA.reduce((s: number, p: any) => s + p.custo, 0) / PRODUCT_COST_DATA.length;
-  readonly totalFaturamentoProducts = PRODUCT_COST_DATA.reduce((s: number, p: any) => s + p.preco * p.vendas, 0);
-  readonly totalLucro = PRODUCT_COST_DATA.reduce((s: number, p: any) => s + (p.preco - p.custo) * p.vendas, 0);
+  private readonly _avgCost = computed(() => {
+    const list = this._productCosts();
+    return list.length ? list.reduce((s: number, p: any) => s + p.custo, 0) / list.length : 0;
+  });
+  get avgCost() { return this._avgCost(); }
+
+  private readonly _totalFaturamentoProducts = computed(() => 
+    this.productCosts.reduce((s: number, p: any) => s + p.preco * p.vendas, 0)
+  );
+  get totalFaturamentoProducts() { return this._totalFaturamentoProducts(); }
+
+  private readonly _totalLucro = computed(() => 
+    this.productCosts.reduce((s: number, p: any) => s + (p.preco - p.custo) * p.vendas, 0)
+  );
+  get totalLucro() { return this._totalLucro(); }
   
-  readonly productCostsSorted = [...PRODUCT_COST_DATA].sort((a, b) => b.margem - a.margem);
-  readonly bestProduct = this.productCostsSorted[0];
-  readonly worstProduct = this.productCostsSorted[this.productCostsSorted.length - 1];
+  private readonly _productCostsSorted = computed(() => 
+    [...this.productCosts].sort((a, b) => b.margem - a.margem)
+  );
+  get productCostsSorted() { return this._productCostsSorted(); }
+
+  private readonly _bestProduct = computed(() => {
+    const sorted = this.productCostsSorted;
+    return sorted.length ? sorted[0] : { name: 'Nenhum', margem: 0, preco: 0, custo: 0 };
+  });
+  get bestProduct() { return this._bestProduct(); }
+
+  private readonly _worstProduct = computed(() => {
+    const sorted = this.productCostsSorted;
+    return sorted.length ? sorted[sorted.length - 1] : { name: 'Nenhum', margem: 0, preco: 0, custo: 0 };
+  });
+  get worstProduct() { return this._worstProduct(); }
 
   // SVG Area Paths calculations
   readonly weeklyChartPath = computed(() => {

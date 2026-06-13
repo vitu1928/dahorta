@@ -10,7 +10,7 @@ export class MockAuthService extends AuthService {
 
   override isAuthenticated = computed(() => this.currentUser() !== null);
 
-  override login(email: string, password: string): { success: boolean; message: string; role?: string } {
+  override async login(email: string, password: string): Promise<{ success: boolean; message: string; role?: string }> {
     const user = this.users().find(
       (u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password
     );
@@ -21,11 +21,18 @@ export class MockAuthService extends AuthService {
     return { success: false, message: 'E-mail ou senha incorretos.' };
   }
 
-  override logout() {
+  override async loginWithGoogle(): Promise<{ success: boolean; message: string; role?: string }> {
+    // Simula o login do Google retornando a cliente demo Ana Paula
+    const user = this.users()[3]; // Ana Paula (cliente)
+    this.currentUser.set(user);
+    return { success: true, message: 'Login com Google (Simulado) realizado com sucesso!', role: user.role };
+  }
+
+  override async logout() {
     this.currentUser.set(null);
   }
 
-  override register(name: string, email: string, password: string, phone: string): { success: boolean; message: string } {
+  override async register(name: string, email: string, password: string, phone: string): Promise<{ success: boolean; message: string }> {
     const existing = this.users().find((u) => u.email.toLowerCase() === email.toLowerCase());
     if (existing) {
       return { success: false, message: 'Este e-mail já está cadastrado.' };
@@ -44,7 +51,7 @@ export class MockAuthService extends AuthService {
     return { success: true, message: 'Conta criada com sucesso!' };
   }
 
-  override updateProfile(name: string, email: string, phone: string) {
+  override async updateProfile(name: string, email: string, phone: string) {
     const current = this.currentUser();
     if (current) {
       const updated: User = {

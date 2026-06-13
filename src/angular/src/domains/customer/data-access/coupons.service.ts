@@ -1,14 +1,15 @@
 import { Injectable, inject } from '@angular/core';
 import { signal, computed } from '@angular/core';
 import { Coupon } from './customer.models';
-import { MOCK_COUPONS } from './mock-data';
 import { CartStateService } from './cart.state';
+import { Firestore, collection, doc, setDoc, deleteDoc, updateDoc, onSnapshot } from '@angular/fire/firestore';
 
 @Injectable({ providedIn: 'root' })
 export class CouponsService {
+  private firestore = inject(Firestore);
   private cartState = inject(CartStateService);
 
-  coupons = signal<Coupon[]>(MOCK_COUPONS);
+  coupons = signal<Coupon[]>([]);
   activeCoupon = signal<Coupon | null>(null);
 
   discountAmount = computed(() => {
@@ -23,6 +24,31 @@ export class CouponsService {
     }
     return 0;
   });
+
+  constructor() {
+    const colRef = collection(this.firestore, 'coupons');
+    onSnapshot(colRef, (snapshot) => {
+      const list: Coupon[] = [];
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        list.push({
+          id: doc.id,
+          code: data['code'],
+          type: data['type'],
+          value: data['value'],
+          active: data['active'],
+          expirationDate: data['expirationDate']?.toDate() || null,
+          minOrderValue: data['minOrderValue'],
+          usageLimit: data['usageLimit'],
+          usedCount: data['usedCount'] || 0,
+          totalSalesVolume: data['totalSalesVolume'] || 0
+        } as Coupon);
+      });
+      this.coupons.set(list);
+    }, (err) => {
+      console.error('Erro ao carregar cupons do Firestore:', err);
+    });
+  }
 
   apply(code: string, cartTotal: number): { success: boolean; message: string } {
     const coupon = this.coupons().find(c => c.code.toUpperCase() === code.toUpperCase() && c.active);
@@ -64,20 +90,34 @@ export class CouponsService {
   }
 
   add(coupon: Omit<Coupon, 'id' | 'usedCount' | 'totalSalesVolume'>): void {
-    const newCoupon: Coupon = {
+    const colRef = collection(this.firestore, 'coupons');
+    const docRef = doc(colRef);
+    const newCoupon = {
       ...coupon,
-      id: `coup${Date.now()}`,
       usedCount: 0,
-      totalSalesVolume: 0
+      totalSalesVolume: 0,
+      expirationDate: coupon.expirationDate ? coupon.expirationDate : null
     };
-    this.coupons.update(list => [...list, newCoupon]);
+    setDoc(docRef, newCoupon).catch(err => {
+      console.error('Erro ao adicionar cupom:', err);
+    });
   }
 
   update(id: string, coupon: Partial<Coupon>): void {
-    this.coupons.update(list => list.map(c => c.id === id ? { ...c, ...coupon } as Coupon : c));
+    const docRef = doc(this.firestore, `coupons/${id}`);
+    const updateData = { ...coupon };
+    if (updateData.expirationDate) {
+      updateData.expirationDate = new Date(updateData.expirationDate);
+    }
+    updateDoc(docRef, updateData).catch(err => {
+      console.error('Erro ao atualizar cupom:', err);
+    });
   }
 
   delete(id: string): void {
-    this.coupons.update(list => list.filter(c => c.id !== id));
+    const docRef = doc(this.firestore, `coupons/${id}`);
+    deleteDoc(docRef).catch(err => {
+      console.error('Erro ao deletar cupom:', err);
+    });
   }
 }

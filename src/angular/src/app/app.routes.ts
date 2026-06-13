@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { LandingPageComponent } from '../domains/landing/feature-landing/landing-page.component';
 import { authGuard } from '@shared/data-access/auth.guard';
+import { roleGuard } from '@shared/data-access/role.guard';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/customer/menu', pathMatch: 'full' },
@@ -42,21 +43,24 @@ export const routes: Routes = [
   },
   {
     path: 'employee',
-    canActivate: [authGuard],
+    canActivate: [authGuard, roleGuard],
+    data: { allowedRoles: ['employee', 'owner'] },
     loadComponent: () => import('@domain/employee/feature-dashboard/employee-dashboard.component')
       .then(m => m.EmployeeDashboardComponent),
     title: 'DaHorta | Painel do Funcionário',
   },
   {
     path: 'motoboy',
-    canActivate: [authGuard],
+    canActivate: [authGuard, roleGuard],
+    data: { allowedRoles: ['motoboy', 'owner'] },
     loadComponent: () => import('@domain/motoboy/feature-dashboard/motoboy-dashboard.component')
       .then(m => m.MotoboyDashboardComponent),
     title: 'DaHorta | Painel do Motoboy',
   },
   {
     path: 'owner',
-    canActivate: [authGuard],
+    canActivate: [authGuard, roleGuard],
+    data: { allowedRoles: ['owner'] },
     loadComponent: () => import('@domain/owner/feature-layout/owner-layout.component')
       .then(m => m.OwnerLayoutComponent),
     children: [

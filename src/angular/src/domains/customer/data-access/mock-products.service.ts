@@ -1,12 +1,13 @@
 import { Injectable, signal, computed, WritableSignal, Signal } from '@angular/core';
 import { ProductsService } from './products.service';
 import { Product, Category } from './customer.models';
-import { MOCK_PRODUCTS, MOCK_CATEGORIES } from './mock-data';
+import { MOCK_PRODUCTS, MOCK_CATEGORIES, MOCK_PLATE_OF_DAY } from './mock-data';
 
 @Injectable({ providedIn: 'root' })
 export class MockProductsService extends ProductsService {
   override products = signal<Product[]>(MOCK_PRODUCTS);
   override categories = signal<Category[]>(MOCK_CATEGORIES);
+  override readonly plateOfDay = signal<Record<number, string>>(MOCK_PLATE_OF_DAY);
 
   override availableProducts = computed(() => 
     this.products().filter(p => p.available)
