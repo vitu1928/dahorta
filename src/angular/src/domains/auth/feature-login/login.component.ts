@@ -372,9 +372,6 @@ export class LoginComponent {
 
     this.loading.set(true);
 
-    // Simulate API delay
-    await new Promise((r) => setTimeout(r, 800));
-
     const result = await this.authService.login(trimmedEmail, this.password);
     this.loading.set(false);
 

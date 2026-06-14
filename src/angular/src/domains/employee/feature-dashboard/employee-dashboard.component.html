@@ -100,15 +100,38 @@
           </svg>
           <span>Estoque</span>
         </button>
+
+        <button
+          (click)="activeView.set('account')"
+          class="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl border-none cursor-pointer text-left text-xs font-bold transition-all"
+          [style.background]="activeView() === 'account' ? 'rgba(255,255,255,0.15)' : 'transparent'"
+          [style.color]="activeView() === 'account' ? '#FFFFFF' : 'rgba(255,255,255,0.6)'"
+        >
+          <!-- User SVG Icon -->
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          <span>Minha Conta</span>
+        </button>
       </nav>
     </div>
 
     <!-- Status & Logout -->
     <div class="flex flex-col gap-3">
-      <!-- Clickable Restaurant Status Badge -->
-      <button
-        (click)="toggleRestaurantOpen()"
-        class="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left border cursor-pointer transition-all hover:bg-white/5 active:scale-[0.98]"
+      <!-- Restaurant Status Information Badge -->
+      <div
+        class="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left border"
         [style.background]="restaurantOpen() ? 'rgba(58,165,93,0.15)' : 'rgba(230,57,70,0.15)'"
         [style.borderColor]="restaurantOpen() ? 'var(--success)' : 'var(--destructive)'"
       >
@@ -119,7 +142,7 @@
         <span class="text-white text-xs font-bold">
           {{ restaurantOpen() ? 'Restaurante Aberto' : 'Restaurante Fechado' }}
         </span>
-      </button>
+      </div>
 
       <!-- Logout Button -->
       <button
@@ -444,13 +467,30 @@
     @if (activeView() === 'stock') {
       <div class="flex flex-col gap-6">
         <!-- Stock View Header -->
-        <div>
-          <h2 class="text-2xl font-extrabold text-[#1F1F1F]">
-            Resumo de Estoque
-          </h2>
-          <p class="text-sm text-[#5F5F5F] mt-1 font-medium">
-            Acompanhe os níveis dos insumos para a produção diária.
-          </p>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-2xl font-extrabold text-[#1F1F1F]">
+              Resumo de Estoque
+            </h2>
+            <p class="text-sm text-[#5F5F5F] mt-1 font-medium">
+              Acompanhe os níveis dos insumos para a produção diária.
+            </p>
+          </div>
+          <div class="relative w-full sm:max-w-xs">
+            <div class="absolute left-3.5 top-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none text-muted-foreground">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+            </div>
+            <input 
+              type="text" 
+              placeholder="Buscar insumo..."
+              [ngModel]="stockSearch()"
+              (ngModelChange)="stockSearch.set($event)"
+              class="w-full pl-11 pr-4 py-3 rounded-2xl border border-[#DADADA] focus:border-[#4C7C59] outline-none transition-all shadow-sm text-sm"
+            />
+          </div>
         </div>
 
         <!-- Attention Box (Low Stock Items Alert) -->
@@ -493,7 +533,7 @@
 
         <!-- Stock Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          @for (item of stockItems(); track item.id) {
+          @for (item of filteredStockItems(); track item.id) {
             @let isLow = item.currentQuantity <= item.minQuantity;
             @let pct = getPercent(item.currentQuantity, item.minQuantity);
 
@@ -552,5 +592,62 @@
       </div>
     }
 
+    <!-- ==============================
+         VIEW: MINHA CONTA (ACCOUNT)
+    ================================ -->
+    @if (activeView() === 'account') {
+      <div class="flex flex-col gap-6 max-w-lg">
+        <div>
+          <h2 class="text-2xl font-extrabold text-[#1F1F1F]">
+            Minha Conta
+          </h2>
+          <p class="text-sm text-[#5F5F5F] mt-1 font-medium">
+            Gerencie e atualize os dados de acesso da sua conta.
+          </p>
+        </div>
+
+        <div class="bg-white rounded-2xl p-6 border border-[#EEF2EE] shadow-sm flex flex-col gap-6">
+          <h3 class="text-base font-extrabold text-[#1F1F1F]">
+            Alterar Senha
+          </h3>
+          
+          <form (submit)="$event.preventDefault(); handleUpdatePassword()" class="flex flex-col gap-4">
+            <div class="flex flex-col gap-1.5">
+              <label for="newPassword" class="text-xs font-bold text-[#5F5F5F] uppercase tracking-wider">
+                Nova Senha
+              </label>
+              <input
+                id="newPassword"
+                type="password"
+                [(ngModel)]="newPassword"
+                name="newPassword"
+                placeholder="Mínimo de 6 caracteres"
+                class="w-full px-4 py-3 rounded-xl border border-[#DADADA] focus:border-[#4C7C59] outline-none transition-all shadow-sm text-sm"
+                required
+              />
+            </div>
+
+            @if (passwordError()) {
+              <div class="text-xs font-bold text-red-500 bg-red-50 p-3 rounded-lg border border-red-100">
+                {{ passwordError() }}
+              </div>
+            }
+
+            <button
+              type="submit"
+              [disabled]="passwordSubmitting() || !newPassword.trim()"
+              class="w-full py-3 rounded-xl font-bold text-xs text-white cursor-pointer transition-all flex items-center justify-center gap-1.5 shadow-md active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+              style="background: #4C7C59;"
+              onmouseenter="this.style.opacity = '0.9'"
+              onmouseleave="this.style.opacity = '1'"
+            >
+              <span>{{ passwordSubmitting() ? 'Atualizando...' : 'Atualizar Senha' }}</span>
+            </button>
+          </form>
+        </div>
+      </div>
+    }
+
   </main>
 </div>
+

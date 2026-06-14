@@ -105,6 +105,12 @@ export const routes: Routes = [
         loadComponent: () => import('@domain/owner/feature-settings/settings.component')
           .then(m => m.SettingsComponent),
         title: 'DaHorta | Configurações'
+      },
+      {
+        path: 'equipe',
+        loadComponent: () => import('@domain/owner/feature-team/team.component')
+          .then(m => m.TeamComponent),
+        title: 'DaHorta | Gerenciar Equipe'
       }
     ]
   },

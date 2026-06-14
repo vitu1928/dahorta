@@ -1,4 +1,4 @@
-import { Injectable, signal, inject, computed } from '@angular/core';
+import { Injectable, signal, inject, computed, effect } from '@angular/core';
 import { OwnerService } from './owner.service';
 import { Supplier, Insumo, PriceRecord, TechnicalSheet, StockMovement, TechnicalSheetIngredient } from './owner.models';
 import { AuthService } from '../../auth/data-access/auth.service';
@@ -22,97 +22,132 @@ export class FirebaseOwnerService extends OwnerService {
   constructor() {
     super();
 
-    // Listen to suppliers
-    const suppliersCol = collection(this.firestore, 'suppliers');
-    onSnapshot(suppliersCol, (snapshot) => {
-      const list: Supplier[] = [];
-      snapshot.forEach((doc) => {
-        list.push({ id: doc.id, ...doc.data() } as Supplier);
-      });
-      this.suppliers.set(list);
-    }, (err) => {
-      console.error('Erro ao carregar fornecedores:', err);
-    });
+    let unsubscribeSuppliers: any = null;
+    let unsubscribePriceRecords: any = null;
+    let unsubscribeMovements: any = null;
+    let unsubscribeInsumos: any = null;
+    let unsubscribeSheets: any = null;
+    let unsubscribePlate: any = null;
 
-    // Listen to insumos
-    const insumosCol = collection(this.firestore, 'insumos');
-    onSnapshot(insumosCol, (snapshot) => {
-      const list: Insumo[] = [];
-      snapshot.forEach((doc) => {
-        list.push({ id: doc.id, ...doc.data() } as Insumo);
-      });
-      this.insumos.set(list);
-    }, (err) => {
-      console.error('Erro ao carregar insumos:', err);
-    });
+    // Dynamically manage listeners based on authenticated user role to prevent unauthorized client console warnings
+    effect(() => {
+      const user = this.authService.currentUser();
+      
+      // Cleanup previous subscriptions
+      if (unsubscribeSuppliers) { unsubscribeSuppliers(); unsubscribeSuppliers = null; }
+      if (unsubscribePriceRecords) { unsubscribePriceRecords(); unsubscribePriceRecords = null; }
+      if (unsubscribeMovements) { unsubscribeMovements(); unsubscribeMovements = null; }
+      if (unsubscribeInsumos) { unsubscribeInsumos(); unsubscribeInsumos = null; }
+      if (unsubscribeSheets) { unsubscribeSheets(); unsubscribeSheets = null; }
+      if (unsubscribePlate) { unsubscribePlate(); unsubscribePlate = null; }
 
-    // Listen to price records
-    const priceRecordsCol = collection(this.firestore, 'priceRecords');
-    onSnapshot(priceRecordsCol, (snapshot) => {
-      const list: PriceRecord[] = [];
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        list.push({
-          id: doc.id,
-          insumoId: data['insumoId'],
-          supplierId: data['supplierId'],
-          value: data['value'],
-          date: data['date']?.toDate() || new Date(),
-          observation: data['observation']
-        } as PriceRecord);
-      });
-      this.priceRecords.set(list);
-    }, (err) => {
-      console.error('Erro ao carregar registros de preços:', err);
-    });
+      if (user) {
+        const isStaff = user.role === 'owner' || user.role === 'employee';
+        
+        // 1. Listen to insumos (available to all authenticated users for stock validation/checkout)
+        const insumosCol = collection(this.firestore, 'insumos');
+        unsubscribeInsumos = onSnapshot(insumosCol, (snapshot) => {
+          const list: Insumo[] = [];
+          snapshot.forEach((doc) => {
+            list.push({ id: doc.id, ...doc.data() } as Insumo);
+          });
+          this.insumos.set(list);
+        }, (err) => {
+          console.error('Erro ao carregar insumos:', err);
+        });
 
-    // Listen to technical sheets
-    const sheetsCol = collection(this.firestore, 'technicalSheets');
-    onSnapshot(sheetsCol, (snapshot) => {
-      const list: TechnicalSheet[] = [];
-      snapshot.forEach((doc) => {
-        list.push({ id: doc.id, ...doc.data() } as TechnicalSheet);
-      });
-      this.technicalSheets.set(list);
-    }, (err) => {
-      console.error('Erro ao carregar fichas técnicas:', err);
-    });
+        // 2. Listen to technical sheets (available to all for checkout recipe matching)
+        const sheetsCol = collection(this.firestore, 'technicalSheets');
+        unsubscribeSheets = onSnapshot(sheetsCol, (snapshot) => {
+          const list: TechnicalSheet[] = [];
+          snapshot.forEach((doc) => {
+            list.push({ id: doc.id, ...doc.data() } as TechnicalSheet);
+          });
+          this.technicalSheets.set(list);
+        }, (err) => {
+          console.error('Erro ao carregar fichas técnicas:', err);
+        });
 
-    // Listen to stock movements
-    const movementsCol = collection(this.firestore, 'stockMovements');
-    onSnapshot(movementsCol, (snapshot) => {
-      const list: StockMovement[] = [];
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        list.push({
-          id: doc.id,
-          stockItemId: data['stockItemId'],
-          type: data['type'],
-          quantity: data['quantity'],
-          userId: data['userId'],
-          userName: data['userName'],
-          timestamp: data['timestamp']?.toDate() || new Date(),
-          notes: data['notes'],
-          orderId: data['orderId']
-        } as StockMovement);
-      });
-      this.stockMovements.set(list);
-    }, (err) => {
-      console.error('Erro ao carregar movimentações de estoque:', err);
-    });
+        // 3. Listen to plate of day settings (available to all)
+        const plateDocRef = doc(this.firestore, 'settings/plateOfDay');
+        unsubscribePlate = onSnapshot(plateDocRef, (snap) => {
+          if (snap.exists()) {
+            this.plateOfDay.set(snap.data()['config'] || {});
+          } else {
+            if (isStaff) {
+              setDoc(plateDocRef, { config: {} }).catch(err => console.error(err));
+            }
+            this.plateOfDay.set({});
+          }
+        }, (err) => {
+          console.error('Erro ao ouvir configuração de prato do dia:', err);
+        });
 
-    // Listen to plate of day settings
-    const plateDocRef = doc(this.firestore, 'settings/plateOfDay');
-    onSnapshot(plateDocRef, (snap) => {
-      if (snap.exists()) {
-        this.plateOfDay.set(snap.data()['config'] || {});
+        if (isStaff) {
+          // 4. Listen to suppliers
+          const suppliersCol = collection(this.firestore, 'suppliers');
+          unsubscribeSuppliers = onSnapshot(suppliersCol, (snapshot) => {
+            const list: Supplier[] = [];
+            snapshot.forEach((doc) => {
+              list.push({ id: doc.id, ...doc.data() } as Supplier);
+            });
+            this.suppliers.set(list);
+          }, (err) => {
+            console.error('Erro ao carregar fornecedores:', err);
+          });
+
+          // 5. Listen to price records
+          const priceRecordsCol = collection(this.firestore, 'priceRecords');
+          unsubscribePriceRecords = onSnapshot(priceRecordsCol, (snapshot) => {
+            const list: PriceRecord[] = [];
+            snapshot.forEach((doc) => {
+              const data = doc.data();
+              list.push({
+                id: doc.id,
+                insumoId: data['insumoId'],
+                supplierId: data['supplierId'],
+                value: data['value'],
+                date: data['date']?.toDate() || new Date(),
+                observation: data['observation']
+              } as PriceRecord);
+            });
+            this.priceRecords.set(list);
+          }, (err) => {
+            console.error('Erro ao carregar registros de preços:', err);
+          });
+
+          // 6. Listen to stock movements
+          const movementsCol = collection(this.firestore, 'stockMovements');
+          unsubscribeMovements = onSnapshot(movementsCol, (snapshot) => {
+            const list: StockMovement[] = [];
+            snapshot.forEach((doc) => {
+              const data = doc.data();
+              list.push({
+                id: doc.id,
+                stockItemId: data['stockItemId'],
+                type: data['type'],
+                quantity: data['quantity'],
+                userId: data['userId'],
+                userName: data['userName'],
+                timestamp: data['timestamp']?.toDate() || new Date(),
+                notes: data['notes'],
+                orderId: data['orderId']
+              } as StockMovement);
+            });
+            this.stockMovements.set(list);
+          }, (err) => {
+            console.error('Erro ao carregar movimentações de estoque:', err);
+          });
+        }
       } else {
-        setDoc(plateDocRef, { config: {} }).catch(err => console.error(err));
+        this.suppliers.set([]);
+        this.insumos.set([]);
+        this.priceRecords.set([]);
+        this.technicalSheets.set([]);
+        this.stockMovements.set([]);
         this.plateOfDay.set({});
       }
-    }, (err) => {
-      console.error('Erro ao ouvir configuração de prato do dia:', err);
-    });
+    }, { allowSignalWrites: true });
   }
 
   // Suppliers CRUD
@@ -138,67 +173,39 @@ export class FirebaseOwnerService extends OwnerService {
     });
   }
 
-  // Insumos CRUD (Sincroniza 1:1 com Coleção Stock usando mesmo ID)
+  // Insumos CRUD (Unificado com estoque)
   override async addInsumo(insumo: Omit<Insumo, 'id'>): Promise<void> {
     try {
       const insumosCol = collection(this.firestore, 'insumos');
       const insumoDocRef = doc(insumosCol);
       const id = insumoDocRef.id;
 
-      const stockDocRef = doc(this.firestore, `stock/${id}`);
-
-      const batch = writeBatch(this.firestore);
-      batch.set(insumoDocRef, insumo);
-      batch.set(stockDocRef, {
-        name: insumo.name,
-        category: insumo.category,
-        unit: insumo.unit,
-        currentQuantity: 0,
-        maxCapacity: 1000,
-        minAlert: 100
+      await setDoc(insumoDocRef, {
+        ...insumo,
+        currentQuantity: insumo.currentQuantity ?? 0,
+        maxCapacity: insumo.maxCapacity ?? 1000,
+        minAlert: insumo.minAlert ?? 100
       });
-
-      await batch.commit();
     } catch (err) {
-      console.error('Erro ao cadastrar insumo e inicializar estoque:', err);
+      console.error('Erro ao cadastrar insumo:', err);
     }
   }
 
   override async updateInsumo(id: string, insumo: Partial<Insumo>): Promise<void> {
     try {
       const insumoDocRef = doc(this.firestore, `insumos/${id}`);
-      const stockDocRef = doc(this.firestore, `stock/${id}`);
-
-      const batch = writeBatch(this.firestore);
-      batch.update(insumoDocRef, insumo);
-
-      const stockUpdate: any = {};
-      if (insumo.name) stockUpdate.name = insumo.name;
-      if (insumo.category) stockUpdate.category = insumo.category;
-      if (insumo.unit) stockUpdate.unit = insumo.unit;
-
-      if (Object.keys(stockUpdate).length > 0) {
-        batch.update(stockDocRef, stockUpdate);
-      }
-
-      await batch.commit();
+      await updateDoc(insumoDocRef, insumo);
     } catch (err) {
-      console.error('Erro ao atualizar insumo e estoque:', err);
+      console.error('Erro ao atualizar insumo:', err);
     }
   }
 
   override async deleteInsumo(id: string): Promise<void> {
     try {
       const insumoDocRef = doc(this.firestore, `insumos/${id}`);
-      const stockDocRef = doc(this.firestore, `stock/${id}`);
-
-      const batch = writeBatch(this.firestore);
-      batch.delete(insumoDocRef);
-      batch.delete(stockDocRef);
-
-      await batch.commit();
+      await deleteDoc(insumoDocRef);
     } catch (err) {
-      console.error('Erro ao excluir insumo e registro de estoque:', err);
+      console.error('Erro ao excluir insumo:', err);
     }
   }
 
@@ -257,7 +264,7 @@ export class FirebaseOwnerService extends OwnerService {
   override async addStockMovement(movement: Omit<StockMovement, 'id' | 'timestamp'>): Promise<void> {
     try {
       const newMovRef = doc(collection(this.firestore, 'stockMovements'));
-      const stockRef = doc(this.firestore, `stock/${movement.stockItemId}`);
+      const stockRef = doc(this.firestore, `insumos/${movement.stockItemId}`);
 
       await runTransaction(this.firestore, async (transaction) => {
         const stockSnap = await transaction.get(stockRef);
@@ -288,7 +295,7 @@ export class FirebaseOwnerService extends OwnerService {
 
     try {
       const newMovRef = doc(collection(this.firestore, 'stockMovements'));
-      const stockRef = doc(this.firestore, `stock/${stockItemId}`);
+      const stockRef = doc(this.firestore, `insumos/${stockItemId}`);
 
       await runTransaction(this.firestore, async (transaction) => {
         const stockSnap = await transaction.get(stockRef);

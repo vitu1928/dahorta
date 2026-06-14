@@ -9,6 +9,7 @@ import { ProductCardComponent } from '../ui/product-card.component';
 import { Product } from '../data-access/customer.models';
 import { ProductModalComponent } from './product-modal.component';
 import { CouponsService } from '../data-access/coupons.service';
+import { AuthService } from '../../auth/data-access/auth.service';
 
 @Component({
   selector: 'app-menu',
@@ -163,7 +164,7 @@ import { CouponsService } from '../data-access/coupons.service';
       </div>
 
       <!-- Floating bottom cart bar -->
-      @if (cartCount() > 0 && !modalOpen()) {
+      @if (authService.isAuthenticated() && cartCount() > 0 && !modalOpen()) {
         <div class="fixed bottom-20 md:bottom-8 left-0 right-0 px-6 z-[40] flex justify-center">
           <button 
             (click)="router.navigate(['/customer/cart'])" 
@@ -214,6 +215,7 @@ export class MenuComponent {
   private cartState = inject(CartStateService);
   private couponsService = inject(CouponsService);
   private toastService = inject(ToastService);
+  authService = inject(AuthService);
   router = inject(Router);
 
   selectedCategory = signal<string | null>(null);

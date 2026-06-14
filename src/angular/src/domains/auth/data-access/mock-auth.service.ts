@@ -9,6 +9,7 @@ export class MockAuthService extends AuthService {
   override currentUser = signal<User | null>(MOCK_USERS[3]); // Default to Ana Paula (customer) for seamless simulation
 
   override isAuthenticated = computed(() => this.currentUser() !== null);
+  override readonly initialized = Promise.resolve(true);
 
   override async login(email: string, password: string): Promise<{ success: boolean; message: string; role?: string }> {
     const user = this.users().find(
@@ -64,5 +65,9 @@ export class MockAuthService extends AuthService {
       this.currentUser.set(updated);
       this.users.update((prev) => prev.map((u) => u.id === current.id ? updated : u));
     }
+  }
+
+  override async updatePassword(newPassword: string): Promise<{ success: boolean; message: string }> {
+    return { success: true, message: 'Senha atualizada com sucesso (Simulado)!' };
   }
 }

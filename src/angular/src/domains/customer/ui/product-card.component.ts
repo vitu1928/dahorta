@@ -2,7 +2,7 @@ import { Component, input, output, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Product } from '../data-access/customer.models';
 import { AllergenIconComponent } from './allergen-icon.component';
-import { getAllergensByProductId } from '../data-access/mock-data';
+
 
 @Component({
   selector: 'app-product-card',
@@ -69,7 +69,7 @@ export class ProductCardComponent {
   select = output<Product>();
 
   allergens = computed(() => {
-    return getAllergensByProductId(this.product().id).slice(0, 3);
+    return (this.product().allergens ?? []).slice(0, 3);
   });
 
   onSelect() {

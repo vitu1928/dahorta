@@ -261,23 +261,31 @@ export class DeliveryCardComponent {
   readonly error = signal('');
   readonly confirmed = signal(false);
 
-  readonly isDelivering = computed(() => this.order.status === 'delivering');
+  isDelivering(): boolean {
+    return this.order.status === 'delivering';
+  }
 
-  readonly totalQuantity = computed(() => 
-    this.order.items.reduce((sum, item) => sum + item.quantity, 0)
-  );
+  totalQuantity(): number {
+    return this.order.items.reduce((sum, item) => sum + item.quantity, 0);
+  }
 
   handleStartDelivery() {
     this.startDelivery.emit(this.order.id);
   }
 
-  handleConfirm() {
-    const success = this.ordersService.confirmDelivery(this.order.id, this.code());
-    if (success) {
-      this.confirmed.set(true);
-      this.error.set('');
-    } else {
-      this.error.set('Código incorreto. Tente novamente.');
+  async handleConfirm() {
+    this.error.set('');
+    try {
+      const success = await this.ordersService.confirmDelivery(this.order.id, this.code());
+      if (success) {
+        this.confirmed.set(true);
+        this.error.set('');
+      } else {
+        this.error.set('Código incorreto. Tente novamente.');
+      }
+    } catch (err: any) {
+      console.error(err);
+      this.error.set('Falha de permissão ou rede ao registrar a entrega.');
     }
   }
 
@@ -323,6 +331,7 @@ export class MotoboyDashboardComponent implements OnInit, OnDestroy {
   readonly showUserMenu = signal<boolean>(false);
 
   private watchId: number | null = null;
+  private lastLocationUpdateTime = 0;
 
   constructor() {
     // Watch location during active deliveries
@@ -346,7 +355,11 @@ export class MotoboyDashboardComponent implements OnInit, OnDestroy {
           (pos) => {
             this.showLocationWarning.set(false);
             if (user) {
-              this.ordersService.updateMotoboyLocation(user.id, pos.coords.latitude, pos.coords.longitude);
+              const now = Date.now();
+              if (now - this.lastLocationUpdateTime >= 10000) {
+                this.lastLocationUpdateTime = now;
+                this.ordersService.updateMotoboyLocation(user.id, pos.coords.latitude, pos.coords.longitude);
+              }
             }
           },
           () => this.showLocationWarning.set(true),
@@ -397,10 +410,26 @@ export class MotoboyDashboardComponent implements OnInit, OnDestroy {
 
   requestLocation() {
     this.locationStatus.set('checking');
-    // Simulated location activation for demo/sandbox environment
-    setTimeout(() => {
-      this.locationStatus.set('granted');
-    }, 1500);
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          this.locationStatus.set('granted');
+          const user = this.currentUser();
+          if (user) {
+            this.ordersService.updateMotoboyLocation(user.id, pos.coords.latitude, pos.coords.longitude);
+          }
+        },
+        (err) => {
+          console.error('Erro ao obter localização:', err);
+          this.locationStatus.set('denied');
+          this.toast.error('Permissão de localização negada ou indisponível.');
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    } else {
+      this.locationStatus.set('unsupported');
+      this.toast.error('Geolocalização não é suportada por este navegador.');
+    }
   }
 
   // Computed values
@@ -437,6 +466,31 @@ export class MotoboyDashboardComponent implements OnInit, OnDestroy {
       .slice(0, 3)
   );
 
+  readonly showPasswordModal = signal(false);
+  newPassword = '';
+  passwordSubmitting = signal(false);
+  passwordError = signal('');
+
+  async handleUpdatePassword() {
+    this.passwordError.set('');
+    if (this.newPassword.trim().length < 6) {
+      this.passwordError.set('A nova senha deve ter pelo menos 6 caracteres.');
+      return;
+    }
+
+    this.passwordSubmitting.set(true);
+    const res = await this.authService.updatePassword(this.newPassword.trim());
+    this.passwordSubmitting.set(false);
+
+    if (res.success) {
+      this.toast.success('Senha atualizada com sucesso!');
+      this.showPasswordModal.set(false);
+      this.newPassword = '';
+    } else {
+      this.passwordError.set(res.message);
+    }
+  }
+
   // Handlers
   handleLogout(): void {
     this.authService.logout();
@@ -448,7 +502,7 @@ export class MotoboyDashboardComponent implements OnInit, OnDestroy {
       this.toast.error('Você já possui um pedido em rota!');
       return;
     }
-    this.ordersService.updateStatus(id, 'delivering', this.currentUser()?.id);
+    this.ordersService.updateStatus(id, 'delivering', this.currentUser()?.id, this.currentUser()?.name);
     this.toast.success('Entrega iniciada com sucesso!');
   }
 

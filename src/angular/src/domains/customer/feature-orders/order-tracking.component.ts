@@ -7,7 +7,7 @@ import { OrdersService } from '../data-access/orders.service';
 import { AuthService } from '@domain/auth/data-access/auth.service';
 import { ReviewsService } from '../data-access/reviews.service';
 import { Order, OrderStatus } from '../data-access/customer.models';
-import { MockDeliveryMapComponent } from '../ui/mock-delivery-map.component';
+import { DeliveryMapComponent } from '../ui/delivery-map.component';
 import { OrderTimelineComponent } from '../ui/order-timeline.component';
 
 const STATUS_LABELS: Record<OrderStatus, string> = {
@@ -37,7 +37,7 @@ const ETA_VALUES: Record<OrderStatus, string> = {
 @Component({
   selector: 'app-order-tracking',
   standalone: true,
-  imports: [CommonModule, FormsModule, MockDeliveryMapComponent, OrderTimelineComponent],
+  imports: [CommonModule, FormsModule, DeliveryMapComponent, OrderTimelineComponent],
   template: `
     <div style="color: var(--foreground); min-height: 100vh;">
       <!-- Header -->
@@ -125,11 +125,12 @@ const ETA_VALUES: Record<OrderStatus, string> = {
 
           <!-- Live Map (when delivering) -->
           @if (order()!.status === 'delivering') {
-            <app-mock-delivery-map
-              motoboyName="Diego"
+            <app-delivery-map
+              [motoboyName]="order()!.motoboyName || 'Motoboy'"
               [customerAddress]="getAddressString(order()!.deliveryAddress || order()!.address)"
+              [address]="order()!.deliveryAddress || order()!.address"
               [motoboyLocation]="motoboyLocation()"
-            ></app-mock-delivery-map>
+            ></app-delivery-map>
           }
 
           <!-- Timeline -->

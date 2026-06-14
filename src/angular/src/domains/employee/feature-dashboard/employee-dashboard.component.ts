@@ -6,6 +6,7 @@ import { AuthService } from '../../auth/data-access/auth.service';
 import { OrdersService } from '../../customer/data-access/orders.service';
 import { EmployeeService } from '../data-access/employee.service';
 import { Order, OrderStatus } from '../../customer/data-access/customer.models';
+import { ToastService } from '../../../shared/data-access/toast.service';
 
 interface ColumnDef {
   status: OrderStatus;
@@ -34,6 +35,7 @@ export class EmployeeDashboardComponent {
   private ordersService = inject(OrdersService);
   private employeeService = inject(EmployeeService);
   private router = inject(Router);
+  private toast = inject(ToastService);
 
   // Expose signals from services
   readonly currentUser = this.authService.currentUser;
@@ -42,8 +44,19 @@ export class EmployeeDashboardComponent {
   readonly stockItems = this.employeeService.stockItems;
 
   // Local state signals
-  readonly activeView = signal<'orders' | 'stock'>('orders');
+  readonly activeView = signal<'orders' | 'stock' | 'account'>('orders');
   readonly search = signal<string>('');
+  readonly stockSearch = signal<string>('');
+
+  readonly filteredStockItems = computed(() => {
+    const term = this.stockSearch().toLowerCase().trim();
+    const list = this.stockItems();
+    if (!term) return list;
+    return list.filter(item =>
+      item.name.toLowerCase().includes(term) ||
+      item.category.toLowerCase().includes(term)
+    );
+  });
 
   // Constants mapping
   readonly paymentLabels: Record<string, string> = {
@@ -113,6 +126,30 @@ export class EmployeeDashboardComponent {
   readonly lowStockItems = computed(() => {
     return this.stockItems().filter(item => item.currentQuantity <= item.minQuantity);
   });
+
+  newPassword = '';
+  readonly passwordSubmitting = signal(false);
+  readonly passwordError = signal('');
+
+  async handleUpdatePassword() {
+    this.passwordError.set('');
+    if (this.newPassword.trim().length < 6) {
+      this.passwordError.set('A nova senha deve ter pelo menos 6 caracteres.');
+      return;
+    }
+
+    this.passwordSubmitting.set(true);
+    const res = await this.authService.updatePassword(this.newPassword.trim());
+    this.passwordSubmitting.set(false);
+
+    if (res.success) {
+      this.toast.success('Senha atualizada com sucesso!');
+      this.newPassword = '';
+      this.activeView.set('orders');
+    } else {
+      this.passwordError.set(res.message);
+    }
+  }
 
   // Action methods
   handleLogout(): void {

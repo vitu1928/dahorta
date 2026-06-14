@@ -4,9 +4,9 @@ import { routes } from './app.routes';
 import { provideHttpClient } from '@angular/common/http';
 
 // Firebase Modules
-import { initializeApp, provideFirebaseApp } from '@angular/fire/app';
+import { getApp, initializeApp, provideFirebaseApp } from '@angular/fire/app';
 import { getAuth, provideAuth } from '@angular/fire/auth';
-import { getFirestore, provideFirestore } from '@angular/fire/firestore';
+import { initializeFirestore, provideFirestore, persistentLocalCache, persistentMultipleTabManager } from '@angular/fire/firestore';
 import { getDatabase, provideDatabase } from '@angular/fire/database';
 import { environment } from '../environments/environment';
 
@@ -37,7 +37,14 @@ export const appConfig: ApplicationConfig = {
     // Inicialização do Firebase real
     provideFirebaseApp(() => initializeApp(environment.firebase)),
     provideAuth(() => getAuth()),
-    provideFirestore(() => getFirestore()),
+    provideFirestore(() => {
+      const app = getApp();
+      return initializeFirestore(app, {
+        localCache: persistentLocalCache({
+          tabManager: persistentMultipleTabManager()
+        })
+      });
+    }),
     provideDatabase(() => getDatabase()),
 
     // Injeções de Dependência das Classes Firebase Reais (Sem fallbacks locais)

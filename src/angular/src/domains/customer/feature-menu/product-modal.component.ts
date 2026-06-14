@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Product } from '../data-access/customer.models';
 import { ProductsService } from '../data-access/products.service';
 import { AllergenIconComponent } from '../ui/allergen-icon.component';
-import { getAllergensByProductId } from '../data-access/mock-data';
+
 
 @Component({
   selector: 'app-product-modal',
@@ -173,7 +173,7 @@ export class ProductModalComponent {
   allProducts = this.productsService.products;
 
   allergens = computed(() => {
-    return getAllergensByProductId(this.product().id);
+    return this.product().allergens ?? [];
   });
 
   activeSlot = computed(() => {

@@ -34,6 +34,7 @@ export interface Product {
   desiredMargin?: number;
   isCombo?: boolean;
   comboSlots?: ComboSlot[];
+  allergens?: string[];
 }
 
 export interface Address {
@@ -82,6 +83,7 @@ export interface Order {
   total?: number;
   reviewId?: string;
   deliveryAddress?: Address;
+  motoboyName?: string;
 }
 
 export interface Coupon {
@@ -125,6 +127,11 @@ export interface Insumo {
   category: string;
   observations?: string;
   allergens?: string[];
+  // Unified stock properties
+  currentQuantity?: number;
+  maxCapacity?: number;
+  minAlert?: number;
+  yieldRule?: any;
 }
 
 export interface PriceRecord {
@@ -147,16 +154,7 @@ export interface Supplier {
 
 export type PlateOfDayConfig = Record<number, string>;
 
-export interface StockItem {
-  id: string;
-  name: string;
-  category: string;
-  unit: string;
-  currentQuantity: number;
-  maxCapacity: number;
-  minAlert: number;
-  yieldRule?: any;
-}
+export type StockItem = Insumo;
 
 export interface StockMovement {
   id: string;

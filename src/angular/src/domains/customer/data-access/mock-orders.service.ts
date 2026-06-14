@@ -23,7 +23,7 @@ export class MockOrdersService extends OrdersService {
     return (id ? this.orders().find(o => o.id === id) : null) ?? null;
   });
 
-  override placeOrder(
+  override async placeOrder(
     customerId: string,
     paymentMethod: PaymentMethod,
     address: Address,
@@ -32,13 +32,17 @@ export class MockOrdersService extends OrdersService {
     discount: number = 0,
     notes?: string,
     addressNotes?: string
-  ): Order {
+  ): Promise<Order> {
     const currentUser = this.authService.currentUser();
     const customerName = currentUser ? currentUser.name : 'Cliente Anônimo';
     const customerPhone = currentUser ? currentUser.phone : '';
 
+    const nextCount = this.orders().length + 1;
+    const paddedNum = String(nextCount).padStart(3, '0');
+    const orderId = `ORD-${paddedNum}`;
+
     const order: Order = {
-      id: `order-${Date.now()}`,
+      id: orderId,
       customerId,
       customerName,
       customerPhone,
@@ -93,12 +97,13 @@ export class MockOrdersService extends OrdersService {
     return order;
   }
 
-  override updateStatus(orderId: string, status: OrderStatus, motoboyId?: string) {
+  override updateStatus(orderId: string, status: OrderStatus, motoboyId?: string, motoboyName?: string) {
     const order = this.orders().find(o => o.id === orderId);
     if (order) {
       order.status = status;
       order.updatedAt = new Date();
       if (motoboyId) order.motoboyId = motoboyId;
+      if (motoboyName) order.motoboyName = motoboyName;
       this.orders.set([...this.orders()]);
 
       // If marked as 'ready', simulate Motoboy picking it up 10 seconds later

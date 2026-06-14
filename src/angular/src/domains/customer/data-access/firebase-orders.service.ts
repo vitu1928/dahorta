@@ -5,7 +5,7 @@ import { OrdersService } from './orders.service';
 import { Order, OrderStatus, PaymentMethod, Address, CartItem } from './customer.models';
 import { AuthService } from '../../auth/data-access/auth.service';
 import { OwnerService } from '../../owner/data-access/owner.service';
-import { Firestore, collection, doc, setDoc, updateDoc, onSnapshot, runTransaction } from '@angular/fire/firestore';
+import { Firestore, collection, doc, setDoc, updateDoc, onSnapshot, query, where, runTransaction } from '@angular/fire/firestore';
 import { Database } from '@angular/fire/database';
 import { ref, set as dbSet, onValue } from 'firebase/database';
 
@@ -41,7 +41,14 @@ export class FirebaseOrdersService extends OrdersService {
 
       if (user) {
         const colRef = collection(this.firestore, 'orders');
-        this.unsubscribe = onSnapshot(colRef, (snapshot) => {
+        let q;
+        if (user.role === 'customer') {
+          q = query(colRef, where('customerId', '==', user.id));
+        } else {
+          q = colRef;
+        }
+
+        this.unsubscribe = onSnapshot(q, (snapshot) => {
           const list: Order[] = [];
           snapshot.forEach((doc) => {
             const data = doc.data();
@@ -72,7 +79,7 @@ export class FirebaseOrdersService extends OrdersService {
     });
   }
 
-  override placeOrder(
+  override async placeOrder(
     customerId: string,
     paymentMethod: PaymentMethod,
     address: Address,
@@ -81,91 +88,151 @@ export class FirebaseOrdersService extends OrdersService {
     discount: number = 0,
     notes?: string,
     addressNotes?: string
-  ): Order {
+  ): Promise<Order> {
     const currentUser = this.authService.currentUser();
-    const customerName = currentUser ? currentUser.name : 'Cliente Anônimo';
-    const customerPhone = currentUser ? currentUser.phone : '';
+    const customerName = currentUser?.name || 'Cliente Anônimo';
+    const customerPhone = currentUser?.phone || '';
 
-    const ordersCol = collection(this.firestore, 'orders');
-    const orderDocRef = doc(ordersCol);
-    const orderId = orderDocRef.id;
+    try {
+      const finalOrder = await runTransaction(this.firestore, async (transaction) => {
+        // 1. GET THE ORDER COUNTER AND CALCULATE NEXT ID
+        const counterRef = doc(this.firestore, 'settings/counters');
+        const counterSnap = await transaction.get(counterRef);
+        let nextCount = 6;
+        if (counterSnap.exists()) {
+          nextCount = (counterSnap.data()['orderCount'] || 0) + 1;
+        }
 
-    const order: Order = {
-      id: orderId,
-      customerId,
-      customerName,
-      customerPhone,
-      items: cartItems,
-      totalAmount,
-      deliveryFee: 15,
-      discount,
-      address,
-      paymentMethod,
-      status: 'received',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      notes,
-      addressNotes,
-      deliveryCode: Math.floor(100000 + Math.random() * 900000).toString()
-    };
+        const paddedNum = String(nextCount).padStart(3, '0');
+        const orderId = `ORD-${paddedNum}`;
+        const orderDocRef = doc(this.firestore, `orders/${orderId}`);
 
-    // Transaction to write order and deduct stock in Firestore
-    runTransaction(this.firestore, async (transaction) => {
-      // 1. Write order document
-      transaction.set(orderDocRef, {
-        ...order,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      });
+        // 2. GATHER UNIQUE INSUMO IDS & DO ALL READS FIRST
+        const sheetsList = this.ownerService.technicalSheets();
+        const stockUpdates = new Map<string, { 
+          docRef: any; 
+          currentQty: number; 
+          yieldRule: any; 
+          unit: string; 
+          name: string; 
+          deductQty: number;
+        }>();
 
-      // 2. Read recipe configurations and deduct stock
-      const sheetsList = this.ownerService.technicalSheets();
-      
-      for (const item of cartItems) {
-        const sheet = sheetsList.find(ts => ts.productId === item.productId);
-        if (sheet) {
-          for (const ingredient of sheet.ingredients) {
-            // Deduct stock item corresponding to ingredient (1:1 link by ID)
-            const stockDocRef = doc(this.firestore, `stock/${ingredient.insumoId}`);
-            const stockSnap = await transaction.get(stockDocRef);
-            
-            if (stockSnap.exists()) {
-              const currentQty = stockSnap.data()['currentQuantity'] || 0;
-              let quantityNeeded = ingredient.quantity * item.quantity;
-              
-              const yieldRule = stockSnap.data()['yieldRule'];
-              if (ingredient.unit === 'un' && yieldRule && stockSnap.data()['unit'] !== 'un') {
-                quantityNeeded = (ingredient.quantity * yieldRule.yields) * item.quantity;
+        for (const item of cartItems) {
+          const sheet = sheetsList.find(ts => ts.productId === item.productId);
+          if (sheet) {
+            for (const ingredient of sheet.ingredients) {
+              const insumoId = ingredient.insumoId;
+              if (!stockUpdates.has(insumoId)) {
+                const docRef = doc(this.firestore, `insumos/${insumoId}`);
+                const snap = await transaction.get(docRef);
+                if (snap.exists()) {
+                  const data = snap.data();
+                  stockUpdates.set(insumoId, {
+                    docRef,
+                    currentQty: data['currentQuantity'] || 0,
+                    yieldRule: data['yieldRule'] || null,
+                    unit: data['unit'] || '',
+                    name: data['name'] || '',
+                    deductQty: 0
+                  });
+                }
               }
-              
-              const newQty = Math.max(0, currentQty - quantityNeeded);
-              transaction.update(stockDocRef, { currentQuantity: newQty });
-
-              // Record a stock movement log
-              const newMovRef = doc(collection(this.firestore, 'stockMovements'));
-              transaction.set(newMovRef, {
-                stockItemId: ingredient.insumoId,
-                type: 'exit_auto',
-                quantity: quantityNeeded,
-                userId: customerId,
-                userName: customerName,
-                timestamp: new Date(),
-                notes: `Baixa automática do pedido ${orderId}`,
-                orderId
-              });
             }
           }
         }
-      }
-    }).catch(err => {
-      console.error('Erro na transação ao criar pedido:', err);
-    });
 
-    this.activeOrderId.set(orderId);
-    return order;
+        // 3. COMPUTE DEDUCTIONS
+        for (const item of cartItems) {
+          const sheet = sheetsList.find(ts => ts.productId === item.productId);
+          if (sheet) {
+            for (const ingredient of sheet.ingredients) {
+              const insumoId = ingredient.insumoId;
+              const updateInfo = stockUpdates.get(insumoId);
+              if (updateInfo) {
+                let qtyNeeded = ingredient.quantity * item.quantity;
+                if (ingredient.unit === 'un' && updateInfo.yieldRule && updateInfo.unit !== 'un') {
+                  qtyNeeded = (ingredient.quantity * updateInfo.yieldRule.yields) * item.quantity;
+                }
+                updateInfo.deductQty += qtyNeeded;
+              }
+            }
+          }
+        }
+
+        // Sanitize address to avoid any undefined properties (like complement)
+        const sanitizedAddress = {
+          id: address?.id || '',
+          label: address?.label || '',
+          street: address?.street || '',
+          number: address?.number || '',
+          complement: address?.complement || '',
+          neighborhood: address?.neighborhood || '',
+          city: address?.city || '',
+          zipCode: address?.zipCode || ''
+        };
+
+        const order: Order = {
+          id: orderId,
+          customerId,
+          customerName: customerName || 'Cliente Anônimo',
+          customerPhone: customerPhone || '',
+          items: cartItems,
+          totalAmount,
+          deliveryFee: 15,
+          discount: discount || 0,
+          address: sanitizedAddress,
+          paymentMethod,
+          status: 'received',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          notes: notes || '',
+          addressNotes: addressNotes || '',
+          deliveryCode: Math.floor(100000 + Math.random() * 900000).toString()
+        };
+
+        // 4. WRITE INCREMENTED COUNTER
+        transaction.set(counterRef, { orderCount: nextCount }, { merge: true });
+
+        // 5. WRITE THE ORDER
+        transaction.set(orderDocRef, {
+          ...order,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+
+        // 6. WRITE THE STOCK UPDATES AND MOVEMENTS (ALL WRITES LAST)
+        for (const [insumoId, info] of stockUpdates.entries()) {
+          if (info.deductQty > 0) {
+            const newQty = Math.max(0, info.currentQty - info.deductQty);
+            transaction.update(info.docRef, { currentQuantity: newQty });
+
+            const newMovRef = doc(collection(this.firestore, 'stockMovements'));
+            transaction.set(newMovRef, {
+              stockItemId: insumoId,
+              type: 'exit_auto',
+              quantity: info.deductQty,
+              userId: customerId,
+              userName: customerName,
+              timestamp: new Date(),
+              notes: `Baixa automática do pedido ${orderId}`,
+              orderId
+            });
+          }
+        }
+
+        return order;
+      });
+
+      this.activeOrderId.set(finalOrder.id);
+      return finalOrder;
+    } catch (err) {
+      console.error('Erro na transação ao criar pedido:', err);
+      throw err;
+    }
   }
 
-  override updateStatus(orderId: string, status: OrderStatus, motoboyId?: string) {
+  override updateStatus(orderId: string, status: OrderStatus, motoboyId?: string, motoboyName?: string) {
     const docRef = doc(this.firestore, `orders/${orderId}`);
     const updates: any = {
       status,
@@ -173,6 +240,9 @@ export class FirebaseOrdersService extends OrdersService {
     };
     if (motoboyId) {
       updates.motoboyId = motoboyId;
+    }
+    if (motoboyName) {
+      updates.motoboyName = motoboyName;
     }
 
     updateDoc(docRef, updates).catch(err => {
@@ -184,11 +254,20 @@ export class FirebaseOrdersService extends OrdersService {
     return this.orders().filter(o => o.customerId === customerId);
   }
 
-  override confirmDelivery(orderId: string, code: string): boolean {
+  override async confirmDelivery(orderId: string, code: string): Promise<boolean> {
     const order = this.orders().find(o => o.id === orderId);
     if (order && order.deliveryCode === code) {
-      this.updateStatus(orderId, 'delivered');
-      return true;
+      try {
+        const docRef = doc(this.firestore, `orders/${orderId}`);
+        await updateDoc(docRef, {
+          status: 'delivered',
+          updatedAt: new Date()
+        });
+        return true;
+      } catch (err) {
+        console.error('Erro ao confirmar entrega no Firestore:', err);
+        throw err;
+      }
     }
     return false;
   }
@@ -217,6 +296,7 @@ export class FirebaseOrdersService extends OrdersService {
 
   // Realtime Database location telemetry (Write)
   override updateMotoboyLocation(motoboyId: string, lat: number, lng: number): void {
+    console.log(`[TELEMETRIA] Gravando localização no Realtime DB para o motoboy ${motoboyId}:`, { lat, lng });
     const pathRef = ref(this.db, `telemetry/motoboyLocations/${motoboyId}`);
     dbSet(pathRef, {
       lat,
@@ -229,10 +309,12 @@ export class FirebaseOrdersService extends OrdersService {
 
   // Realtime Database location telemetry (Read)
   override getMotoboyLocation(motoboyId: string): Observable<{ lat: number; lng: number } | null> {
+    console.log(`[TELEMETRIA] Iniciando escuta de localização no Realtime DB para o motoboy ${motoboyId}`);
     const pathRef = ref(this.db, `telemetry/motoboyLocations/${motoboyId}`);
     return new Observable<{ lat: number; lng: number } | null>((subscriber) => {
       const unsub = onValue(pathRef, (snapshot) => {
         const val = snapshot.val();
+        console.log(`[TELEMETRIA] Atualização de localização recebida para o motoboy ${motoboyId}:`, val);
         if (val && val.lat && val.lng) {
           subscriber.next({ lat: val.lat, lng: val.lng });
         } else {

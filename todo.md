@@ -8,12 +8,12 @@ Este arquivo serve como repositório centralizado para planejar tarefas futuras,
 *Espaço para adicionar novos pedidos e refinamentos que serão realizados ao final do projeto.*
 
 - [ ] **Integração Real com Firebase / Backend**: Substituir todas as implementações mock pelas conexões reais.
-  - [ ] *Autenticação Real*: Conectar o `AuthService` ao Firebase Auth.
-  - [ ] *Firestore Realtime Observers*: Substituir a simulação de subscrição de status do pedido por listeners reais do Firestore (`onSnapshot`).
-  - [ ] *CRUD de Endereços Salvos por Usuário*: Persistir a lista de endereços do cliente na subcoleção `addresses` do documento do usuário no Firestore (`users/{userId}/addresses`).
-  - [ ] *Rastreamento de Motoboy no Firestore*: Escutar atualizações do campo `deliveryLocation` na coleção de pedidos (`orders/{orderId}`) e projetar rota no mapa.
+  - [x] *Autenticação Real*: Conectar o `AuthService` ao Firebase Auth.
+  - [x] *Firestore Realtime Observers*: Substituir a simulação de subscrição de status do pedido por listeners reais do Firestore (`onSnapshot`).
+  - [x] *CRUD de Endereços Salvos por Usuário*: Persistir a lista de endereços do cliente na subcoleção `addresses` do documento do usuário no Firestore (`users/{userId}/addresses`).
+  - [x] *Rastreamento de Motoboy no Firestore*: Escutar atualizações do campo `deliveryLocation` na coleção de pedidos (`orders/{orderId}`) e projetar rota no mapa.
   - [ ] *Notificações FCM*: Configurar Cloud Messaging para notificações Push ao alterar status do pedido.
-  - [ ] *Sincronização de Estoque e Ficha Técnica*: Criar triggers/functions que deduzem ingredientes do estoque do Firestore quando um pedido é concluído e desativam o produto caso falte insumos.
+  - [x] *Sincronização de Estoque e Ficha Técnica*: Criar triggers/functions que deduzem ingredientes do estoque do Firestore quando um pedido é concluído e desativam o produto caso falte insumos.
 
 - [ ] **Módulo de Endereços no Perfil (CRUD)**:
   - [ ] Criar interface visual (modal ou seção) no `ProfileComponent` para gerenciar e editar os endereços utilizando o `AddressService`.

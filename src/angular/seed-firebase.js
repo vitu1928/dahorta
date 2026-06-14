@@ -307,6 +307,17 @@ const orders = [
 // ----------------------------------------------------
 async function main() {
   try {
+    console.log('\n--- 0. DELETANDO COLEÇÃO DE ESTOQUE ANTIGA (STOCK) ---');
+    try {
+      const stockDocs = await db.collection('stock').get();
+      for (const doc of stockDocs.docs) {
+        await doc.ref.delete();
+      }
+      console.log(`Deletados ${stockDocs.size} documentos da coleção 'stock'.`);
+    } catch (err) {
+      console.error('Erro ao deletar coleção stock:', err.message);
+    }
+
     console.log('\n--- 1. CADASTRANDO USUÁRIOS NO AUTH E FIRESTORE ---');
     for (const u of users) {
       let firebaseUser;
@@ -370,29 +381,22 @@ async function main() {
       console.log(`[FIRESTORE] Produto cadastrado: ${prod.name} (${prod.id})`);
     }
 
-    console.log('\n--- 4. POPULANDO INSUMOS E ESTOQUE (1:1) ---');
+    console.log('\n--- 4. POPULANDO INSUMOS UNIFICADOS COM ESTOQUE ---');
     for (const ins of insumos) {
+      const stock = stockDetails[ins.id] || { currentQuantity: 100, maxCapacity: 1000, minAlert: 10 };
       // Grava no Insumo
       await db.collection('insumos').doc(ins.id).set({
         name: ins.name,
         unit: ins.unit,
         category: ins.category,
         observations: ins.observations || null,
-        allergens: ins.allergens || []
-      });
-
-      // Grava no Estoque correspondente usando mesmo ID
-      const stock = stockDetails[ins.id] || { currentQuantity: 100, maxCapacity: 1000, minAlert: 10 };
-      await db.collection('stock').doc(ins.id).set({
-        name: ins.name,
-        category: ins.category.toLowerCase(),
-        unit: ins.unit,
+        allergens: ins.allergens || [],
         currentQuantity: stock.currentQuantity,
         maxCapacity: stock.maxCapacity,
         minAlert: stock.minAlert,
         yieldRule: stock.yieldRule || null
       });
-      console.log(`[FIRESTORE] Insumo e Estoque criados para: ${ins.name} (${ins.id})`);
+      console.log(`[FIRESTORE] Insumo unificado com estoque criado para: ${ins.name} (${ins.id})`);
     }
 
     console.log('\n--- 5. POPULANDO FORNECEDORES ---');

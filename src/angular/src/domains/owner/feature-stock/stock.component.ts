@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { EmployeeService } from '../../employee/data-access/employee.service';
 import { OwnerService } from '../data-access/owner.service';
 import { StockItem, StockMovement, InsumoUnit } from '../data-access/owner.models';
+import { AuthService } from '../../auth/data-access/auth.service';
 
 @Component({
   selector: 'app-stock',
@@ -300,6 +301,7 @@ import { StockItem, StockMovement, InsumoUnit } from '../data-access/owner.model
 export class StockComponent {
   private employeeService = inject(EmployeeService);
   private ownerService = inject(OwnerService);
+  private authService = inject(AuthService);
 
   readonly searchQuery = signal<string>('');
   readonly categoryFilter = signal<string>('all');
@@ -367,12 +369,13 @@ export class StockComponent {
 
   // Helpers
   isLowStock(item: StockItem): boolean {
-    return item.currentQuantity <= item.minAlert;
+    return (item.currentQuantity ?? 0) <= (item.minAlert ?? 0);
   }
 
   getPercent(item: StockItem): number {
-    if (item.maxCapacity <= 0) return 0;
-    return Math.min((item.currentQuantity / item.maxCapacity) * 100, 100);
+    const maxCapacity = item.maxCapacity ?? 0;
+    if (maxCapacity <= 0) return 0;
+    return Math.min(((item.currentQuantity ?? 0) / maxCapacity) * 100, 100);
   }
 
   formatUnit(unit: string): string {
@@ -422,9 +425,9 @@ export class StockComponent {
       name: item.name,
       category: item.category,
       unit: item.unit as InsumoUnit,
-      currentQuantity: item.currentQuantity,
-      maxCapacity: item.maxCapacity,
-      minAlert: item.minAlert
+      currentQuantity: item.currentQuantity ?? 0,
+      maxCapacity: item.maxCapacity ?? 1000,
+      minAlert: item.minAlert ?? 100
     };
     this.showItemModal.set(true);
   }
@@ -438,22 +441,19 @@ export class StockComponent {
     if (!this.itemForm.name) return;
 
     const data = {
-      id: '', // filled below
       name: this.itemForm.name,
       category: this.itemForm.category,
       unit: this.itemForm.unit,
       currentQuantity: this.itemForm.currentQuantity,
       maxCapacity: this.itemForm.maxCapacity,
-      minAlert: this.itemForm.minAlert,
-      minQuantity: this.itemForm.minAlert
+      minAlert: this.itemForm.minAlert
     };
 
     if (this.isEditing() && this.selectedItem()) {
       const id = this.selectedItem()!.id;
-      this.stockItems.update(list => list.map(item => item.id === id ? { ...data, id } as any : item));
+      this.ownerService.updateInsumo(id, data);
     } else {
-      const id = `stk${Date.now()}`;
-      this.stockItems.update(list => [...list, { ...data, id } as any]);
+      this.ownerService.addInsumo(data as any);
     }
 
     this.closeItemModal();
@@ -461,7 +461,7 @@ export class StockComponent {
 
   deleteItem(item: StockItem) {
     if (confirm(`Deseja realmente excluir "${item.name}" do estoque?`)) {
-      this.stockItems.update(list => list.filter(i => i.id !== item.id));
+      this.ownerService.deleteInsumo(item.id);
     }
   }
 
@@ -483,12 +483,13 @@ export class StockComponent {
     const item = this.selectedItem();
     if (!item || this.movementQuantity <= 0) return;
 
+    const user = this.authService.currentUser();
     this.ownerService.addStockMovement({
       stockItemId: item.id,
       type: this.movementType(),
       quantity: this.movementQuantity,
-      userId: 'owner', // Mock user
-      userName: 'Rafael Mendes', // Mock user
+      userId: user?.id || 'owner',
+      userName: user?.name || 'Rafael Mendes',
       notes: this.movementNotes || undefined
     });
 

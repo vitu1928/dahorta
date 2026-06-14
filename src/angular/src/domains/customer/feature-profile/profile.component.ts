@@ -135,7 +135,7 @@ import { Order, Address } from '../data-access/customer.models';
                     </div>
                     <div>
                       <label class="label-text">CEP (Opcional)</label>
-                      <input [(ngModel)]="newAddrZip" placeholder="01234-567" class="input-field" />
+                      <input [(ngModel)]="newAddrZip" (ngModelChange)="fetchAddressByCep($event)" placeholder="01234-567" class="input-field" />
                     </div>
                   </div>
                   
@@ -481,6 +481,22 @@ export class ProfileComponent {
     this.newAddrNeighborhood = '';
     this.newAddrZip = '';
     this.addressError.set('');
+  }
+
+  async fetchAddressByCep(cepValue: string) {
+    const cleanCep = cepValue.replace(/\D/g, '');
+    if (cleanCep.length === 8) {
+      try {
+        const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+        const data = await response.json();
+        if (!data.erro) {
+          this.newAddrStreet = data.logradouro || '';
+          this.newAddrNeighborhood = data.bairro || '';
+        }
+      } catch (err) {
+        console.error('Erro ao consultar CEP:', err);
+      }
+    }
   }
 
   removeAddress(id: string) {
