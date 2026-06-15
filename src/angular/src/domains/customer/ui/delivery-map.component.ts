@@ -153,53 +153,34 @@ export class DeliveryMapComponent implements AfterViewInit, OnDestroy, OnInit {
   private routeLine?: L.Polyline;
 
   // São Paulo — coordenadas do restaurante DaHorta
-  private readonly RESTAURANT_COORDS: L.LatLngExpression = [-23.5615, -46.6559];
+  private readonly RESTAURANT_LAT = -23.5615;
+  private readonly RESTAURANT_LNG = -46.6559;
+  private readonly RESTAURANT_COORDS: L.LatLngExpression = [this.RESTAURANT_LAT, this.RESTAURANT_LNG];
 
-  // Writable signal updated by async geocoding
-  private readonly resolvedCustomerCoords = signal<L.LatLngExpression>([-23.5615, -46.6559]);
+  // Writable signal updated when address changes
+  private readonly resolvedCustomerCoords = signal<L.LatLngExpression>([-23.5505, -46.6333]);
 
-  // Geocode address using Nominatim API
-  private async geocodeAddress(addr: Address): Promise<L.LatLngExpression> {
-    const query = [
-      addr.street,
-      addr.number,
-      addr.neighborhood,
-      addr.city || 'São Paulo',
-      'Brasil'
-    ].filter(Boolean).join(', ');
-
-    try {
-      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1&accept-language=pt-BR`;
-      const resp = await fetch(url, { headers: { 'Accept-Language': 'pt-BR' } });
-      const data = await resp.json();
-      if (data && data.length > 0) {
-        const lat = parseFloat(data[0].lat);
-        const lng = parseFloat(data[0].lon);
-        // Check if result is reasonably close to São Paulo (-23.5505, -46.6333)
-        // If more than ~0.6 degrees away, the user is testing from another city
-        const distLat = Math.abs(lat - (-23.5505));
-        const distLng = Math.abs(lng - (-46.6333));
-        if (distLat > 0.6 || distLng > 0.6) {
-          // Fallback: offset from restaurant using address hash
-          return this.fallbackCoords(addr);
-        }
-        return [lat, lng];
-      }
-    } catch (err) {
-      console.warn('[Mapa] Geocoding falhou, usando fallback:', err);
-    }
-    return this.fallbackCoords(addr);
-  }
-
-  private fallbackCoords(addr: Address): L.LatLngExpression {
-    const str = `${addr.street} ${addr.number} ${addr.neighborhood}`;
-    let hash = 0;
+  /**
+   * Posicionamento deterministico: converte o endereço em coordenadas
+   * dentro de um raio de ~1.2km em relação ao restaurante.
+   * Garante consistência (mesmo endereço = mesmo ponto) sem API externa.
+   */
+  private coordsFromAddress(addr: Address): L.LatLngExpression {
+    const str = `${(addr.street || '').trim().toLowerCase()} ${(addr.number || '').trim()} ${(addr.neighborhood || '').trim()}`;
+    let hash = 5381;
     for (let i = 0; i < str.length; i++) {
-      hash = str.charCodeAt(i) + ((hash << 5) - hash);
+      hash = (hash * 33) ^ str.charCodeAt(i);
+      hash = hash & hash; // keep 32-bit
     }
-    const latOffset = ((hash % 100) / 100) * 0.025 - 0.0125;
-    const lngOffset = (((hash >> 8) % 100) / 100) * 0.025 - 0.0125;
-    return [-23.5615 + latOffset, -46.6559 + lngOffset];
+    // Map hash to offsets: -0.012..+0.012 degrees (~1.3 km)
+    const h1 = Math.abs(hash);
+    const h2 = Math.abs(hash >> 8);
+    // Use circular distribution to avoid clustering in one quadrant
+    const angle = ((h1 % 360) * Math.PI) / 180;
+    const radius = 0.004 + ((h2 % 80) / 80) * 0.010; // 0.004..0.014 degrees
+    const latOffset = Math.sin(angle) * radius;
+    const lngOffset = Math.cos(angle) * radius;
+    return [this.RESTAURANT_LAT + latOffset, this.RESTAURANT_LNG + lngOffset];
   }
 
   constructor() {
@@ -209,19 +190,19 @@ export class DeliveryMapComponent implements AfterViewInit, OnDestroy, OnInit {
       this.updateMotoboyPosition(loc);
     });
 
-    // Whenever the address input changes, trigger async geocoding
+    // Whenever the address input changes, recompute customer coords deterministically
     effect(() => {
       const addr = this.address();
       if (addr) {
-        this.geocodeAddress(addr).then(coords => {
-          this.resolvedCustomerCoords.set(coords);
-          if (this.customerMarker && this.map) {
-            this.customerMarker.setLatLng(coords);
-            this.updateRoute();
-          }
-        });
+        const coords = this.coordsFromAddress(addr);
+        this.resolvedCustomerCoords.set(coords);
+        if (this.customerMarker && this.map) {
+          this.customerMarker.setLatLng(coords);
+          this.updateRoute();
+        }
       } else {
-        this.resolvedCustomerCoords.set(this.RESTAURANT_COORDS);
+        // No address: put customer slightly south-east of restaurant
+        this.resolvedCustomerCoords.set([this.RESTAURANT_LAT - 0.008, this.RESTAURANT_LNG + 0.008]);
       }
     });
   }
@@ -315,16 +296,13 @@ export class DeliveryMapComponent implements AfterViewInit, OnDestroy, OnInit {
 
     this.updateRoute();
 
-    // Trigger initial geocoding
+    // Apply address-based coords if address is already available
     const addr = this.address();
     if (addr) {
-      this.geocodeAddress(addr).then(coords => {
-        this.resolvedCustomerCoords.set(coords);
-        if (this.customerMarker) {
-          this.customerMarker.setLatLng(coords);
-          this.updateRoute();
-        }
-      });
+      const coords = this.coordsFromAddress(addr);
+      this.resolvedCustomerCoords.set(coords);
+      this.customerMarker.setLatLng(coords);
+      this.updateRoute();
     }
 
     // Update motoboy location immediately if already available
