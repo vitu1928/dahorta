@@ -1,4 +1,4 @@
-import { Component, ElementRef, ViewChild, AfterViewInit, OnDestroy, input, effect, computed } from '@angular/core';
+import { Component, ElementRef, ViewChild, AfterViewInit, OnDestroy, OnInit, input, effect, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import * as L from 'leaflet';
 import { Address } from '../data-access/customer.models';
@@ -53,14 +53,33 @@ import { Address } from '../data-access/customer.models';
           </div>
         </div>
 
-        @if (customerAddress()) {
-          <div class="max-w-[60%] text-right">
-            <p class="text-[10px] text-muted-foreground">Entregando em</p>
-            <p class="overflow-hidden text-ellipsis whitespace-nowrap text-[11px] text-muted-foreground">
-              {{ customerAddress() }}
-            </p>
-          </div>
-        }
+        <!-- Location freshness badge -->
+        <div class="flex flex-col items-end gap-1">
+          @if (lastLocationUpdate()) {
+            <div class="flex items-center gap-1.5">
+              <span
+                class="h-2 w-2 rounded-full"
+                [style.background]="locationBadgeColor()"
+                [class.animate-pulse]="locationAge() < 60"
+              ></span>
+              <span class="text-[10px] font-semibold" [style.color]="locationBadgeColor()">
+                {{ locationStatusText() }}
+              </span>
+            </div>
+            <span class="text-[10px] text-muted-foreground">
+              {{ locationAgeText() }}
+            </span>
+          } @else if (customerAddress()) {
+            <div class="max-w-[60%] text-right">
+              <p class="text-[10px] text-muted-foreground">Entregando em</p>
+              <p class="overflow-hidden text-ellipsis whitespace-nowrap text-[11px] text-muted-foreground">
+                {{ customerAddress() }}
+              </p>
+            </div>
+          } @else {
+            <span class="text-[10px] text-muted-foreground">Aguardando sinal GPS...</span>
+          }
+        </div>
       </footer>
     </section>
   `,
@@ -86,13 +105,46 @@ import { Address } from '../data-access/customer.models';
     }
   `]
 })
-export class DeliveryMapComponent implements AfterViewInit, OnDestroy {
+export class DeliveryMapComponent implements AfterViewInit, OnDestroy, OnInit {
   @ViewChild('mapContainer', { static: true }) mapContainer!: ElementRef;
 
   readonly motoboyName = input('Diego');
   readonly customerAddress = input<string | undefined>();
   readonly address = input<Address | undefined>();
   readonly motoboyLocation = input<{ lat: number; lng: number } | null>(null);
+  readonly lastLocationUpdate = input<number | null>(null);
+
+  // Ticks every second to keep relative time fresh
+  private readonly _now = signal<number>(Date.now());
+  private _nowInterval: any = null;
+
+  readonly locationAge = () => {
+    const ts = this.lastLocationUpdate();
+    if (!ts) return Infinity;
+    return Math.floor((this._now() - ts) / 1000);
+  };
+
+  readonly locationBadgeColor = () => {
+    const age = this.locationAge();
+    if (age < 30) return '#22c55e';   // verde — fresco
+    if (age < 120) return '#f59e0b';  // amarelo — um pouco defasado
+    return '#9ca3af';                 // cinza — sem sinal recente
+  };
+
+  readonly locationStatusText = () => {
+    const age = this.locationAge();
+    if (age < 30) return 'Localização ao vivo';
+    if (age < 120) return 'Sinal fraco';
+    return 'Sem sinal GPS';
+  };
+
+  readonly locationAgeText = () => {
+    const age = this.locationAge();
+    if (!isFinite(age)) return 'Aguardando...';
+    if (age < 60) return `há ${age}s`;
+    const mins = Math.floor(age / 60);
+    return `há ${mins} min`;
+  };
 
   private map?: L.Map;
   private restaurantMarker?: L.Marker;
@@ -100,40 +152,55 @@ export class DeliveryMapComponent implements AfterViewInit, OnDestroy {
   private motoboyMarker?: L.Marker;
   private routeLine?: L.Polyline;
 
-  // São Paulo coordinates used in the mock
+  // São Paulo — coordenadas do restaurante DaHorta
   private readonly RESTAURANT_COORDS: L.LatLngExpression = [-23.5615, -46.6559];
 
-  // Geocode address or fallback deterministically
-  readonly customerCoords = computed<L.LatLngExpression>(() => {
-    const addr = this.address();
-    if (!addr) return [-23.5505, -46.6333];
-    
-    const street = (addr.street || '').toLowerCase();
-    
-    if (street.includes('flores')) {
-      return [-23.5678, -46.6612];
+  // Writable signal updated by async geocoding
+  private readonly resolvedCustomerCoords = signal<L.LatLngExpression>([-23.5615, -46.6559]);
+
+  // Geocode address using Nominatim API
+  private async geocodeAddress(addr: Address): Promise<L.LatLngExpression> {
+    const query = [
+      addr.street,
+      addr.number,
+      addr.neighborhood,
+      addr.city || 'São Paulo',
+      'Brasil'
+    ].filter(Boolean).join(', ');
+
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1&accept-language=pt-BR`;
+      const resp = await fetch(url, { headers: { 'Accept-Language': 'pt-BR' } });
+      const data = await resp.json();
+      if (data && data.length > 0) {
+        const lat = parseFloat(data[0].lat);
+        const lng = parseFloat(data[0].lon);
+        // Check if result is reasonably close to São Paulo (-23.5505, -46.6333)
+        // If more than ~0.6 degrees away, the user is testing from another city
+        const distLat = Math.abs(lat - (-23.5505));
+        const distLng = Math.abs(lng - (-46.6333));
+        if (distLat > 0.6 || distLng > 0.6) {
+          // Fallback: offset from restaurant using address hash
+          return this.fallbackCoords(addr);
+        }
+        return [lat, lng];
+      }
+    } catch (err) {
+      console.warn('[Mapa] Geocoding falhou, usando fallback:', err);
     }
-    if (street.includes('paulista')) {
-      return [-23.5615, -46.6559];
-    }
-    if (street.includes('augusta')) {
-      return [-23.5535, -46.6553];
-    }
-    if (street.includes('oscar freire') || street.includes('oscar')) {
-      return [-23.5663, -46.6675];
-    }
-    
-    // Deterministic fallback based on address string to avoid hardcoded overlap
+    return this.fallbackCoords(addr);
+  }
+
+  private fallbackCoords(addr: Address): L.LatLngExpression {
     const str = `${addr.street} ${addr.number} ${addr.neighborhood}`;
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
       hash = str.charCodeAt(i) + ((hash << 5) - hash);
     }
-    const latOffset = ((hash % 100) / 100) * 0.04 - 0.02;
-    const lngOffset = (((hash >> 8) % 100) / 100) * 0.04 - 0.02;
-    
+    const latOffset = ((hash % 100) / 100) * 0.025 - 0.0125;
+    const lngOffset = (((hash >> 8) % 100) / 100) * 0.025 - 0.0125;
     return [-23.5615 + latOffset, -46.6559 + lngOffset];
-  });
+  }
 
   constructor() {
     // Reactively update motoboy position when coordinates signal updates
@@ -142,14 +209,28 @@ export class DeliveryMapComponent implements AfterViewInit, OnDestroy {
       this.updateMotoboyPosition(loc);
     });
 
-    // Reactively update customer position and route when customer coordinates change
+    // Whenever the address input changes, trigger async geocoding
     effect(() => {
-      const coords = this.customerCoords();
-      if (this.customerMarker && this.map) {
-        this.customerMarker.setLatLng(coords);
-        this.updateRoute();
+      const addr = this.address();
+      if (addr) {
+        this.geocodeAddress(addr).then(coords => {
+          this.resolvedCustomerCoords.set(coords);
+          if (this.customerMarker && this.map) {
+            this.customerMarker.setLatLng(coords);
+            this.updateRoute();
+          }
+        });
+      } else {
+        this.resolvedCustomerCoords.set(this.RESTAURANT_COORDS);
       }
     });
+  }
+
+  ngOnInit() {
+    // Tick every second so locationAge() updates reactively in the template
+    this._nowInterval = setInterval(() => {
+      this._now.set(Date.now());
+    }, 1000);
   }
 
   ngAfterViewInit() {
@@ -159,6 +240,9 @@ export class DeliveryMapComponent implements AfterViewInit, OnDestroy {
   ngOnDestroy() {
     if (this.map) {
       this.map.remove();
+    }
+    if (this._nowInterval) {
+      clearInterval(this._nowInterval);
     }
   }
 
@@ -224,12 +308,24 @@ export class DeliveryMapComponent implements AfterViewInit, OnDestroy {
       .bindPopup('<b>DaHorta Restaurante</b>')
       .addTo(this.map);
 
-    const dest = this.customerCoords();
+    const dest = this.resolvedCustomerCoords();
     this.customerMarker = L.marker(dest, { icon: customerIcon })
       .bindPopup('<b>Destino da Entrega</b>')
       .addTo(this.map);
 
     this.updateRoute();
+
+    // Trigger initial geocoding
+    const addr = this.address();
+    if (addr) {
+      this.geocodeAddress(addr).then(coords => {
+        this.resolvedCustomerCoords.set(coords);
+        if (this.customerMarker) {
+          this.customerMarker.setLatLng(coords);
+          this.updateRoute();
+        }
+      });
+    }
 
     // Update motoboy location immediately if already available
     if (this.motoboyLocation()) {
@@ -242,7 +338,7 @@ export class DeliveryMapComponent implements AfterViewInit, OnDestroy {
 
     const loc = this.motoboyLocation();
     const start = loc ? [loc.lat, loc.lng] as L.LatLngExpression : this.RESTAURANT_COORDS;
-    const end = this.customerCoords();
+    const end = this.resolvedCustomerCoords();
 
     if (this.routeLine) {
       this.routeLine.setLatLngs([start, end]);

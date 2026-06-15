@@ -95,6 +95,13 @@ export class FirebaseOrdersService extends OrdersService {
 
     try {
       const finalOrder = await runTransaction(this.firestore, async (transaction) => {
+        // 0. CHECK IF RESTAURANT IS OPEN
+        const restaurantSettingsRef = doc(this.firestore, 'settings/restaurant');
+        const restaurantSnap = await transaction.get(restaurantSettingsRef);
+        if (restaurantSnap.exists() && restaurantSnap.data()['open'] === false) {
+          throw new Error('RESTAURANT_CLOSED');
+        }
+
         // 1. GET THE ORDER COUNTER AND CALCULATE NEXT ID
         const counterRef = doc(this.firestore, 'settings/counters');
         const counterSnap = await transaction.get(counterRef);
@@ -308,15 +315,15 @@ export class FirebaseOrdersService extends OrdersService {
   }
 
   // Realtime Database location telemetry (Read)
-  override getMotoboyLocation(motoboyId: string): Observable<{ lat: number; lng: number } | null> {
+  override getMotoboyLocation(motoboyId: string): Observable<{ lat: number; lng: number; updatedAt: number } | null> {
     console.log(`[TELEMETRIA] Iniciando escuta de localização no Realtime DB para o motoboy ${motoboyId}`);
     const pathRef = ref(this.db, `telemetry/motoboyLocations/${motoboyId}`);
-    return new Observable<{ lat: number; lng: number } | null>((subscriber) => {
+    return new Observable<{ lat: number; lng: number; updatedAt: number } | null>((subscriber) => {
       const unsub = onValue(pathRef, (snapshot) => {
         const val = snapshot.val();
         console.log(`[TELEMETRIA] Atualização de localização recebida para o motoboy ${motoboyId}:`, val);
         if (val && val.lat && val.lng) {
-          subscriber.next({ lat: val.lat, lng: val.lng });
+          subscriber.next({ lat: val.lat, lng: val.lng, updatedAt: val.updatedAt || Date.now() });
         } else {
           subscriber.next(null);
         }

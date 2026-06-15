@@ -87,9 +87,22 @@ import { ToastService } from '../../../shared/data-access/toast.service';
                 <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
                 <circle cx="12" cy="10" r="3"/>
               </svg>
-              <span class="text-[#5F5F5F] text-[11px] font-bold uppercase tracking-wider">
+              <span class="text-[#5F5F5F] text-[11px] font-bold uppercase tracking-wider flex-1">
                 Endereço de Entrega
               </span>
+              @if (order.deliveryAddress || order.address) {
+                <a
+                  [href]="getMapsUrl(order.deliveryAddress || order.address)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold border transition-colors"
+                  style="background: rgba(66,133,244,0.1); color: #4285f4; border-color: rgba(66,133,244,0.3); text-decoration: none;"
+                  title="Abrir no Google Maps"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+                  Navegar
+                </a>
+              }
             </div>
             @if (order.deliveryAddress || order.address; as addr) {
               <p class="text-[#1F1F1F] text-sm font-medium leading-relaxed">
@@ -148,16 +161,29 @@ import { ToastService } from '../../../shared/data-access/toast.service';
             >
               <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
             </svg>
-            <span class="text-[#1F1F1F] text-sm">
+            <span class="text-[#1F1F1F] text-sm flex-1">
               {{ order.customerPhone || 'Sem telefone' }}
             </span>
             @if (order.customerPhone) {
               <a
                 [href]="'tel:' + order.customerPhone"
-                class="ml-auto px-2.5 py-1 rounded-lg text-xs font-semibold bg-[#3AA55D]/15 text-[#3AA55D] border border-[#3AA55D] hover:bg-[#3AA55D]/25 transition-colors"
-                style="text-decoration: none;"
+                class="px-2.5 py-1 rounded-lg text-xs font-semibold border transition-colors"
+                style="background: rgba(58,165,93,0.15); color: #3AA55D; border-color: #3AA55D; text-decoration: none;"
               >
                 Ligar
+              </a>
+            }
+            @if (order.deliveryAddress || order.address) {
+              <a
+                [href]="getMapsUrl(order.deliveryAddress || order.address)"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold border transition-colors"
+                style="background: rgba(66,133,244,0.15); color: #4285f4; border-color: rgba(66,133,244,0.5); text-decoration: none;"
+                title="Abrir rota no Google Maps"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                Maps
               </a>
             }
           </div>
@@ -287,6 +313,19 @@ export class DeliveryCardComponent {
       console.error(err);
       this.error.set('Falha de permissão ou rede ao registrar a entrega.');
     }
+  }
+
+  getMapsUrl(addr: any): string {
+    if (!addr) return '#';
+    const parts = [
+      addr.street,
+      addr.number,
+      addr.complement,
+      addr.neighborhood,
+      addr.city || 'São Paulo',
+      'Brasil'
+    ].filter(Boolean).join(', ');
+    return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(parts)}&travelmode=driving`;
   }
 
   formatCurrency(v: number): string {

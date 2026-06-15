@@ -3,6 +3,7 @@ import { RouterOutlet, RouterLink, Router, RouterLinkActive } from '@angular/rou
 import { CommonModule } from '@angular/common';
 import { CartStateService } from '../data-access/cart.state';
 import { AuthService } from '@domain/auth/data-access/auth.service';
+import { EmployeeService } from '@domain/employee/data-access/employee.service';
 
 @Component({
   selector: 'app-customer-layout',
@@ -78,10 +79,24 @@ import { AuthService } from '@domain/auth/data-access/auth.service';
                 <span class="text-[10px] font-medium text-white/90">Bowls orgânicos, frescos e cheios de vida.</span>
               </div>
             </div>
+
+            <!-- Restaurante Fechado Banner -->
+            @if (!restaurantOpen()) {
+              <div class="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl" style="background: rgba(220,38,38,0.85); backdrop-filter: blur(4px);">
+                <span style="font-size: 20px;">🔴</span>
+                <span class="font-black text-white" style="font-size: 18px; letter-spacing: -0.02em; font-family: 'Poppins', sans-serif;">Restaurante Fechado</span>
+              </div>
+            }
+
             <!-- Mobile cart -->
-            <button class="md:hidden relative flex items-center gap-2 px-3 py-2 rounded-xl transition-all border-none bg-primary text-white font-bold" (click)="router.navigate(['/customer/cart'])">
-              🛒 {{ cartCount() }}
-            </button>
+            <div class="flex items-center gap-2">
+              @if (!restaurantOpen()) {
+                <span class="md:hidden text-white font-black text-sm" style="background: rgba(220,38,38,0.85); padding: 4px 8px; border-radius: 8px;">🔴 Fechado</span>
+              }
+              <button class="md:hidden relative flex items-center gap-2 px-3 py-2 rounded-xl transition-all border-none bg-primary text-white font-bold" (click)="router.navigate(['/customer/cart'])">
+                🛒 {{ cartCount() }}
+              </button>
+            </div>
           </div>
         </header>
 
@@ -134,10 +149,12 @@ import { AuthService } from '@domain/auth/data-access/auth.service';
 export class CustomerLayoutComponent {
   cartState = inject(CartStateService);
   authService = inject(AuthService);
+  employeeService = inject(EmployeeService);
   router = inject(Router);
 
   cartCount = this.cartState.count;
   isLoggedIn = this.authService.isAuthenticated;
+  restaurantOpen = this.employeeService.restaurantOpen;
 
   logout() {
     this.cartState.clear();

@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CartStateService } from '../data-access/cart.state';
 import { CouponsService } from '../data-access/coupons.service';
+import { EmployeeService } from '../../employee/data-access/employee.service';
 
 @Component({
   selector: 'app-cart',
@@ -319,11 +320,27 @@ import { CouponsService } from '../data-access/coupons.service';
             </div>
           </div>
 
+          <!-- Restaurante Fechado Warning -->
+          @if (!restaurantOpen()) {
+            <div class="flex items-center gap-3 p-4 rounded-xl mb-4" style="background: rgba(220,38,38,0.08); border: 1px solid rgba(220,38,38,0.25);">
+              <span style="font-size: 20px;">🔴</span>
+              <div>
+                <p class="font-bold text-sm" style="color: #dc2626;">Restaurante fechado no momento</p>
+                <p class="text-xs" style="color: rgba(220,38,38,0.75);">Não é possível realizar pedidos enquanto a loja está fechada.</p>
+              </div>
+            </div>
+          }
+
           <!-- Checkout CTA -->
           <button
-            (click)="router.navigate(['/customer/checkout'])"
-            class="w-full py-4 rounded-xl flex items-center justify-between px-6 mb-3 border-none cursor-pointer transition-all"
-            style="background: var(--primary); color: var(--primary-foreground); box-shadow: var(--shadow-hover);"
+            (click)="!restaurantOpen() ? null : router.navigate(['/customer/checkout'])"
+            [disabled]="!restaurantOpen()"
+            class="w-full py-4 rounded-xl flex items-center justify-between px-6 mb-3 border-none transition-all"
+            [style.background]="restaurantOpen() ? 'var(--primary)' : '#9ca3af'"
+            [style.color]="'white'"
+            [style.cursor]="restaurantOpen() ? 'pointer' : 'not-allowed'"
+            [style.box-shadow]="restaurantOpen() ? 'var(--shadow-hover)' : 'none'"
+            [style.opacity]="restaurantOpen() ? '1' : '0.7'"
           >
             <span style="font-size: 15px; font-weight: 600;">
               Finalizar Pedido
@@ -352,12 +369,14 @@ import { CouponsService } from '../data-access/coupons.service';
 export class CartComponent {
   cartState = inject(CartStateService);
   couponsService = inject(CouponsService);
+  employeeService = inject(EmployeeService);
   router = inject(Router);
 
   cartItems = this.cartState.items;
   cartTotal = this.cartState.total;
   cartCount = this.cartState.count;
   orderNotes = this.cartState.orderNotes;
+  restaurantOpen = this.employeeService.restaurantOpen;
 
   coupons = this.couponsService.coupons;
   activeCoupon = this.couponsService.activeCoupon;

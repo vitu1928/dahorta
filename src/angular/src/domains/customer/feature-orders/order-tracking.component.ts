@@ -129,7 +129,8 @@ const ETA_VALUES: Record<OrderStatus, string> = {
               [motoboyName]="order()!.motoboyName || 'Motoboy'"
               [customerAddress]="getAddressString(order()!.deliveryAddress || order()!.address)"
               [address]="order()!.deliveryAddress || order()!.address"
-              [motoboyLocation]="motoboyLocation()"
+              [motoboyLocation]="motoboyCoords()"
+              [lastLocationUpdate]="lastLocationUpdate()"
             ></app-delivery-map>
           }
 
@@ -372,8 +373,17 @@ export class OrderTrackingComponent {
   copiedCode = signal(false);
   reviewSubmitted = signal(false);
   
-  motoboyLocation = signal<{ lat: number; lng: number } | null>(null);
+  motoboyLocation = signal<{ lat: number; lng: number; updatedAt: number } | null>(null);
+  lastLocationUpdate = signal<number | null>(null);
   private locationSub: any = null;
+  private tickInterval: any = null;
+  private _now = signal<number>(Date.now());
+
+  /** Exposes only lat/lng to the map component (no updatedAt leak needed there) */
+  motoboyCoords = computed(() => {
+    const loc = this.motoboyLocation();
+    return loc ? { lat: loc.lat, lng: loc.lng } : null;
+  });
 
   // Review states
   stars = signal(0);
@@ -409,14 +419,31 @@ export class OrderTrackingComponent {
           if (o && o.status === 'delivering' && o.motoboyId) {
             if (!this.locationSub) {
               this.locationSub = this.ordersService.getMotoboyLocation(o.motoboyId)
-                .subscribe(loc => this.motoboyLocation.set(loc));
+                .subscribe(loc => {
+                  this.motoboyLocation.set(loc);
+                  if (loc) {
+                    this.lastLocationUpdate.set(loc.updatedAt);
+                  }
+                });
+
+              // Start 1-second ticker to keep "há X seg" fresh
+              if (!this.tickInterval) {
+                this.tickInterval = setInterval(() => {
+                  this._now.set(Date.now());
+                }, 1000);
+              }
             }
           } else {
             if (this.locationSub) {
               this.locationSub.unsubscribe();
               this.locationSub = null;
             }
+            if (this.tickInterval) {
+              clearInterval(this.tickInterval);
+              this.tickInterval = null;
+            }
             this.motoboyLocation.set(null);
+            this.lastLocationUpdate.set(null);
           }
         });
     }

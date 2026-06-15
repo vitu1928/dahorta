@@ -24,6 +24,6 @@ export abstract class OrdersService {
   abstract confirmDelivery(orderId: string, code: string): Promise<boolean> | boolean;
   abstract subscribeToOrder(orderId: string): Observable<Order | null>;
   abstract updateMotoboyLocation(motoboyId: string, lat: number, lng: number): void;
-  abstract getMotoboyLocation(motoboyId: string): Observable<{ lat: number; lng: number } | null>;
+  abstract getMotoboyLocation(motoboyId: string): Observable<{ lat: number; lng: number; updatedAt: number } | null>;
 }
 

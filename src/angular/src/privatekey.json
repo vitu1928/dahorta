@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "dahorta-dark",
+  "private_key_id": "06532406ef1ee62b278b5d54e0af1c9efde792ce",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvwIBADANBgkqhkiG9w0BAQEFAASCBKkwggSlAgEAAoIBAQDIpgx+Gni+vGAe\nfR3lD4CsionNKVByvcIebEAS4ynVU9SVyh+K997NVOsvZJIK2nhq+GV06FfAqsZq\n4GAVgUxO4G1ELZ9Kr7E84ojoLIszKvrytiv1wTrF9aI/xMEpVO+N9DMvNeqH32wl\n+Ui2rzXQum2214fK2EGBB3DyzohELiR/dwYd2GWGOyJBngMXucKyj+E5o2t9QRBe\nvPUArNj4a9/avRgMT4n3ltTA+vHkr1DBSAJS0kbGmo4NeEWcvuoS5eQ3SmtlYjE2\nHkIBjYcb2MrdIEHeY+1BcSsbawj1AgNhBZ+UcBtDnIepL6qrOOEpNU6SxArMXPYf\noRCvhqVLAgMBAAECggEAC1XIxOL38/EuY5U2jXctEhJC1f1B1zQ9ytGGDnXDf5Kx\nzW3SubC7vHvR9tEb/ahOlInIftdABdlf8NpmHduPv7D8Ber8jGU/16xbMZ/lPpRs\nrYN5w54RP5ewfSEUtyII5SBo4n+NlUlw5vWd6abHnS1lqfujvI4vp9C6Im1lKKdy\nUxHvwbOCzuIOZDQVxR0BNz7IbX3YK/PeLU7bgMqBHGHv8Q83MieTMYZ8VF9AZL3r\nq9C9/aKrkLy+FoWwmy0aALr4ib6w+CW9/lrprWFDKXdf2C000ltHe0j3/aeUjciE\nJIUtfPsonvBYgQhaLIpNNJ7JB/THB1aGO39nidLp0QKBgQD0VOJgj6Az54cEfBYF\nNpY5zHGWC4c+ignHqDOPRMaCT0tfcg/rqSDo+9Doj3H6Hn4I+Krjh6wDOfCjWZgn\nAD7Mz59z8KEDhQXdLaQCoaqHsHDl6TZx1r3d+FMsV02bqRkB7FFTFdMaC9td+8eF\nWMo17myYMR3klbFc9f2Wo1710wKBgQDSOxyHnhTZJ847/kozULWSDg+/5uTzmKfS\nL3JodHjLr5PEli+5w7moE1PvRM88acTse89+pjnjJ8g287BsXP+4vJq7RcUhPmsp\naN95dav3atyXMe7z2r4/sdGMFGBkPIJIlMQEbxR4Qba8vzXRCnzuMOWX4hDLvXdI\n5/my5HUPqQKBgQC8fcvS0Jq30DLyO8RFK1KDrnwmVCh3D8jxtYppSZaXKxMrw/QS\nSvzvoG0PLLKyUdnLlANJ2v3R014YtuLRm7fXC4moyQd+jp3yfuZbfVrwqSa/x8XP\n1unNF2ka+RMPNknrmOM4ZMrh+im2/Kl07wW4y4INez7jfLRC0idbkheNLwKBgQCA\njAZ44m9rDQzs4CNs1zf+87wrojpyvPA49CwntLg8C8L2HMNX+lbmb9MN5ew1y5LO\n6zHIBko1HJkvCLjiucbfpeuTASl1l14dNvQWp54cLmptxOmQkDtuZQN1fOwnvlwH\nl3d4IpfIpJ3hMaXtiVU0rA9nXKLagaKToMys10bA6QKBgQCqs9kIBqP+S447l2dE\nv/xGHlb4MyNt8NcNr3onZcxGJBixNTGXAKAHsh8A50E5KXf19M//wsUsDkxIndoe\nSFmX3dtM5gTxyVdxcBwiTBtAWfhv/NVmBYzgLyDaTr8NyFaXmDQFfUxl4qjP7PDH\nAautCZuZ7Cwv6C/0SCrtY3upeQ==\n-----END PRIVATE KEY-----\n",
+  "client_email": "firebase-adminsdk-fbsvc@dahorta-dark.iam.gserviceaccount.com",
+  "client_id": "110257769686470053448",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40dahorta-dark.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
