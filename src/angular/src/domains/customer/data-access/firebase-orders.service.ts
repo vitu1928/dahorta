@@ -244,7 +244,7 @@ export class FirebaseOrdersService extends OrdersService {
         transaction.set(counterRef, { orderCount: nextCount }, { merge: true });
 
         // 5. WRITE THE ORDER
-        transaction.set(orderDocRef, sanitizeObject({
+        transaction.set(orderDocRef, {
           ...order,
           createdAt: new Date(),
           updatedAt: new Date()
