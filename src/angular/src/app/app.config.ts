@@ -28,6 +28,9 @@ import { FirebaseAddressService } from '../domains/customer/data-access/firebase
 import { FirebaseOwnerService } from '../domains/owner/data-access/firebase-owner.service';
 import { FirebaseReviewsService } from '../domains/customer/data-access/firebase-reviews.service';
 
+import { NotificationService } from '../domains/customer/data-access/notification.service';
+import { MockNotificationService } from '../domains/customer/data-access/mock-notification.service';
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }),
@@ -54,6 +57,7 @@ export const appConfig: ApplicationConfig = {
     { provide: EmployeeService, useClass: FirebaseEmployeeService },
     { provide: AddressService, useClass: FirebaseAddressService },
     { provide: OwnerService, useClass: FirebaseOwnerService },
-    { provide: ReviewsService, useClass: FirebaseReviewsService }
+    { provide: ReviewsService, useClass: FirebaseReviewsService },
+    { provide: NotificationService, useClass: MockNotificationService }
   ]
 };

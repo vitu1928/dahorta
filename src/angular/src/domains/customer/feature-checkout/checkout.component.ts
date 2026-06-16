@@ -105,66 +105,49 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
             </div>
 
             <!-- Selector for Saved Addresses -->
-            @if (savedAddresses().length > 0) {
-              <div class="mb-4">
-                <label class="label-text">Usar Endereço Salvo</label>
-                <select 
-                  [ngModel]="selectedAddressId()" 
-                  (ngModelChange)="onAddressSelect($event)" 
-                  class="input-field"
-                  style="height: 48px; width: 100%;"
-                >
-                  <option value="custom">-- Digitar outro endereço --</option>
-                  @for (addr of savedAddresses(); track addr.id) {
-                    <option [value]="addr.id">{{ addr.label }} ({{ addr.street }}, {{ addr.number }})</option>
-                  }
-                </select>
+            <div class="mb-4">
+              <label class="label-text">Usar Endereço Salvo</label>
+              <select 
+                [ngModel]="selectedAddressId()" 
+                (ngModelChange)="onAddressSelect($event)" 
+                class="input-field"
+                style="height: 48px; width: 100%;"
+              >
+                <option value="custom">-- Digitar outro endereço --</option>
+                @for (addr of savedAddresses(); track addr.id) {
+                  <option [value]="addr.id">{{ addr.label }} ({{ addr.street }}, {{ addr.number }})</option>
+                }
+              </select>
+            </div>
+
+            <div class="space-y-3">
+              <div>
+                <label class="label-text">CEP</label>
+                <input [(ngModel)]="address.zipCode" (ngModelChange)="onCepChange($event)" [disabled]="selectedAddressId() !== 'custom'" placeholder="00000-000" class="input-field" />
               </div>
-            }
-            <!-- Selected Saved Address Card -->
-            @if (selectedAddressId() !== 'custom') {
-              <div class="p-4 rounded-2xl border bg-white mb-4" style="border-color: var(--border);">
-                <div class="flex items-center gap-2 mb-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-map-pin"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-                  <span class="font-bold text-sm text-[#1F1F1F]">{{ address.label }}</span>
-                </div>
-                <p class="text-xs text-[#5F5F5F] leading-relaxed">
-                  {{ address.street }}, {{ address.number }}{{ address.complement ? ' - ' + address.complement : '' }}
-                  <br />
-                  {{ address.neighborhood }}, {{ address.city }} - CEP: {{ address.zipCode }}
-                </p>
-              </div>
-            } @else {
-              <!-- Address Form -->
-              <div class="space-y-3">
-                <div>
-                  <label class="label-text">CEP</label>
-                  <input [(ngModel)]="address.zipCode" (ngModelChange)="fetchAddressByCep($event)" placeholder="00000-000" class="input-field" />
-                </div>
-                <div class="grid grid-cols-3 gap-3">
-                  <div class="col-span-2">
-                    <label class="label-text">Rua / Avenida *</label>
-                    <input required [(ngModel)]="address.street" placeholder="Rua das Flores" class="input-field" />
-                  </div>
-                  <div>
-                    <label class="label-text">Número *</label>
-                    <input required type="number" [(ngModel)]="address.number" (input)="address.number = onlyNumbers(address.number)" placeholder="123" class="input-field" />
-                  </div>
+              <div class="grid grid-cols-3 gap-3">
+                <div class="col-span-2">
+                  <label class="label-text">Rua / Avenida *</label>
+                  <input required [(ngModel)]="address.street" [disabled]="selectedAddressId() !== 'custom'" placeholder="Rua das Flores" class="input-field" />
                 </div>
                 <div>
-                  <label class="label-text">Complemento</label>
-                  <input [(ngModel)]="address.complement" placeholder="Apto, Bloco, Casa..." class="input-field" />
-                </div>
-                <div>
-                  <label class="label-text">Bairro *</label>
-                  <input required [(ngModel)]="address.neighborhood" placeholder="Jardim Paulista" class="input-field" />
-                </div>
-                <div>
-                  <label class="label-text">Cidade</label>
-                  <input [(ngModel)]="address.city" placeholder="São Paulo" class="input-field" />
+                  <label class="label-text">Número *</label>
+                  <input required type="number" [(ngModel)]="address.number" [disabled]="selectedAddressId() !== 'custom'" (input)="address.number = onlyNumbers(address.number)" placeholder="123" class="input-field" />
                 </div>
               </div>
-            }
+              <div>
+                <label class="label-text">Complemento</label>
+                <input [(ngModel)]="address.complement" [disabled]="selectedAddressId() !== 'custom'" placeholder="Apto, Bloco, Casa..." class="input-field" />
+              </div>
+              <div>
+                <label class="label-text">Bairro *</label>
+                <input required [(ngModel)]="address.neighborhood" [disabled]="selectedAddressId() !== 'custom'" placeholder="Jardim Paulista" class="input-field" />
+              </div>
+              <div>
+                <label class="label-text">Cidade</label>
+                <input [(ngModel)]="address.city" [disabled]="selectedAddressId() !== 'custom'" placeholder="São Paulo" class="input-field" />
+              </div>
+            </div>
  
               <!-- Save address checkbox & custom identification input -->
               @if (selectedAddressId() === 'custom') {
@@ -418,6 +401,22 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
       transition: all 0.2s;
     }
     .input-field:focus { border-color: var(--primary); }
+    .input-field:disabled {
+      background-color: #E2E8F0 !important;
+      color: #64748B !important;
+      border-color: #CBD5E1 !important;
+      cursor: not-allowed;
+      opacity: 0.8;
+    }
+    select.input-field {
+      appearance: none;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234C7C59' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right 16px center;
+      background-size: 16px;
+      padding-right: 40px;
+      cursor: pointer;
+    }
     .section-title { color: var(--muted-foreground); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
   `]
 })
@@ -537,6 +536,26 @@ export class CheckoutComponent {
 
   onlyNumbers(val: string): string {
     return val.replace(/[^0-9]/g, '');
+  }
+
+  async onCepChange(cep: string) {
+    if (!cep) return;
+    const cleanCep = cep.replace(/\D/g, '');
+    if (cleanCep.length === 8) {
+      try {
+        const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+        const data = await response.json();
+        if (!data.erro) {
+          this.address.street = data.logradouro || '';
+          this.address.neighborhood = data.bairro || '';
+          this.address.city = data.localidade || '';
+        } else {
+          this.toastService.error('CEP não encontrado.');
+        }
+      } catch (error) {
+        console.error('Error fetching CEP:', error);
+      }
+    }
   }
 
   isStepActive(key: string): boolean {

@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { OrdersService } from '../data-access/orders.service';
 import { AuthService } from '@domain/auth/data-access/auth.service';
 import { AddressService } from '../data-access/address.service';
+import { NotificationService } from '../data-access/notification.service';
 import { Order, Address } from '../data-access/customer.models';
 
 @Component({
@@ -135,7 +136,7 @@ import { Order, Address } from '../data-access/customer.models';
                     </div>
                     <div>
                       <label class="label-text">CEP (Opcional)</label>
-                      <input [(ngModel)]="newAddrZip" (ngModelChange)="fetchAddressByCep($event)" placeholder="01234-567" class="input-field" />
+                      <input [(ngModel)]="newAddrZip" (ngModelChange)="onCepChange($event)" placeholder="01234-567" class="input-field" />
                     </div>
                   </div>
                   
@@ -157,6 +158,97 @@ import { Order, Address } from '../data-access/customer.models';
                       </button>
                     }
                   </div>
+                </div>
+              </div>
+            </div>
+          } @else if (showNotifications()) {
+            <!-- Notifications Settings View -->
+            <div class="rounded-2xl p-5 mb-4 border bg-white" style="border-color: var(--border);">
+              <div class="flex items-center gap-3 mb-5">
+                <button
+                  (click)="showNotifications.set(false);"
+                  class="w-8 h-8 rounded-lg flex items-center justify-center border transition-all cursor-pointer bg-transparent"
+                  style="background: var(--muted); border-color: var(--border); color: var(--muted-foreground);"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                </button>
+                <h3 style="font-family: 'Space Grotesk', sans-serif; font-size: 16px; font-weight: 700; color: var(--foreground); margin: 0;">
+                  Configurações de Notificação
+                </h3>
+              </div>
+
+              <!-- Browser Permission Request Banner -->
+              <div class="p-4 rounded-xl mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-50 border border-slate-200">
+                <div class="flex-1">
+                  <p style="font-size: 13px; font-weight: 700; color: var(--foreground); margin: 0 0 4px 0;">Notificações Push do Navegador</p>
+                  <p style="font-size: 11px; color: var(--text-secondary); margin: 0;">Permita o envio de alertas nativos do navegador para atualizações instantâneas.</p>
+                </div>
+                @if (notificationService.permissionStatus() === 'granted') {
+                  <span class="text-xs font-bold text-green-600 px-3 py-1.5 rounded-lg bg-green-50 border border-green-200">Ativado ✅</span>
+                } @else if (notificationService.permissionStatus() === 'denied') {
+                  <span class="text-xs font-bold text-red-500 px-3 py-1.5 rounded-lg bg-red-50 border border-red-200">Bloqueado ❌</span>
+                } @else {
+                  <button
+                    (click)="notificationService.requestPermission()"
+                    class="px-4 py-2 rounded-lg font-bold text-xs text-white border-none cursor-pointer transition-all bg-[var(--primary)] hover:brightness-110 shadow-sm"
+                  >
+                    Ativar Notificações
+                  </button>
+                }
+              </div>
+
+              <!-- Preferences Switches List -->
+              <div class="space-y-4">
+                <div class="flex items-center justify-between py-2 border-b border-slate-100">
+                  <div>
+                    <p style="font-size: 13px; font-weight: 700; color: var(--foreground); margin: 0 0 4px 0;">Notificação de Pedido</p>
+                    <p style="font-size: 11px; color: var(--text-secondary); margin: 0;">Acompanhe em tempo real quando seu pedido mudar de etapa (Preparando, Pronto, etc.).</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    [ngModel]="notificationService.preferences().orderStatus"
+                    (ngModelChange)="notificationService.updatePreference('orderStatus', $event)"
+                    style="width: 20px; height: 20px; cursor: pointer;"
+                  />
+                </div>
+
+                <div class="flex items-center justify-between py-2 border-b border-slate-100">
+                  <div>
+                    <p style="font-size: 13px; font-weight: 700; color: var(--foreground); margin: 0 0 4px 0;">Promoções</p>
+                    <p style="font-size: 11px; color: var(--text-secondary); margin: 0;">Fique por dentro de descontos, ofertas especiais e novidades do dia.</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    [ngModel]="notificationService.preferences().promotions"
+                    (ngModelChange)="notificationService.updatePreference('promotions', $event)"
+                    style="width: 20px; height: 20px; cursor: pointer;"
+                  />
+                </div>
+
+                <div class="flex items-center justify-between py-2 border-b border-slate-100">
+                  <div>
+                    <p style="font-size: 13px; font-weight: 700; color: var(--foreground); margin: 0 0 4px 0;">Cupons Disponíveis</p>
+                    <p style="font-size: 11px; color: var(--text-secondary); margin: 0;">Receba alertas de novos cupons liberados para economizar nos seus bowls.</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    [ngModel]="notificationService.preferences().coupons"
+                    (ngModelChange)="notificationService.updatePreference('coupons', $event)"
+                    style="width: 20px; height: 20px; cursor: pointer;"
+                  />
+                </div>
+
+                <div class="flex items-center justify-between py-2">
+                  <div>
+                    <p style="font-size: 13px; font-weight: 700; color: var(--foreground); margin: 0 0 4px 0;">Motoboy Chegando</p>
+                    <p style="font-size: 11px; color: var(--text-secondary); margin: 0;">Saiba exatamente quando o entregador estiver se aproximando do seu endereço.</p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    [ngModel]="notificationService.preferences().motoboyApproaching"
+                    (ngModelChange)="notificationService.updatePreference('motoboyApproaching', $event)"
+                    style="width: 20px; height: 20px; cursor: pointer;"
+                  />
                 </div>
               </div>
             </div>
@@ -336,6 +428,7 @@ export class ProfileComponent {
   authService = inject(AuthService);
   ordersService = inject(OrdersService);
   addressService = inject(AddressService);
+  notificationService = inject(NotificationService);
   router = inject(Router);
 
   currentUser = this.authService.currentUser;
@@ -344,6 +437,7 @@ export class ProfileComponent {
 
   editMode = signal(false);
   showAddresses = signal(false);
+  showNotifications = signal(false);
   editingAddressId = signal<string | null>(null);
   addressError = signal<string>('');
 
@@ -371,7 +465,7 @@ export class ProfileComponent {
   actions = [
     { label: 'Meus Pedidos', action: () => this.router.navigate(['/customer/orders']), icon: '📦', bg: 'rgba(212,116,95,0.14)', color: 'var(--primary)' },
     { label: 'Endereços Salvos', action: () => this.showAddresses.set(true), icon: '📍', bg: 'rgba(117,176,68,0.14)', color: '#75B044' },
-    { label: 'Notificações', action: () => {}, icon: '🔔', bg: 'rgba(168,85,247,0.14)', color: '#a855f7' },
+    { label: 'Notificações', action: () => this.showNotifications.set(true), icon: '🔔', bg: 'rgba(168,85,247,0.14)', color: '#a855f7' },
     { label: 'Segurança & Privacidade', action: () => {}, icon: '🛡️', bg: 'rgba(76,175,80,0.14)', color: '#4CAF50' },
   ];
 
@@ -386,6 +480,25 @@ export class ProfileComponent {
 
   onlyNumbers(val: string): string {
     return val.replace(/[^0-9]/g, '');
+  }
+
+  async onCepChange(cep: string) {
+    if (!cep) return;
+    const cleanCep = cep.replace(/\D/g, '');
+    if (cleanCep.length === 8) {
+      try {
+        const response = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+        const data = await response.json();
+        if (!data.erro) {
+          this.newAddrStreet = data.logradouro || '';
+          this.newAddrNeighborhood = data.bairro || '';
+        } else {
+          this.addressError.set('CEP não encontrado.');
+        }
+      } catch (error) {
+        console.error('Error fetching CEP:', error);
+      }
+    }
   }
 
   getRoleLabel(role?: string): string {
