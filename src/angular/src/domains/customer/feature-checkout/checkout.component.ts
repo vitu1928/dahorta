@@ -635,6 +635,13 @@ export class CheckoutComponent {
       this.loading.set(false);
 
       if (order) {
+        const activeCp = this.couponsService.activeCoupon();
+        if (activeCp) {
+          this.couponsService.update(activeCp.id, {
+            usedCount: (activeCp.usedCount || 0) + 1,
+            totalSalesVolume: (activeCp.totalSalesVolume || 0) + (order.totalAmount || 0)
+          });
+        }
         this.toastService.success('Pedido finalizado com sucesso!');
         this.cartState.clear();
         this.couponsService.remove();
@@ -643,7 +650,7 @@ export class CheckoutComponent {
     } catch (err: any) {
       this.loading.set(false);
       console.error('Erro ao finalizar pedido:', err);
-      this.error.set('Erro ao processar o pedido. Verifique sua conexão, as regras do banco ou os níveis de estoque.');
+      this.error.set('Erro ao processar o pedido. Verifique sua conexão ou a disponibilidade dos itens no estoque.');
     }
   }
 }

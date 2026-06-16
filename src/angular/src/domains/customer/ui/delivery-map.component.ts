@@ -189,6 +189,39 @@ export class DeliveryMapComponent implements AfterViewInit, OnDestroy, OnInit {
     return [this.RESTAURANT_LAT + latOffset, this.RESTAURANT_LNG + lngOffset];
   }
 
+  private async geocodeAddress(addr: Address) {
+    const query = `${addr.street}, ${addr.number}, ${addr.neighborhood}, ${addr.city}, Brasil`;
+    try {
+      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`);
+      const data = await response.json();
+      if (data && data.length > 0) {
+        const lat = parseFloat(data[0].lat);
+        const lon = parseFloat(data[0].lon);
+        const coords: L.LatLngExpression = [lat, lon];
+        this.resolvedCustomerCoords.set(coords);
+        if (this.customerMarker && this.map) {
+          this.customerMarker.setLatLng(coords);
+          this.updateRoute();
+        }
+      } else {
+        const coords = this.coordsFromAddress(addr);
+        this.resolvedCustomerCoords.set(coords);
+        if (this.customerMarker && this.map) {
+          this.customerMarker.setLatLng(coords);
+          this.updateRoute();
+        }
+      }
+    } catch (error) {
+      console.error('Geocoding error:', error);
+      const coords = this.coordsFromAddress(addr);
+      this.resolvedCustomerCoords.set(coords);
+      if (this.customerMarker && this.map) {
+        this.customerMarker.setLatLng(coords);
+        this.updateRoute();
+      }
+    }
+  }
+
   constructor() {
     // Reactively update motoboy position when coordinates signal updates
     effect(() => {
@@ -196,16 +229,11 @@ export class DeliveryMapComponent implements AfterViewInit, OnDestroy, OnInit {
       this.updateMotoboyPosition(loc);
     });
 
-    // Whenever the address input changes, recompute customer coords deterministically
+    // Whenever the address input changes, recompute customer coords via Nominatim
     effect(() => {
       const addr = this.address();
       if (addr) {
-        const coords = this.coordsFromAddress(addr);
-        this.resolvedCustomerCoords.set(coords);
-        if (this.customerMarker && this.map) {
-          this.customerMarker.setLatLng(coords);
-          this.updateRoute();
-        }
+        this.geocodeAddress(addr);
       } else {
         // No address: put customer slightly south-east of restaurant
         this.resolvedCustomerCoords.set([this.RESTAURANT_LAT - 0.008, this.RESTAURANT_LNG + 0.008]);
@@ -248,28 +276,7 @@ export class DeliveryMapComponent implements AfterViewInit, OnDestroy, OnInit {
       attribution: '© OpenStreetMap'
     }).addTo(this.map);
 
-    // Custom CSS/HTML markers for restaurant and customer
-    const restaurantIcon = L.divIcon({
-      html: `
-        <div style="
-          background-color: var(--primary, #4C7C59);
-          color: white;
-          width: 32px;
-          height: 32px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 16px;
-          border: 2px solid white;
-          box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-        ">🥗</div>
-      `,
-      className: '',
-      iconSize: [32, 32],
-      iconAnchor: [16, 16]
-    });
-
+    // Custom CSS/HTML markers for customer
     const customerIcon = L.divIcon({
       html: `
         <div style="
@@ -291,10 +298,6 @@ export class DeliveryMapComponent implements AfterViewInit, OnDestroy, OnInit {
       iconAnchor: [16, 16]
     });
 
-    this.restaurantMarker = L.marker(this.RESTAURANT_COORDS, { icon: restaurantIcon })
-      .bindPopup('<b>DaHorta Restaurante</b>')
-      .addTo(this.map);
-
     const dest = this.resolvedCustomerCoords();
     this.customerMarker = L.marker(dest, { icon: customerIcon })
       .bindPopup('<b>Destino da Entrega</b>')
@@ -305,10 +308,7 @@ export class DeliveryMapComponent implements AfterViewInit, OnDestroy, OnInit {
     // Apply address-based coords if address is already available
     const addr = this.address();
     if (addr) {
-      const coords = this.coordsFromAddress(addr);
-      this.resolvedCustomerCoords.set(coords);
-      this.customerMarker.setLatLng(coords);
-      this.updateRoute();
+      this.geocodeAddress(addr);
     }
 
     // Update motoboy location immediately if already available

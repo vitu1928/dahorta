@@ -466,7 +466,6 @@ export class ProfileComponent {
     { label: 'Meus Pedidos', action: () => this.router.navigate(['/customer/orders']), icon: '📦', bg: 'rgba(212,116,95,0.14)', color: 'var(--primary)' },
     { label: 'Endereços Salvos', action: () => this.showAddresses.set(true), icon: '📍', bg: 'rgba(117,176,68,0.14)', color: '#75B044' },
     { label: 'Notificações', action: () => this.showNotifications.set(true), icon: '🔔', bg: 'rgba(168,85,247,0.14)', color: '#a855f7' },
-    { label: 'Segurança & Privacidade', action: () => {}, icon: '🛡️', bg: 'rgba(76,175,80,0.14)', color: '#4CAF50' },
   ];
 
   constructor() {

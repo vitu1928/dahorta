@@ -8,6 +8,23 @@ import { OwnerService } from '../../owner/data-access/owner.service';
 import { Firestore, collection, doc, setDoc, updateDoc, onSnapshot, query, where, runTransaction } from '@angular/fire/firestore';
 import { Database } from '@angular/fire/database';
 import { ref, set as dbSet, onValue } from 'firebase/database';
+import { NotificationService } from './notification.service';
+
+function sanitizeObject(obj: any): any {
+  if (obj === undefined) return null;
+  if (Array.isArray(obj)) {
+    return obj.map(item => sanitizeObject(item));
+  } else if (obj !== null && typeof obj === 'object' && !(obj instanceof Date)) {
+    const clean: any = {};
+    for (const key of Object.keys(obj)) {
+      if (obj[key] !== undefined) {
+        clean[key] = sanitizeObject(obj[key]);
+      }
+    }
+    return clean;
+  }
+  return obj;
+}
 
 @Injectable({ providedIn: 'root' })
 export class FirebaseOrdersService extends OrdersService {
@@ -15,6 +32,9 @@ export class FirebaseOrdersService extends OrdersService {
   private db = inject(Database);
   private authService = inject(AuthService);
   private ownerService = inject(OwnerService);
+  private notificationService = inject(NotificationService);
+
+  private previousOrderStatusMap = new Map<string, OrderStatus>();
 
   override readonly orders = signal<Order[]>([]);
   override readonly activeOrderId = signal<string | null>(null);
@@ -52,12 +72,32 @@ export class FirebaseOrdersService extends OrdersService {
           const list: Order[] = [];
           snapshot.forEach((doc) => {
             const data = doc.data();
-            list.push({
+            const order = {
               id: doc.id,
               ...data,
               createdAt: data['createdAt']?.toDate() || new Date(),
               updatedAt: data['updatedAt']?.toDate() || new Date()
-            } as Order);
+            } as Order;
+            list.push(order);
+
+            // Notify on status change
+            if (this.previousOrderStatusMap.has(order.id)) {
+              const prevStatus = this.previousOrderStatusMap.get(order.id);
+              if (prevStatus !== order.status) {
+                const cleanId = order.id;
+                if (order.status === 'preparing') {
+                  this.notificationService.sendNotification('Pedido em Preparo 🥗', `Seu pedido #${cleanId} está sendo preparado com muito carinho!`, 'orderStatus');
+                } else if (order.status === 'ready') {
+                  this.notificationService.sendNotification('Pedido Pronto! 😋', `Seu pedido #${cleanId} está pronto e aguardando o entregador.`, 'orderStatus');
+                } else if (order.status === 'delivering') {
+                  this.notificationService.sendNotification('Pedido a Caminho! 🛵', `Seu pedido #${cleanId} saiu para entrega!`, 'orderStatus');
+                  this.notificationService.sendNotification('Entregador se Aproximando 📍', 'O entregador já está a caminho do seu endereço.', 'motoboyApproaching');
+                } else if (order.status === 'delivered') {
+                  this.notificationService.sendNotification('Pedido Entregue! 🎉', 'Seu pedido foi entregue com sucesso. Bom apetite!', 'orderStatus');
+                }
+              }
+            }
+            this.previousOrderStatusMap.set(order.id, order.status);
           });
           
           let filtered = list;
@@ -202,11 +242,11 @@ export class FirebaseOrdersService extends OrdersService {
         transaction.set(counterRef, { orderCount: nextCount }, { merge: true });
 
         // 5. WRITE THE ORDER
-        transaction.set(orderDocRef, {
+        transaction.set(orderDocRef, sanitizeObject({
           ...order,
           createdAt: new Date(),
           updatedAt: new Date()
-        });
+        }));
 
         // 6. WRITE THE STOCK UPDATES AND MOVEMENTS (ALL WRITES LAST)
         for (const [insumoId, info] of stockUpdates.entries()) {

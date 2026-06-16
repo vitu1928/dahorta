@@ -40,4 +40,19 @@ export class MockProductsService extends ProductsService {
       this.products.set([...this.products()]);
     }
   }
+
+  override async addProduct(product: Omit<Product, 'id'>): Promise<string> {
+    const id = `p${Date.now()}`;
+    const newProduct = { ...product, id } as Product;
+    this.products.update(list => [...list, newProduct]);
+    return id;
+  }
+
+  override async updateProduct(id: string, product: Partial<Product>): Promise<void> {
+    this.products.update(list => list.map(p => p.id === id ? { ...p, ...product } as Product : p));
+  }
+
+  override async deleteProduct(id: string): Promise<void> {
+    this.products.update(list => list.filter(p => p.id !== id));
+  }
 }

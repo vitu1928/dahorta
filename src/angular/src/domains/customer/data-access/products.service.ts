@@ -12,5 +12,8 @@ export abstract class ProductsService {
   abstract search(searchTerm: string): Signal<Product[]>;
   abstract getById(id: string): Product | undefined;
   abstract toggleAvailability(id: string): void;
+  abstract addProduct(product: Omit<Product, 'id'>): Promise<string>;
+  abstract updateProduct(id: string, product: Partial<Product>): Promise<void>;
+  abstract deleteProduct(id: string): Promise<void>;
 }
 
