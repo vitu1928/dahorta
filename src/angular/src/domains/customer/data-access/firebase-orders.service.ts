@@ -248,7 +248,7 @@ export class FirebaseOrdersService extends OrdersService {
           ...order,
           createdAt: new Date(),
           updatedAt: new Date()
-        }));
+        });
 
         // 6. WRITE THE STOCK UPDATES AND MOVEMENTS (ALL WRITES LAST)
         for (const [insumoId, info] of stockUpdates.entries()) {
