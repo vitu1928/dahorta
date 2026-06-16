@@ -121,7 +121,7 @@ import { Order, Address } from '../data-access/customer.models';
                     </div>
                     <div>
                       <label class="label-text">Número *</label>
-                      <input type="number" [(ngModel)]="newAddrNumber" (input)="newAddrNumber = onlyNumbers(newAddrNumber)" placeholder="123" class="input-field" />
+                      <input type="text" [(ngModel)]="newAddrNumber" (input)="newAddrNumber = onlyNumbers(newAddrNumber)" placeholder="123" class="input-field" />
                     </div>
                   </div>
                   <div>
@@ -384,8 +384,8 @@ export class ProfileComponent {
     }
   }
 
-  onlyNumbers(val: string): string {
-    return val.replace(/[^0-9]/g, '');
+  onlyNumbers(val: any): string {
+    return String(val || '').replace(/[^0-9]/g, '');
   }
 
   getRoleLabel(role?: string): string {
@@ -414,37 +414,44 @@ export class ProfileComponent {
   addAddress() {
     this.addressError.set('');
     
+    const label = String(this.newAddrLabel || '').trim();
+    const street = String(this.newAddrStreet || '').trim();
+    const number = String(this.newAddrNumber ?? '').trim();
+    const complement = String(this.newAddrComplement || '').trim();
+    const neighborhood = String(this.newAddrNeighborhood || '').trim();
+    const zip = String(this.newAddrZip || '').trim();
+
     // Validations
-    if (!this.newAddrLabel.trim()) {
+    if (!label) {
       this.addressError.set('Identificação do endereço é obrigatória.');
       return;
     }
-    if (!this.newAddrStreet.trim()) {
+    if (!street) {
       this.addressError.set('A rua/avenida é obrigatória.');
       return;
     }
-    if (!this.newAddrNumber.trim()) {
+    if (!number) {
       this.addressError.set('O número é obrigatório.');
       return;
     }
-    if (!this.newAddrNeighborhood.trim()) {
+    if (!neighborhood) {
       this.addressError.set('O bairro é obrigatório.');
       return;
     }
     const cepRegex = /^\d{5}-?\d{3}$/;
-    if (this.newAddrZip.trim() && !cepRegex.test(this.newAddrZip.trim())) {
+    if (zip && !cepRegex.test(zip)) {
       this.addressError.set('O CEP informado é inválido (formato esperado: 00000-000).');
       return;
     }
 
     const payload = {
-      label: this.newAddrLabel.trim(),
-      street: this.newAddrStreet.trim(),
-      number: this.newAddrNumber.trim(),
-      complement: this.newAddrComplement.trim(),
-      neighborhood: this.newAddrNeighborhood.trim(),
+      label,
+      street,
+      number,
+      complement,
+      neighborhood,
       city: 'São Paulo',
-      zipCode: this.newAddrZip.trim() || '00000-000',
+      zipCode: zip || '00000-000',
     };
 
     if (this.editingAddressId()) {

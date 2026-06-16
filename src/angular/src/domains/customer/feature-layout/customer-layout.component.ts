@@ -12,7 +12,7 @@ import { EmployeeService } from '@domain/employee/data-access/employee.service';
   template: `
     <div class="min-h-screen flex" style="background: var(--background)">
       <!-- Desktop Sidebar -->
-      <aside class="hidden md:flex flex-col sticky top-0 h-screen z-40 w-[280px]" style="background: var(--background); border-right: 1px solid var(--border-light)">
+      <aside class="hidden md:flex flex-col sticky top-0 h-screen z-50 w-[280px]" style="background: var(--background); border-right: 1px solid var(--border-light); overflow-y: auto;">
         <div class="p-8 flex flex-col h-full">
           <!-- Logo -->
           <div class="flex items-center gap-4 mb-12">

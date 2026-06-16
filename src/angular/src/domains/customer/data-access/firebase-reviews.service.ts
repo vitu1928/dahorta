@@ -38,10 +38,15 @@ export class FirebaseReviewsService extends ReviewsService {
     try {
       const reviewsCol = collection(this.firestore, 'reviews');
       const docRef = doc(reviewsCol);
-      const newReview = {
+      const newReview: any = {
         ...review,
         createdAt: new Date()
       };
+      Object.keys(newReview).forEach(key => {
+        if (newReview[key] === undefined) {
+          delete newReview[key];
+        }
+      });
       await setDoc(docRef, newReview);
     } catch (err) {
       console.error('Erro ao adicionar avaliação no Firestore:', err);
