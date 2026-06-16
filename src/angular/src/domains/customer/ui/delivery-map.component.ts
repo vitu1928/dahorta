@@ -1,4 +1,4 @@
-import { Component, ElementRef, ViewChild, AfterViewInit, OnDestroy, OnInit, input, effect, signal } from '@angular/core';
+import { Component, ElementRef, ViewChild, AfterViewInit, OnDestroy, OnInit, input, effect, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import * as L from 'leaflet';
 import { Address } from '../data-access/customer.models';
@@ -54,7 +54,7 @@ import { Address } from '../data-access/customer.models';
         </div>
 
         <!-- Location freshness badge -->
-        <div class="flex flex-col items-end gap-1">
+        <div class="flex flex-col items-end gap-0.5">
           @if (lastLocationUpdate()) {
             <div class="flex items-center gap-1.5">
               <span
@@ -67,7 +67,7 @@ import { Address } from '../data-access/customer.models';
               </span>
             </div>
             <span class="text-[10px] text-muted-foreground">
-              {{ locationAgeText() }}
+              {{ locationAgeText() }} · {{ lastUpdateTimeText() }}
             </span>
           } @else if (customerAddress()) {
             <div class="max-w-[60%] text-right">
@@ -118,33 +118,39 @@ export class DeliveryMapComponent implements AfterViewInit, OnDestroy, OnInit {
   private readonly _now = signal<number>(Date.now());
   private _nowInterval: any = null;
 
-  readonly locationAge = () => {
+  readonly locationAge = computed(() => {
     const ts = this.lastLocationUpdate();
     if (!ts) return Infinity;
     return Math.floor((this._now() - ts) / 1000);
-  };
+  });
 
-  readonly locationBadgeColor = () => {
+  readonly locationBadgeColor = computed(() => {
     const age = this.locationAge();
     if (age < 30) return '#22c55e';   // verde — fresco
     if (age < 120) return '#f59e0b';  // amarelo — um pouco defasado
     return '#9ca3af';                 // cinza — sem sinal recente
-  };
+  });
 
-  readonly locationStatusText = () => {
+  readonly locationStatusText = computed(() => {
     const age = this.locationAge();
     if (age < 30) return 'Localização ao vivo';
     if (age < 120) return 'Sinal fraco';
     return 'Sem sinal GPS';
-  };
+  });
 
-  readonly locationAgeText = () => {
+  readonly locationAgeText = computed(() => {
     const age = this.locationAge();
     if (!isFinite(age)) return 'Aguardando...';
     if (age < 60) return `há ${age}s`;
     const mins = Math.floor(age / 60);
     return `há ${mins} min`;
-  };
+  });
+
+  readonly lastUpdateTimeText = computed(() => {
+    const ts = this.lastLocationUpdate();
+    if (!ts) return '';
+    return new Date(ts).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  });
 
   private map?: L.Map;
   private restaurantMarker?: L.Marker;

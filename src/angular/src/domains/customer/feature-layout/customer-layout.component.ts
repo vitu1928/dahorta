@@ -67,10 +67,24 @@ import { EmployeeService } from '@domain/employee/data-access/employee.service';
       <div class="flex-1 flex flex-col min-w-0 font-sans">
         <!-- Top Header -->
         <header class="relative overflow-hidden h-[120px]" style="border-bottom: 1px solid var(--border-light)">
-          <img src="/assets/hero.png" alt="Hero" class="absolute inset-0 z-0 w-full h-full object-cover opacity-80" />
+          <img src="/assets/hero.png" alt="Hero" class="absolute inset-0 z-0 w-full h-full object-cover opacity-80"
+            [style.filter]="!restaurantOpen() ? 'blur(7px)' : 'none'"
+            style="transition: filter 0.4s ease;"
+          />
           <div class="absolute inset-0 bg-black/40 z-[1]"></div>
-          <div class="flex items-center justify-between px-6 h-full mx-auto relative z-10 max-w-[1200px]">
-            <div class="flex items-center gap-3">
+
+          <!-- Wrapper: full width, no right padding when closed -->
+          <div
+            class="flex items-center h-full mx-auto relative z-10 max-w-[1200px]"
+            [class.pr-0]="!restaurantOpen()"
+            [class.px-6]="restaurantOpen()"
+            style="padding-left: 24px;"
+          >
+            <!-- Left: logo + name + desc (60% when closed, full when open) -->
+            <div
+              class="flex items-center gap-3 shrink-0"
+              [style.width]="!restaurantOpen() ? '60%' : 'auto'"
+            >
               <div class="w-[52px] h-[52px] bg-white rounded-full flex items-center justify-center p-1 shadow-[0_2px_12px_rgba(0,0,0,0.15)] border-2 border-primary">
                 <img src="/assets/logo.png" alt="DaHorta" class="w-full h-full object-contain rounded-full" />
               </div>
@@ -80,20 +94,24 @@ import { EmployeeService } from '@domain/employee/data-access/employee.service';
               </div>
             </div>
 
-            <!-- Restaurante Fechado Banner -->
+            <!-- Right: Restaurante Fechado — ocupa 40%, fundo preto até a borda -->
             @if (!restaurantOpen()) {
-              <div class="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl" style="background: rgba(220,38,38,0.85); backdrop-filter: blur(4px);">
-                <span style="font-size: 20px;">🔴</span>
-                <span class="font-black text-white" style="font-size: 18px; letter-spacing: -0.02em; font-family: 'Poppins', sans-serif;">Restaurante Fechado</span>
+              <div
+                class="hidden md:flex items-center justify-center h-full flex-1"
+                style="background: #000000;"
+              >
+                <span style="font-size: clamp(18px, 2.9vw, 29px); font-weight: 600; letter-spacing: 0.06em; color: #ffffff; font-family: 'Poppins', sans-serif; white-space: nowrap;">
+                  RESTAURANTE FECHADO
+                </span>
               </div>
             }
 
-            <!-- Mobile cart -->
-            <div class="flex items-center gap-2">
+            <!-- Mobile: cart + fechado badge -->
+            <div class="flex items-center gap-2 ml-auto md:hidden pr-4">
               @if (!restaurantOpen()) {
-                <span class="md:hidden text-white font-black text-sm" style="background: rgba(220,38,38,0.85); padding: 4px 8px; border-radius: 8px;">🔴 Fechado</span>
+                <span class="text-white font-bold text-xs" style="background: #000; padding: 3px 8px; border-radius: 6px; letter-spacing: 0.04em;">FECHADO</span>
               }
-              <button class="md:hidden relative flex items-center gap-2 px-3 py-2 rounded-xl transition-all border-none bg-primary text-white font-bold" (click)="router.navigate(['/customer/cart'])">
+              <button class="relative flex items-center gap-2 px-3 py-2 rounded-xl transition-all border-none bg-primary text-white font-bold" (click)="router.navigate(['/customer/cart'])">
                 🛒 {{ cartCount() }}
               </button>
             </div>

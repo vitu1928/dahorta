@@ -420,8 +420,10 @@ export class OrderTrackingComponent {
             if (!this.locationSub) {
               this.locationSub = this.ordersService.getMotoboyLocation(o.motoboyId)
                 .subscribe(loc => {
+                  console.log('[TRACKING] Localização recebida do motoboy:', loc);
                   this.motoboyLocation.set(loc);
                   if (loc) {
+                    console.log('[TRACKING] updatedAt:', loc.updatedAt, new Date(loc.updatedAt).toLocaleTimeString('pt-BR'));
                     this.lastLocationUpdate.set(loc.updatedAt);
                   }
                 });
