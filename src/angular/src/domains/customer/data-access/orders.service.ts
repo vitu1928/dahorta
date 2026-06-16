@@ -16,7 +16,8 @@ export abstract class OrdersService {
     totalAmount: number,
     discount?: number,
     notes?: string,
-    addressNotes?: string
+    addressNotes?: string,
+    couponCode?: string
   ): Promise<Order>;
 
   abstract updateStatus(orderId: string, status: OrderStatus, motoboyId?: string, motoboyName?: string): void;

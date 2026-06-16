@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CouponsService } from '../../customer/data-access/coupons.service';
 import { Coupon, CouponType } from '../../customer/data-access/customer.models';
+import { OrdersService } from '../../customer/data-access/orders.service';
 
 @Component({
   selector: 'app-coupons',
@@ -50,8 +51,8 @@ import { Coupon, CouponType } from '../../customer/data-access/customer.models';
         </div>
 
         <div class="bg-card border border-border p-5 rounded-2xl flex items-center gap-5">
-          <div class="w-12 h-12 rounded-full bg-[#E63946]/10 flex items-center justify-center text-[#E63946]">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polygon points="17 6 23 6 23 12"/></svg>
+          <div class="w-12 h-12 rounded-full bg-[#4CAF50]/10 flex items-center justify-center text-[#4CAF50]">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
           </div>
           <div>
             <p class="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mb-1">Volume de Vendas</p>
@@ -275,12 +276,14 @@ import { Coupon, CouponType } from '../../customer/data-access/customer.models';
 })
 export class CouponsComponent {
   private couponsService = inject(CouponsService);
+  private ordersService = inject(OrdersService);
 
   readonly searchQuery = signal<string>('');
   readonly isCreatorOpen = signal(false);
   readonly editingCoupon = signal<Coupon | null>(null);
 
   readonly coupons = this.couponsService.coupons;
+  readonly orders = this.ordersService.orders;
 
   readonly couponTypes = [
     { value: 'percentage' as CouponType, label: 'Percentual (% Off)' },
@@ -298,14 +301,28 @@ export class CouponsComponent {
     expirationDate: ''
   };
 
+  readonly computedCoupons = computed(() => {
+    const orders = this.orders();
+    return this.coupons().map(c => {
+       const couponOrders = orders.filter(o => o.couponCode === c.code);
+       const usedCount = couponOrders.length;
+       const totalSalesVolume = couponOrders.reduce((sum, o) => sum + (o.totalAmount || o.total || 0), 0);
+       return {
+         ...c,
+         usedCount,
+         totalSalesVolume
+       };
+    });
+  });
+
   readonly filteredCoupons = computed(() => {
     const term = this.searchQuery().toLowerCase().trim();
-    return this.coupons().filter(c => c.code.toLowerCase().includes(term));
+    return this.computedCoupons().filter(c => c.code.toLowerCase().includes(term));
   });
 
   // Top level stats
   readonly analytics = computed(() => {
-    const list = this.coupons();
+    const list = this.computedCoupons();
     const totalUses = list.reduce((sum, c) => sum + c.usedCount, 0);
     const activeCount = list.filter(c => c.active).length;
     const totalVolume = list.reduce((sum, c) => sum + (c.totalSalesVolume || 0), 0);

@@ -761,7 +761,7 @@ export class MenuComponent {
     this.formIngredients = this.formIngredients.filter(i => i.id !== id);
   }
 
-  saveProduct() {
+  async saveProduct() {
     if (!this.formState.name || this.formState.price <= 0) return;
 
     const prodData: Omit<Product, 'id'> = {
@@ -780,37 +780,44 @@ export class MenuComponent {
     let pId: string;
     const editing = this.editProduct();
 
-    if (editing) {
-      pId = editing.id;
-      this.products.update(list => list.map(p => p.id === pId ? { ...p, ...prodData } as Product : p));
-    } else {
-      pId = `p${Date.now()}`;
-      this.products.update(list => [...list, { ...prodData, id: pId }]);
-    }
+    try {
+      if (editing) {
+        pId = editing.id;
+        await this.productsService.updateProduct(pId, prodData);
+      } else {
+        pId = await this.productsService.addProduct(prodData);
+      }
 
-    // Save Technical Sheet
-    const validIngredients = this.formIngredients.filter(i => i.insumoId && i.quantity);
-    if (validIngredients.length > 0) {
-      const sheet: Omit<TechnicalSheet, 'id'> & { id?: string } = {
-        productId: pId,
-        internalName: this.formState.internalName || this.formState.name,
-        desiredMargin: this.formState.desiredMargin,
-        ingredients: validIngredients as TechnicalSheetIngredient[],
-        id: editing ? this.ownerService.getTechnicalSheetByProduct(editing.id)?.id : undefined
-      };
-      this.ownerService.saveTechnicalSheet(sheet);
-    } else if (editing) {
-      this.ownerService.deleteTechnicalSheet(editing.id);
+      // Save Technical Sheet
+      const validIngredients = this.formIngredients.filter(i => i.insumoId && i.quantity);
+      if (validIngredients.length > 0) {
+        const sheet: Omit<TechnicalSheet, 'id'> & { id?: string } = {
+          productId: pId,
+          internalName: this.formState.internalName || this.formState.name,
+          desiredMargin: this.formState.desiredMargin,
+          ingredients: validIngredients as TechnicalSheetIngredient[],
+          id: editing ? this.ownerService.getTechnicalSheetByProduct(editing.id)?.id : undefined
+        };
+        this.ownerService.saveTechnicalSheet(sheet);
+      } else if (editing) {
+        this.ownerService.deleteTechnicalSheet(editing.id);
+      }
+    } catch (err) {
+      console.error('Erro ao salvar produto:', err);
     }
 
     this.closeForm();
   }
 
-  executeDeleteProduct() {
+  async executeDeleteProduct() {
     const editing = this.editProduct();
     if (editing) {
-      this.products.update(list => list.filter(p => p.id !== editing.id));
-      this.ownerService.deleteTechnicalSheet(editing.id);
+      try {
+        await this.productsService.deleteProduct(editing.id);
+        this.ownerService.deleteTechnicalSheet(editing.id);
+      } catch (err) {
+        console.error('Erro ao deletar produto:', err);
+      }
     }
     this.closeForm();
   }

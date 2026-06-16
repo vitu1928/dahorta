@@ -84,6 +84,7 @@ export interface Order {
   reviewId?: string;
   deliveryAddress?: Address;
   motoboyName?: string;
+  couponCode?: string;
 }
 
 export interface Coupon {
@@ -153,6 +154,21 @@ export interface Supplier {
 }
 
 export type PlateOfDayConfig = Record<number, string>;
+
+export interface RestaurantInfo {
+  name: string;
+  tagline: string;
+  phone: string;
+  whatsapp: string;
+  email: string;
+  address: string;
+  city: string;
+  deliveryFee: number;
+  deliveryTime: string;
+  minOrder: number;
+  instagram: string;
+  website: string;
+}
 
 export type StockItem = Insumo;
 

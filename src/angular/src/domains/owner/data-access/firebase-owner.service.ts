@@ -1,6 +1,6 @@
 import { Injectable, signal, inject, computed, effect } from '@angular/core';
 import { OwnerService } from './owner.service';
-import { Supplier, Insumo, PriceRecord, TechnicalSheet, StockMovement, TechnicalSheetIngredient } from './owner.models';
+import { Supplier, Insumo, PriceRecord, TechnicalSheet, StockMovement, TechnicalSheetIngredient, RestaurantInfo } from './owner.models';
 import { AuthService } from '../../auth/data-access/auth.service';
 import { EmployeeService } from '../../employee/data-access/employee.service';
 import { Firestore, collection, doc, setDoc, deleteDoc, updateDoc, onSnapshot, writeBatch, runTransaction } from '@angular/fire/firestore';
@@ -11,6 +11,22 @@ export class FirebaseOwnerService extends OwnerService {
   private authService = inject(AuthService);
   private employeeService = inject(EmployeeService);
 
+  private sanitizeObject(obj: any): any {
+    if (obj === undefined) return null;
+    if (Array.isArray(obj)) {
+      return obj.map((item: any) => this.sanitizeObject(item));
+    } else if (obj !== null && typeof obj === 'object' && !(obj instanceof Date)) {
+      const clean: any = {};
+      for (const key of Object.keys(obj)) {
+        if (obj[key] !== undefined) {
+          clean[key] = this.sanitizeObject(obj[key]);
+        }
+      }
+      return clean;
+    }
+    return obj;
+  }
+
   override readonly suppliers = signal<Supplier[]>([]);
   override readonly insumos = signal<Insumo[]>([]);
   override readonly priceRecords = signal<PriceRecord[]>([]);
@@ -18,6 +34,7 @@ export class FirebaseOwnerService extends OwnerService {
   override readonly stockMovements = signal<StockMovement[]>([]);
   override readonly plateOfDay = signal<Record<number, string>>({});
   override readonly pricePeriodDays = signal<number>(60);
+  override readonly restaurantInfo = signal<RestaurantInfo | null>(null);
 
   constructor() {
     super();
@@ -28,6 +45,7 @@ export class FirebaseOwnerService extends OwnerService {
     let unsubscribeInsumos: any = null;
     let unsubscribeSheets: any = null;
     let unsubscribePlate: any = null;
+    let unsubscribeRestaurant: any = null;
 
     // Dynamically manage listeners based on authenticated user role to prevent unauthorized client console warnings
     effect(() => {
@@ -40,6 +58,7 @@ export class FirebaseOwnerService extends OwnerService {
       if (unsubscribeInsumos) { unsubscribeInsumos(); unsubscribeInsumos = null; }
       if (unsubscribeSheets) { unsubscribeSheets(); unsubscribeSheets = null; }
       if (unsubscribePlate) { unsubscribePlate(); unsubscribePlate = null; }
+      if (unsubscribeRestaurant) { unsubscribeRestaurant(); unsubscribeRestaurant = null; }
 
       if (user) {
         const isStaff = user.role === 'owner' || user.role === 'employee';
@@ -81,6 +100,18 @@ export class FirebaseOwnerService extends OwnerService {
           }
         }, (err) => {
           console.error('Erro ao ouvir configuração de prato do dia:', err);
+        });
+
+        // 3.5 Listen to restaurant settings (available to all)
+        const restaurantDocRef = doc(this.firestore, 'settings/restaurant');
+        unsubscribeRestaurant = onSnapshot(restaurantDocRef, (snap) => {
+          if (snap.exists()) {
+            this.restaurantInfo.set(snap.data() as RestaurantInfo);
+          } else {
+            this.restaurantInfo.set(null);
+          }
+        }, (err) => {
+          console.error('Erro ao ouvir configuração do restaurante:', err);
         });
 
         if (isStaff) {
@@ -146,6 +177,7 @@ export class FirebaseOwnerService extends OwnerService {
         this.technicalSheets.set([]);
         this.stockMovements.set([]);
         this.plateOfDay.set({});
+        this.restaurantInfo.set(null);
       }
     }, { allowSignalWrites: true });
   }
@@ -381,6 +413,13 @@ export class FirebaseOwnerService extends OwnerService {
     const updatedConfig = { ...this.plateOfDay(), [day]: productId };
     updateDoc(docRef, { config: updatedConfig }).catch(err => {
       console.error('Erro ao atualizar prato do dia:', err);
+    });
+  }
+
+  override updateRestaurantInfo(info: RestaurantInfo): void {
+    const docRef = doc(this.firestore, 'settings/restaurant');
+    setDoc(docRef, this.sanitizeObject(info), { merge: true }).catch(err => {
+      console.error('Erro ao atualizar informações do restaurante:', err);
     });
   }
 

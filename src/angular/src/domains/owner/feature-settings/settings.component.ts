@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { OwnerService } from '../data-access/owner.service';
@@ -236,6 +236,7 @@ export class SettingsComponent {
 
   readonly restaurantOpen = this.employeeService.restaurantOpen;
   readonly pricePeriodDays = this.ownerService.pricePeriodDays;
+  readonly restaurantInfoSignal = this.ownerService.restaurantInfo;
 
   readonly saved = signal(false);
   readonly selectedPeriod = signal(60);
@@ -269,7 +270,13 @@ export class SettingsComponent {
   };
 
   constructor() {
-    this.selectedPeriod.set(this.pricePeriodDays());
+    effect(() => {
+      this.selectedPeriod.set(this.pricePeriodDays());
+      const info = this.restaurantInfoSignal();
+      if (info) {
+        this.restaurantInfo = { ...info };
+      }
+    }, { allowSignalWrites: true });
   }
 
   toggleRestaurant() {
@@ -283,6 +290,7 @@ export class SettingsComponent {
 
   handleSave() {
     this.ownerService.pricePeriodDays.set(this.selectedPeriod());
+    this.ownerService.updateRestaurantInfo({ ...this.restaurantInfo });
     this.saved.set(true);
     setTimeout(() => this.saved.set(false), 2000);
   }

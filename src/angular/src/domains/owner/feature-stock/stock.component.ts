@@ -16,19 +16,11 @@ import { AuthService } from '../../auth/data-access/auth.service';
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <p class="overline-label mb-2 text-[#E9C46A]" style="font-weight: 700; letter-spacing: 0.1em">Gestão de Inventário</p>
-          <h1 class="display-heading text-foreground text-3xl font-extrabold" style="font-family: 'Space Grotesk', sans-serif">Estoque e Insumos</h1>
+          <h1 class="display-heading text-foreground text-3xl font-extrabold" style="font-family: 'Space Grotesk', sans-serif">Estoque</h1>
           <p class="text-muted-foreground text-xs mt-1">
             {{ filteredItems().length }} itens no estoque · {{ lowStockItemsCount() }} em nível crítico.
           </p>
         </div>
-        <button
-          (click)="openAddModal()"
-          class="flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all border-none cursor-pointer text-white text-xs"
-          style="background: var(--primary); shadow: var(--shadow-default);"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="5" y2="19"/><line x1="5" x2="19" y1="12" y2="12"/></svg>
-          Adicionar Item
-        </button>
       </div>
 
       <!-- Critical Alerts Box -->
@@ -150,46 +142,21 @@ import { AuthService } from '../../auth/data-access/auth.service';
       <div *ngIf="showItemModal()" class="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div class="fixed inset-0 bg-black/60 backdrop-blur-xs" (click)="closeItemModal()"></div>
         <div class="relative w-full max-w-md bg-card border border-border rounded-2xl p-6 z-40 text-xs">
-          <h2 class="text-base font-bold text-foreground mb-5">{{ isEditing() ? 'Editar Item de Estoque' : 'Adicionar Item de Estoque' }}</h2>
+          <h2 class="text-base font-bold text-foreground mb-1">{{ selectedItem()?.name }}</h2>
+          <p class="text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-5">{{ selectedItem()?.category }} · Unidade: {{ selectedItem()?.unit }}</p>
           <div class="space-y-4">
-            <div class="space-y-1">
-              <label class="text-[10px] font-bold text-muted-foreground block">Nome do Item *</label>
-              <input [(ngModel)]="itemForm.name" class="w-full px-4 py-2.5 rounded-xl bg-white border border-border text-foreground outline-none text-sm" />
-            </div>
-            
-            <div class="grid grid-cols-2 gap-4">
-              <div class="space-y-1">
-                <label class="text-[10px] font-bold text-muted-foreground block">Categoria</label>
-                <select [(ngModel)]="itemForm.category" class="w-full px-4 py-2.5 rounded-xl bg-white border border-border text-foreground outline-none font-bold text-sm">
-                  <option value="hortifruti">Hortifruti</option>
-                  <option value="proteína">Proteína</option>
-                  <option value="grãos">Grãos</option>
-                  <option value="molhos">Molhos</option>
-                  <option value="temperos">Temperos</option>
-                  <option value="secos">Secos</option>
-                  <option value="outros">Outros</option>
-                </select>
-              </div>
-              <div class="space-y-1">
-                <label class="text-[10px] font-bold text-muted-foreground block">Unidade de Medida</label>
-                <select [(ngModel)]="itemForm.unit" class="w-full px-4 py-2.5 rounded-xl bg-white border border-border text-foreground outline-none font-bold text-sm">
-                  <option *ngFor="let u of units" [value]="u">{{ u }}</option>
-                </select>
-              </div>
-            </div>
-
             <div class="grid grid-cols-3 gap-3">
               <div class="space-y-1">
-                <label class="text-[9px] font-bold text-muted-foreground block">Qtd Atual</label>
-                <input type="number" [(ngModel)]="itemForm.currentQuantity" class="w-full px-4 py-2.5 rounded-xl bg-white border border-border text-center text-foreground text-sm" />
+                <label class="text-[9px] font-bold text-muted-foreground block">Qtd Atual ({{ selectedItem()?.unit }})</label>
+                <input type="number" [(ngModel)]="itemForm.currentQuantity" class="w-full px-4 py-2.5 rounded-xl bg-white border border-border text-center text-foreground text-sm font-semibold outline-none" />
               </div>
               <div class="space-y-1">
-                <label class="text-[9px] font-bold text-muted-foreground block">Capac. Máxima</label>
-                <input type="number" [(ngModel)]="itemForm.maxCapacity" class="w-full px-4 py-2.5 rounded-xl bg-white border border-border text-center text-foreground text-sm" />
+                <label class="text-[9px] font-bold text-muted-foreground block">Capac. Máxima ({{ selectedItem()?.unit }})</label>
+                <input type="number" [(ngModel)]="itemForm.maxCapacity" class="w-full px-4 py-2.5 rounded-xl bg-white border border-border text-center text-foreground text-sm font-semibold outline-none" />
               </div>
               <div class="space-y-1">
-                <label class="text-[9px] font-bold text-muted-foreground block">Limite Alerta</label>
-                <input type="number" [(ngModel)]="itemForm.minAlert" class="w-full px-4 py-2.5 rounded-xl bg-white border border-border text-center text-foreground text-sm" />
+                <label class="text-[9px] font-bold text-muted-foreground block">Limite Alerta ({{ selectedItem()?.unit }})</label>
+                <input type="number" [(ngModel)]="itemForm.minAlert" class="w-full px-4 py-2.5 rounded-xl bg-white border border-border text-center text-foreground text-sm font-semibold outline-none" />
               </div>
             </div>
 

@@ -1,7 +1,7 @@
 import { Injectable, inject, signal, computed, effect, Signal } from '@angular/core';
 import { ProductsService } from './products.service';
 import { Product, Category } from './customer.models';
-import { Firestore, collection, doc, updateDoc, onSnapshot } from '@angular/fire/firestore';
+import { Firestore, collection, doc, updateDoc, onSnapshot, setDoc, deleteDoc } from '@angular/fire/firestore';
 import { AuthService } from '../../auth/data-access/auth.service';
 
 @Injectable({ providedIn: 'root' })
@@ -159,5 +159,22 @@ export class FirebaseProductsService extends ProductsService {
     updateDoc(docRef, { available: !product.available }).catch(err => {
       console.error('Erro ao alternar disponibilidade do produto:', err);
     });
+  }
+
+  override async addProduct(product: Omit<Product, 'id'>): Promise<string> {
+    const colRef = collection(this.firestore, 'products');
+    const docRef = doc(colRef);
+    await setDoc(docRef, product);
+    return docRef.id;
+  }
+
+  override async updateProduct(id: string, product: Partial<Product>): Promise<void> {
+    const docRef = doc(this.firestore, `products/${id}`);
+    await updateDoc(docRef, product);
+  }
+
+  override async deleteProduct(id: string): Promise<void> {
+    const docRef = doc(this.firestore, `products/${id}`);
+    await deleteDoc(docRef);
   }
 }

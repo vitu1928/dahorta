@@ -252,9 +252,7 @@ import { ToastService } from '../../../shared/data-access/toast.service';
                   <span>{{ error() }}</span>
                 </div>
               }
-              <p class="text-[#5F5F5F] text-[10px] mt-2 leading-relaxed">
-                💡 Para demo, o código é: <strong class="text-[#1F1F1F]">{{ order.deliveryCode }}</strong>
-              </p>
+
             </div>
           }
         }

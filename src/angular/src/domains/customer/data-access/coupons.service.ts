@@ -3,12 +3,14 @@ import { Coupon } from './customer.models';
 import { CartStateService } from './cart.state';
 import { Firestore, collection, doc, setDoc, deleteDoc, updateDoc, onSnapshot } from '@angular/fire/firestore';
 import { AuthService } from '../../auth/data-access/auth.service';
+import { OrdersService } from './orders.service';
 
 @Injectable({ providedIn: 'root' })
 export class CouponsService {
   private firestore = inject(Firestore);
   private cartState = inject(CartStateService);
   private authService = inject(AuthService);
+  private ordersService = inject(OrdersService);
 
   coupons = signal<Coupon[]>([]);
   activeCoupon = signal<Coupon | null>(null);
@@ -77,8 +79,12 @@ export class CouponsService {
       return { success: false, message: 'Cupom expirado' };
     }
 
-    if (coupon.usageLimit && coupon.usedCount >= coupon.usageLimit) {
-      return { success: false, message: 'Cupom limite de uso atingido' };
+    if (coupon.usageLimit) {
+      const orders = this.ordersService.orders();
+      const realUsedCount = orders.filter(o => o.couponCode === coupon.code).length;
+      if (realUsedCount >= coupon.usageLimit) {
+        return { success: false, message: 'Cupom limite de uso atingido' };
+      }
     }
 
     if (coupon.minOrderValue && cartTotal < coupon.minOrderValue) {
