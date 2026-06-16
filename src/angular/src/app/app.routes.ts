@@ -4,7 +4,7 @@ import { authGuard } from '@shared/data-access/auth.guard';
 import { roleGuard } from '@shared/data-access/role.guard';
 
 export const routes: Routes = [
-  { path: '', redirectTo: '/customer/menu', pathMatch: 'full' },
+  { path: '', redirectTo: '/landing', pathMatch: 'full' },
   {
     path: 'customer',
     loadComponent: () => import('@domain/customer/feature-layout/customer-layout.component')
