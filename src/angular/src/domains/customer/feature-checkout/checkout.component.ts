@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { CartStateService } from '../data-access/cart.state';
 import { CouponsService } from '../data-access/coupons.service';
 import { OrdersService } from '../data-access/orders.service';
+import { OwnerService } from '../../owner/data-access/owner.service';
 import { AuthService } from '@domain/auth/data-access/auth.service';
 import { AddressService } from '../data-access/address.service';
 import { ToastService } from '../../../shared/data-access/toast.service';
@@ -362,7 +363,7 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
                 </div>
               }
               <div class="flex justify-between">
-                <span style="color: var(--muted-foreground); font-size: 13px;">Entrega</span>
+                <span style="color: var(--muted-foreground); font-size: 13px;">Entrega {{ deliveryTime() ? '(' + deliveryTime() + ' min)' : '' }}</span>
                 <span style="color: var(--muted-foreground); font-size: 13px;">{{ isFreeShipping() ? 'Grátis' : formatCurrency(deliveryFee()) }}</span>
               </div>
               <div class="flex justify-between pt-2 border-t" style="border-color: var(--border);">
@@ -424,6 +425,7 @@ export class CheckoutComponent {
   cartState = inject(CartStateService);
   couponsService = inject(CouponsService);
   ordersService = inject(OrdersService);
+  ownerService = inject(OwnerService);
   authService = inject(AuthService);
   addressService = inject(AddressService);
   toastService = inject(ToastService);
@@ -480,7 +482,15 @@ export class CheckoutComponent {
 
   paymentOptions = PAYMENT_OPTIONS;
 
-  deliveryFee = computed(() => 6.00);
+  deliveryFee = computed(() => {
+    const info = this.ownerService.restaurantInfo();
+    return info?.deliveryFee ?? 6.00;
+  });
+
+  deliveryTime = computed(() => {
+    const info = this.ownerService.restaurantInfo();
+    return info?.deliveryTime ?? '35-50';
+  });
 
   isFreeShipping = computed(() => {
     return this.activeCoupon()?.type === 'shipping';
@@ -629,19 +639,13 @@ export class CheckoutComponent {
         this.grandTotal(),
         this.discountAmount(),
         this.orderNotes(),
-        this.addressNotes
+        this.addressNotes,
+        this.activeCoupon()?.code
       );
 
       this.loading.set(false);
 
       if (order) {
-        const activeCp = this.couponsService.activeCoupon();
-        if (activeCp) {
-          this.couponsService.update(activeCp.id, {
-            usedCount: (activeCp.usedCount || 0) + 1,
-            totalSalesVolume: (activeCp.totalSalesVolume || 0) + (order.totalAmount || 0)
-          });
-        }
         this.toastService.success('Pedido finalizado com sucesso!');
         this.cartState.clear();
         this.couponsService.remove();
@@ -650,7 +654,7 @@ export class CheckoutComponent {
     } catch (err: any) {
       this.loading.set(false);
       console.error('Erro ao finalizar pedido:', err);
-      this.error.set('Erro ao processar o pedido. Verifique sua conexão ou a disponibilidade dos itens no estoque.');
+      this.error.set('Não foi possível finalizar o seu pedido. Por favor, tente novamente em instantes.');
     }
   }
 }

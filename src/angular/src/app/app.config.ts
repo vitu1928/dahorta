@@ -29,7 +29,7 @@ import { FirebaseOwnerService } from '../domains/owner/data-access/firebase-owne
 import { FirebaseReviewsService } from '../domains/customer/data-access/firebase-reviews.service';
 
 import { NotificationService } from '../domains/customer/data-access/notification.service';
-import { MockNotificationService } from '../domains/customer/data-access/mock-notification.service';
+import { FirebaseNotificationService } from '../domains/customer/data-access/firebase-notification.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -58,6 +58,6 @@ export const appConfig: ApplicationConfig = {
     { provide: AddressService, useClass: FirebaseAddressService },
     { provide: OwnerService, useClass: FirebaseOwnerService },
     { provide: ReviewsService, useClass: FirebaseReviewsService },
-    { provide: NotificationService, useClass: MockNotificationService }
+    { provide: NotificationService, useClass: FirebaseNotificationService }
   ]
 };

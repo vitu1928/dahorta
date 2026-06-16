@@ -14,7 +14,7 @@ export abstract class NotificationService {
 
   abstract updatePreference(key: keyof NotificationPreferences, value: boolean): void;
   abstract requestPermission(): Promise<boolean>;
-  abstract sendNotification(title: string, body: string, type: keyof NotificationPreferences): void;
+  abstract sendNotification(userId: string, title: string, body: string, type: keyof NotificationPreferences): void;
 }
 
 export type NotificationSettingPermission = 'default' | 'granted' | 'denied';

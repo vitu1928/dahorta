@@ -1,5 +1,5 @@
 import { Injectable, WritableSignal } from '@angular/core';
-import { Supplier, Insumo, PriceRecord, TechnicalSheet, StockMovement, TechnicalSheetIngredient } from './owner.models';
+import { Supplier, Insumo, PriceRecord, TechnicalSheet, StockMovement, TechnicalSheetIngredient, RestaurantInfo } from './owner.models';
 
 @Injectable({ providedIn: 'root' })
 export abstract class OwnerService {
@@ -10,6 +10,7 @@ export abstract class OwnerService {
   abstract readonly stockMovements: WritableSignal<StockMovement[]>;
   abstract readonly plateOfDay: WritableSignal<Record<number, string>>;
   abstract readonly pricePeriodDays: WritableSignal<number>;
+  abstract readonly restaurantInfo: WritableSignal<RestaurantInfo | null>;
 
   // Suppliers CRUD
   abstract addSupplier(supplier: Omit<Supplier, 'id'>): void;
@@ -37,6 +38,7 @@ export abstract class OwnerService {
 
   // Settings & Helpers
   abstract updatePlateOfDay(day: number, productId: string): void;
+  abstract updateRestaurantInfo(info: RestaurantInfo): void;
   abstract getBestPrice(insumoId: string): { value: number; supplierId: string } | null;
   abstract calculateIngredientCost(ingredient: TechnicalSheetIngredient): { unitPrice: number; total: number; supplierId: string | null };
   abstract calculateSheetCost(sheet: TechnicalSheet): number;

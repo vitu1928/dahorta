@@ -83,17 +83,17 @@ export class FirebaseOrdersService extends OrdersService {
             // Notify on status change
             if (this.previousOrderStatusMap.has(order.id)) {
               const prevStatus = this.previousOrderStatusMap.get(order.id);
-              if (prevStatus !== order.status) {
-                const cleanId = order.id;
+              if (prevStatus !== order.status && order.customerId === user.id) {
+                const cleanId = order.id.slice(0, 5); // short id
                 if (order.status === 'preparing') {
-                  this.notificationService.sendNotification('Pedido em Preparo 🥗', `Seu pedido #${cleanId} está sendo preparado com muito carinho!`, 'orderStatus');
+                  this.notificationService.sendNotification(user.id, 'Pedido em Preparo 🥗', `Seu pedido #${cleanId} está sendo preparado com muito carinho!`, 'orderStatus');
                 } else if (order.status === 'ready') {
-                  this.notificationService.sendNotification('Pedido Pronto! 😋', `Seu pedido #${cleanId} está pronto e aguardando o entregador.`, 'orderStatus');
+                  this.notificationService.sendNotification(user.id, 'Pedido Pronto! 😋', `Seu pedido #${cleanId} está pronto e aguardando o entregador.`, 'orderStatus');
                 } else if (order.status === 'delivering') {
-                  this.notificationService.sendNotification('Pedido a Caminho! 🛵', `Seu pedido #${cleanId} saiu para entrega!`, 'orderStatus');
-                  this.notificationService.sendNotification('Entregador se Aproximando 📍', 'O entregador já está a caminho do seu endereço.', 'motoboyApproaching');
+                  this.notificationService.sendNotification(user.id, 'Pedido a Caminho! 🛵', `Seu pedido #${cleanId} saiu para entrega!`, 'orderStatus');
+                  this.notificationService.sendNotification(user.id, 'Entregador se Aproximando 📍', 'O entregador já está a caminho do seu endereço.', 'motoboyApproaching');
                 } else if (order.status === 'delivered') {
-                  this.notificationService.sendNotification('Pedido Entregue! 🎉', 'Seu pedido foi entregue com sucesso. Bom apetite!', 'orderStatus');
+                  this.notificationService.sendNotification(user.id, 'Pedido Entregue! 🎉', 'Seu pedido foi entregue com sucesso. Bom apetite!', 'orderStatus');
                 }
               }
             }
@@ -127,7 +127,8 @@ export class FirebaseOrdersService extends OrdersService {
     totalAmount: number,
     discount: number = 0,
     notes?: string,
-    addressNotes?: string
+    addressNotes?: string,
+    couponCode?: string
   ): Promise<Order> {
     const currentUser = this.authService.currentUser();
     const customerName = currentUser?.name || 'Cliente Anônimo';
@@ -235,7 +236,8 @@ export class FirebaseOrdersService extends OrdersService {
           updatedAt: new Date(),
           notes: notes || '',
           addressNotes: addressNotes || '',
-          deliveryCode: Math.floor(100000 + Math.random() * 900000).toString()
+          deliveryCode: Math.floor(100000 + Math.random() * 900000).toString(),
+          couponCode
         };
 
         // 4. WRITE INCREMENTED COUNTER
@@ -292,7 +294,9 @@ export class FirebaseOrdersService extends OrdersService {
       updates.motoboyName = motoboyName;
     }
 
-    updateDoc(docRef, updates).catch(err => {
+    updateDoc(docRef, updates).then(() => {
+
+    }).catch(err => {
       console.error('Erro ao atualizar status do pedido:', err);
     });
   }

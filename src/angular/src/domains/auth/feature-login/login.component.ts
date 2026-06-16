@@ -64,62 +64,7 @@ import { AuthService } from '../data-access/auth.service';
             Faça login para acessar o sistema
           </p>
 
-          <!-- Contas Demo -->
-          <div
-            class="rounded-lg p-4 mb-6"
-            style="
-              background: var(--secondary);
-              border: 1px solid var(--border-light);
-            "
-          >
-            <p
-              class="mb-3"
-              style="
-                color: var(--muted-foreground);
-                font-size: 11px;
-                font-weight: 600;
-                text-transform: uppercase;
-                letter-spacing: 0.05em;
-              "
-            >
-              Contas demo — senha: 123456
-            </p>
-            <div class="grid grid-cols-2 gap-2">
-              @for (acc of demoAccounts; track acc.email) {
-                <button
-                  (click)="selectDemo(acc.email)"
-                  class="text-left rounded-lg px-3 py-2 transition-all demo-btn"
-                  style="
-                    background: var(--background);
-                    border: 1px solid var(--border);
-                    cursor: pointer;
-                  "
-                >
-                  <div
-                    style="
-                      color: var(--primary);
-                      font-size: 12px;
-                      font-weight: 600;
-                      margin-bottom: 2px;
-                    "
-                  >
-                    {{ acc.label }}
-                  </div>
-                  <div
-                    style="
-                      color: var(--muted-foreground);
-                      font-size: 10px;
-                      overflow: hidden;
-                      text-overflow: ellipsis;
-                      white-space: nowrap;
-                    "
-                  >
-                    {{ acc.email }}
-                  </div>
-                </button>
-              }
-            </div>
-          </div>
+
 
           <!-- Form -->
           <form (submit)="handleLogin($event)" class="space-y-4">
@@ -342,17 +287,7 @@ export class LoginComponent {
   error = signal('');
   loading = signal(false);
 
-  demoAccounts = [
-    { label: 'Dono', email: 'dono@dahorta.com' },
-    { label: 'Funcionário', email: 'func@dahorta.com' },
-    { label: 'Motoboy', email: 'moto@dahorta.com' },
-    { label: 'Cliente', email: 'cliente@email.com' },
-  ];
 
-  selectDemo(email: string) {
-    this.email = email;
-    this.password = '123456';
-  }
 
   async handleLogin(event: Event) {
     event.preventDefault();
