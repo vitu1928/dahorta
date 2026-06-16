@@ -165,10 +165,10 @@ import { AuthService } from '../../auth/data-access/auth.service';
 
       <!-- Floating bottom cart bar -->
       @if (authService.isAuthenticated() && cartCount() > 0 && !modalOpen()) {
-        <div class="fixed bottom-20 md:bottom-8 left-0 right-0 px-6 z-[40] flex justify-center">
+        <div class="fixed bottom-20 md:bottom-8 left-0 right-0 px-6 z-[40] flex justify-center pointer-events-none">
           <button 
             (click)="router.navigate(['/customer/cart'])" 
-            class="w-full max-w-[600px] flex items-center justify-between px-6 py-4 rounded-2xl border-none cursor-pointer text-white" 
+            class="w-full max-w-[600px] flex items-center justify-between px-6 py-4 rounded-2xl border-none cursor-pointer text-white pointer-events-auto" 
             style="background: var(--primary); box-shadow: 0 20px 40px -10px rgba(76, 124, 89, 0.5);"
           >
             <div class="flex items-center gap-4">

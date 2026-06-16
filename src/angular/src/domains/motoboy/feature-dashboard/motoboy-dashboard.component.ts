@@ -171,17 +171,6 @@ import { ToastService } from '../../../shared/data-access/toast.service';
                 Ligar
               </a>
             }
-            <a
-              [href]="getMapsUrl(getOrderAddress(order))"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold border transition-colors"
-              style="background: rgba(66,133,244,0.15); color: #4285f4; border-color: rgba(66,133,244,0.5); text-decoration: none;"
-              title="Abrir rota no Google Maps"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-              Maps
-            </a>
           </div>
 
           <div class="mb-4">
@@ -310,7 +299,6 @@ export class DeliveryCardComponent {
       this.error.set('Falha de permissão ou rede ao registrar a entrega.');
     }
   }
-
   /** Retorna o objeto de endereço do pedido, independente do campo usado */
   getOrderAddress(order: Order): any {
     return order.deliveryAddress || order.address || null;
@@ -328,7 +316,6 @@ export class DeliveryCardComponent {
     ].filter(Boolean).join(', ');
     return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(parts)}&travelmode=driving`;
   }
-
   formatCurrency(v: number): string {
     return v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   }

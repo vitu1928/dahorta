@@ -313,15 +313,16 @@ const ETA_VALUES: Record<OrderStatus, string> = {
                           }
                         </label>
                         <textarea
-                          [(ngModel)]="comment"
+                          [ngModel]="comment()"
+                          (ngModelChange)="comment.set($event)"
                           [placeholder]="needsComment() ? 'Conte o que aconteceu para melhorarmos...' : 'Algo especial que gostou ou pode melhorar?'"
                           rows="3"
                           class="w-full px-4 py-3 rounded-xl outline-none resize-none border"
                           [style.background]="'var(--muted)'"
-                          [style.border-color]="(needsComment() && !comment.trim()) ? 'rgba(196,69,54,0.4)' : 'var(--border)'"
+                          [style.border-color]="(needsComment() && !comment().trim()) ? 'rgba(196,69,54,0.4)' : 'var(--border)'"
                           style="font-size: 13px;"
                         ></textarea>
-                        @if (needsComment() && !comment.trim()) {
+                        @if (needsComment() && !comment().trim()) {
                           <p style="color: var(--destructive); font-size: 11px; margin-top: 4px;">
                             ⚠️ Avaliações com 3 estrelas ou menos exigem um comentário.
                           </p>
@@ -388,7 +389,7 @@ export class OrderTrackingComponent {
   // Review states
   stars = signal(0);
   hoverStar = signal(0);
-  comment = '';
+  comment = signal('');
 
   existingReview = computed(() => {
     const o = this.order();
@@ -402,7 +403,7 @@ export class OrderTrackingComponent {
 
   canSubmitReview = computed(() => {
     const s = this.stars();
-    const commentOk = !this.needsComment() || this.comment.trim().length > 0;
+    const commentOk = !this.needsComment() || this.comment().trim().length > 0;
     return s > 0 && commentOk;
   });
 
@@ -516,7 +517,7 @@ export class OrderTrackingComponent {
     this.reviewsService.addReview({
       orderId: o.id,
       stars: this.stars(),
-      comment: this.comment.trim() || undefined,
+      comment: this.comment().trim() || undefined,
       createdAt: new Date(),
       customerId: currentUser?.id || 'guest',
       customerName: currentUser?.name || 'Cliente',
