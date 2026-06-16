@@ -244,11 +244,11 @@ export class FirebaseOrdersService extends OrdersService {
         transaction.set(counterRef, { orderCount: nextCount }, { merge: true });
 
         // 5. WRITE THE ORDER
-        transaction.set(orderDocRef, {
+        transaction.set(orderDocRef, cleanUndefined({
           ...order,
           createdAt: new Date(),
           updatedAt: new Date()
-        });
+        }));
 
         // 6. WRITE THE STOCK UPDATES AND MOVEMENTS (ALL WRITES LAST)
         for (const [insumoId, info] of stockUpdates.entries()) {

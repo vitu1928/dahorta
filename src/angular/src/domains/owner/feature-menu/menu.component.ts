@@ -303,11 +303,11 @@ const DAYS_OF_WEEK = [
                 </div>
                 <div class="space-y-1">
                   <label class="text-xs font-bold text-muted-foreground">Preço de Venda (R$)</label>
-                  <input type="number" step="0.01" [(ngModel)]="formState.price" class="w-full px-4 py-2.5 rounded-xl border border-border bg-white text-foreground outline-none focus:border-primary text-sm font-bold" />
+                  <input type="number" step="0.01" [ngModel]="formState.price" (ngModelChange)="onPriceChange($event)" class="w-full px-4 py-2.5 rounded-xl border border-border bg-white text-foreground outline-none focus:border-primary text-sm font-bold" />
                 </div>
                 <div class="space-y-1">
                   <label class="text-xs font-bold text-muted-foreground">Margem Alvo (%)</label>
-                  <input type="number" [(ngModel)]="formState.desiredMargin" class="w-full px-4 py-2.5 rounded-xl border border-border bg-white text-foreground outline-none focus:border-primary text-sm" />
+                  <input type="number" [ngModel]="formState.desiredMargin" (ngModelChange)="onMarginChange($event)" class="w-full px-4 py-2.5 rounded-xl border border-border bg-white text-foreground outline-none focus:border-primary text-sm" />
                 </div>
               </div>
 
@@ -620,6 +620,9 @@ export class MenuComponent {
     desiredMargin: 40
   };
   formIngredients: (Partial<TechnicalSheetIngredient> & { id: string })[] = [];
+  
+  readonly formPrice = signal<number>(0);
+  readonly formDesiredMargin = signal<number>(40);
 
   // Combo State variables
   comboState = {
@@ -678,8 +681,8 @@ export class MenuComponent {
   // Calculator panel state
   readonly calculatorState = computed(() => {
     const ingredients = this.formIngredients;
-    const price = this.formState.price;
-    const desiredMargin = this.formState.desiredMargin;
+    const price = this.formPrice();
+    const desiredMargin = this.formDesiredMargin();
 
     const totalCost = ingredients.reduce((sum, ing) => {
       if (!ing.insumoId || !ing.quantity) return sum;
@@ -703,6 +706,16 @@ export class MenuComponent {
     return { totalCost, suggestedPrice, realMargin, profit, marginColor, marginLabel };
   });
 
+  onPriceChange(val: number) {
+    this.formState.price = val;
+    this.formPrice.set(val);
+  }
+
+  onMarginChange(val: number) {
+    this.formState.desiredMargin = val;
+    this.formDesiredMargin.set(val);
+  }
+
   // Actions
   openCreateForm() {
     this.editProduct.set(undefined);
@@ -719,6 +732,8 @@ export class MenuComponent {
       featured: false,
       desiredMargin: 45
     };
+    this.formPrice.set(0);
+    this.formDesiredMargin.set(45);
     this.formIngredients = [];
     this.showForm.set(true);
   }
@@ -738,6 +753,8 @@ export class MenuComponent {
       featured: product.featured || false,
       desiredMargin: product.desiredMargin || 45
     };
+    this.formPrice.set(product.price);
+    this.formDesiredMargin.set(product.desiredMargin || 45);
     const sheet = this.ownerService.getTechnicalSheetByProduct(product.id);
     this.formIngredients = sheet ? sheet.ingredients.map(i => ({ ...i })) : [];
     this.showForm.set(true);
