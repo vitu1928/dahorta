@@ -331,10 +331,10 @@ export class FirebaseOwnerService extends OwnerService {
         const delta = movement.type === 'entry' ? movement.quantity : -movement.quantity;
         const newQty = Math.max(0, currentQty + delta);
 
-        transaction.set(newMovRef, {
+        transaction.set(newMovRef, this.sanitizeObject({
           ...movement,
           timestamp: new Date()
-        });
+        }));
         transaction.update(stockRef, {
           currentQuantity: newQty
         });
