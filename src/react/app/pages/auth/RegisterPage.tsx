@@ -6,7 +6,7 @@ import { useApp } from "../../store/AppContext";
 import logoImg from "figma:asset/db23158a97674c4fe48dc9d4281a185fc5cf6a4b.png";
 
 export default function RegisterPage() {
-  const { register } = useApp();
+  const { register, cartCount } = useApp();
   const navigate = useNavigate();
   const [form, setForm] = useState({
     name: "",
@@ -39,7 +39,11 @@ export default function RegisterPage() {
     const result = register(form.name, form.email, form.password, form.phone);
     setLoading(false);
     if (result.success) {
-      navigate("/menu");
+      if (cartCount > 0) {
+        navigate("/cart");
+      } else {
+        navigate("/menu");
+      }
     } else {
       setError(result.message);
     }

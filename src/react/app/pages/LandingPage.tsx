@@ -7,8 +7,10 @@ import {
   ShieldCheck, 
   ChevronRight, 
   Instagram, 
-  Facebook
+  Facebook,
+  ShoppingCart
 } from "lucide-react";
+import { useApp } from "../store/AppContext";
 
 // Assets (Utilizando os imports originais do seu template Figma)
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
@@ -19,6 +21,7 @@ import bowl2 from "figma:asset/a3b2eda0912e4199fbfbe914a3238135156a1f38.png";
 import bowl3 from "figma:asset/0736d60c269c3c9d4a52cf8eeee6c6038586b08e.png";
 
 export default function LandingPage() {
+  const { cartCount } = useApp();
   const features = [
     {
       icon: <ShieldCheck size={24} />,
@@ -84,12 +87,26 @@ export default function LandingPage() {
             <a href="#sobre" className="text-sm font-medium hover:text-[#4C7C59] transition-colors">Qualidade</a>
             <a href="#origem" className="text-sm font-medium hover:text-[#4C7C59] transition-colors">Nossa Origem</a>
           </div>
-          <button 
-            onClick={handleOrderRedirect}
-            className="bg-[#E9C46A] text-[#1F1F1F] px-8 py-2.5 rounded-full font-bold text-sm hover:bg-[#dfba5c] transition-all shadow-md shadow-[#E9C46A]/20"
-          >
-            Peça Agora
-          </button>
+          <div className="flex items-center gap-2 sm:gap-4">
+            <button 
+              onClick={() => window.location.href = '/cart'}
+              className="relative flex items-center gap-2 border-2 border-[#4C7C59] text-[#4C7C59] px-4 sm:px-6 py-2.5 rounded-full font-bold text-sm hover:bg-[#4C7C59] hover:text-white transition-all cursor-pointer"
+            >
+              <ShoppingCart size={16} />
+              <span className="hidden sm:inline">Ver Carrinho</span>
+              {cartCount > 0 && (
+                <span className="bg-[#E9C46A] text-[#1F1F1F] text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold absolute -top-2 -right-2 shadow-sm border border-white animate-pulse">
+                  {cartCount}
+                </span>
+              )}
+            </button>
+            <button 
+              onClick={handleOrderRedirect}
+              className="bg-[#E9C46A] text-[#1F1F1F] px-6 sm:px-8 py-2.5 rounded-full font-bold text-sm hover:bg-[#dfba5c] transition-all shadow-md shadow-[#E9C46A]/20 cursor-pointer"
+            >
+              Peça Agora
+            </button>
+          </div>
         </div>
       </nav>
 

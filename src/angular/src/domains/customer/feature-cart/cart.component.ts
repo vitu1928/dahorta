@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { CartStateService } from '../data-access/cart.state';
 import { CouponsService } from '../data-access/coupons.service';
 import { EmployeeService } from '../../employee/data-access/employee.service';
+import { AuthService } from '@domain/auth/data-access/auth.service';
 
 @Component({
   selector: 'app-cart',
@@ -333,7 +334,7 @@ import { EmployeeService } from '../../employee/data-access/employee.service';
 
           <!-- Checkout CTA -->
           <button
-            (click)="!restaurantOpen() ? null : router.navigate(['/customer/checkout'])"
+            (click)="handleCheckout()"
             [disabled]="!restaurantOpen()"
             class="w-full py-4 rounded-xl flex items-center justify-between px-6 mb-3 border-none transition-all"
             [style.background]="restaurantOpen() ? 'var(--primary)' : '#9ca3af'"
@@ -370,6 +371,7 @@ export class CartComponent {
   cartState = inject(CartStateService);
   couponsService = inject(CouponsService);
   employeeService = inject(EmployeeService);
+  authService = inject(AuthService);
   router = inject(Router);
 
   cartItems = this.cartState.items;
@@ -377,6 +379,7 @@ export class CartComponent {
   cartCount = this.cartState.count;
   orderNotes = this.cartState.orderNotes;
   restaurantOpen = this.employeeService.restaurantOpen;
+  isLoggedIn = this.authService.isAuthenticated;
 
   coupons = this.couponsService.coupons;
   activeCoupon = this.couponsService.activeCoupon;
@@ -441,6 +444,15 @@ export class CartComponent {
   removeCoupon() {
     this.couponsService.remove();
     this.couponError.set('');
+  }
+
+  handleCheckout() {
+    if (!this.restaurantOpen()) return;
+    if (!this.isLoggedIn()) {
+      this.router.navigate(['/register']);
+    } else {
+      this.router.navigate(['/customer/checkout']);
+    }
   }
 
   updateQuantity(productId: string, quantity: number) {

@@ -202,11 +202,11 @@ export class FirebaseOrdersService extends OrdersService {
         transaction.set(counterRef, { orderCount: nextCount }, { merge: true });
 
         // 5. WRITE THE ORDER
-        transaction.set(orderDocRef, {
+        transaction.set(orderDocRef, cleanUndefined({
           ...order,
           createdAt: new Date(),
           updatedAt: new Date()
-        });
+        }));
 
         // 6. WRITE THE STOCK UPDATES AND MOVEMENTS (ALL WRITES LAST)
         for (const [insumoId, info] of stockUpdates.entries()) {
@@ -215,7 +215,7 @@ export class FirebaseOrdersService extends OrdersService {
             transaction.update(info.docRef, { currentQuantity: newQty });
 
             const newMovRef = doc(collection(this.firestore, 'stockMovements'));
-            transaction.set(newMovRef, {
+            transaction.set(newMovRef, cleanUndefined({
               stockItemId: insumoId,
               type: 'exit_auto',
               quantity: info.deductQty,
@@ -224,7 +224,7 @@ export class FirebaseOrdersService extends OrdersService {
               timestamp: new Date(),
               notes: `Baixa automática do pedido ${orderId}`,
               orderId
-            });
+            }));
           }
         }
 
@@ -333,4 +333,24 @@ export class FirebaseOrdersService extends OrdersService {
       return () => unsub();
     });
   }
+}
+
+function cleanUndefined(obj: any): any {
+  if (obj === null || typeof obj !== 'object') {
+    return obj;
+  }
+  if (obj instanceof Date) {
+    return obj;
+  }
+  if (Array.isArray(obj)) {
+    return obj.map(item => cleanUndefined(item));
+  }
+  const cleanObj: any = {};
+  for (const key of Object.keys(obj)) {
+    const val = obj[key];
+    if (val !== undefined) {
+      cleanObj[key] = cleanUndefined(val);
+    }
+  }
+  return cleanObj;
 }

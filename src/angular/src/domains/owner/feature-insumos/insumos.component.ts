@@ -270,12 +270,22 @@ const supplierColors = ["#d4745f", "#3b82f6", "#22c55e", "#a855f7"];
                       </td>
                       <td class="px-5 py-3 text-muted-foreground italic">{{ r.observation ?? '—' }}</td>
                       <td class="px-5 py-3">
-                        <button 
-                          (click)="deletePriceRecord(r.id)"
-                          class="w-6 h-6 rounded flex items-center justify-center bg-transparent border-none text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 cursor-pointer"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/></svg>
-                        </button>
+                        <div class="flex items-center gap-1.5">
+                          <button 
+                            (click)="openPriceEditForm(r)"
+                            class="w-6 h-6 rounded flex items-center justify-center bg-transparent border-none text-muted-foreground/60 hover:text-primary hover:bg-primary/10 cursor-pointer"
+                            title="Editar Preço"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                          </button>
+                          <button 
+                            (click)="deletePriceRecord(r.id)"
+                            class="w-6 h-6 rounded flex items-center justify-center bg-transparent border-none text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 cursor-pointer"
+                            title="Excluir Preço"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/></svg>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   </tbody>
@@ -376,7 +386,9 @@ const supplierColors = ["#d4745f", "#3b82f6", "#22c55e", "#a855f7"];
         <div class="fixed inset-0 bg-black/60 backdrop-blur-xs" (click)="closePriceModal()"></div>
         <div class="relative w-full max-w-sm bg-card border border-border rounded-2xl p-6 space-y-6 z-40 text-xs shadow-lg">
           <div class="flex items-center justify-between">
-            <h3 class="text-sm font-bold text-foreground" style="font-family: 'Space Grotesk', sans-serif">Registrar Preço</h3>
+            <h3 class="text-sm font-bold text-foreground" style="font-family: 'Space Grotesk', sans-serif">
+              {{ editingPriceRecord() ? 'Editar Preço' : 'Registrar Preço' }}
+            </h3>
             <button (click)="closePriceModal()" class="bg-transparent border-none text-muted-foreground cursor-pointer hover:text-foreground">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/></svg>
             </button>
@@ -438,7 +450,7 @@ const supplierColors = ["#d4745f", "#3b82f6", "#22c55e", "#a855f7"];
                 class="flex-1 py-3 rounded-xl text-white font-bold cursor-pointer border-none flex items-center justify-center gap-1.5 bg-primary disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-                Registrar
+                {{ editingPriceRecord() ? 'Atualizar' : 'Registrar' }}
               </button>
             </div>
           </div>
@@ -460,6 +472,7 @@ export class InsumosComponent {
   readonly deleteConfirmId = signal<string | null>(null);
 
   readonly showPriceModal = signal(false);
+  readonly editingPriceRecord = signal<PriceRecord | null>(null);
 
   // Expose owner signals
   readonly insumos = this.ownerService.insumos;
@@ -608,7 +621,16 @@ export class InsumosComponent {
 
   isBestRecord(insumoId: string, record: PriceRecord, index: number): boolean {
     const best = this.getBestPriceForInsumo(insumoId);
-    return !!best && best.value === record.value && best.supplierId === record.supplierId && index === 0;
+    if (!best) return false;
+    
+    // Verifica se este registro bate com o melhor valor e fornecedor
+    const matchesBest = record.value === best.value && record.supplierId === best.supplierId;
+    if (!matchesBest) return false;
+
+    // Encontra o primeiro índice (mais recente) que tem esse melhor preço para sinalizá-lo
+    const records = this.getInsumoRecords(insumoId);
+    const firstMatchingIndex = records.findIndex(r => r.value === best.value && r.supplierId === best.supplierId);
+    return index === firstMatchingIndex;
   }
 
   formatCurrency(value: number): string {
@@ -696,6 +718,7 @@ export class InsumosComponent {
     const insumo = this.selectedInsumo();
     if (!insumo) return;
 
+    this.editingPriceRecord.set(null);
     this.priceFormState = {
       supplierId: this.suppliers()[0]?.id ?? '',
       value: 0,
@@ -705,26 +728,72 @@ export class InsumosComponent {
     this.showPriceModal.set(true);
   }
 
+  openPriceEditForm(record: PriceRecord) {
+    const insumo = this.selectedInsumo();
+    if (!insumo) return;
+
+    this.editingPriceRecord.set(record);
+    // Converte a data de Date para string formatada YYYY-MM-DD
+    const dateStr = new Date(record.date).toISOString().split('T')[0];
+
+    this.priceFormState = {
+      supplierId: record.supplierId,
+      value: record.value,
+      date: dateStr,
+      observation: record.observation ?? ''
+    };
+    this.showPriceModal.set(true);
+  }
+
   closePriceModal() {
     this.showPriceModal.set(false);
+    this.editingPriceRecord.set(null);
   }
 
   savePriceRecord() {
     const insumo = this.selectedInsumo();
-    if (!insumo || !this.priceFormState.supplierId || !this.priceFormState.value) return;
+    if (!insumo || !this.priceFormState.supplierId) return;
 
-    this.ownerService.addPriceRecord({
+    // Garante que o valor é um número válido maior que zero
+    const valueNum = Number(this.priceFormState.value);
+    if (isNaN(valueNum) || valueNum <= 0) {
+      alert('Por favor, insira um preço válido maior que zero.');
+      return;
+    }
+
+    // Faz o parse seguro da data. Se estiver vazia ou inválida, usa a data atual (Hoje).
+    let recordDate = new Date();
+    if (this.priceFormState.date) {
+      const parsed = new Date(this.priceFormState.date + 'T12:00:00');
+      if (!isNaN(parsed.getTime())) {
+        recordDate = parsed;
+      }
+    }
+
+    const recordPayload: Omit<PriceRecord, 'id'> = {
       insumoId: insumo.id,
       supplierId: this.priceFormState.supplierId,
-      value: this.priceFormState.value,
-      date: new Date(this.priceFormState.date + 'T12:00:00'),
-      observation: this.priceFormState.observation || undefined
-    });
+      value: valueNum,
+      date: recordDate
+    };
+
+    if (this.priceFormState.observation) {
+      recordPayload.observation = this.priceFormState.observation;
+    }
+
+    const editing = this.editingPriceRecord();
+    if (editing) {
+      this.ownerService.updatePriceRecord(editing.id, recordPayload);
+    } else {
+      this.ownerService.addPriceRecord(recordPayload);
+    }
 
     this.closePriceModal();
   }
 
   deletePriceRecord(id: string) {
-    this.ownerService.deletePriceRecord(id);
+    if (confirm('Deseja realmente excluir este registro de preço?')) {
+      this.ownerService.deletePriceRecord(id);
+    }
   }
 }

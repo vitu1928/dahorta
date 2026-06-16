@@ -33,6 +33,7 @@ export default function CartPage() {
     activeCoupon,
     discountAmount,
     coupons,
+    currentUser,
   } = useApp();
   const navigate = useNavigate();
   const [couponInput, setCouponInput] = useState("");
@@ -512,7 +513,13 @@ export default function CartPage() {
         {/* Checkout CTA */}
         <motion.button
           whileTap={{ scale: 0.97 }}
-          onClick={() => navigate("/checkout")}
+          onClick={() => {
+            if (!currentUser) {
+              navigate("/register");
+            } else {
+              navigate("/checkout");
+            }
+          }}
           className="w-full py-4 rounded-xl flex items-center justify-between px-6 mb-3"
           style={{
             background: "var(--primary)",

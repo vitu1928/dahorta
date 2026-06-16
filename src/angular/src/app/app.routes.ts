@@ -12,7 +12,7 @@ export const routes: Routes = [
     children: [
       { path: 'menu', loadComponent: () => import('@domain/customer/feature-menu/menu.component')
           .then(m => m.MenuComponent) },
-      { path: 'cart', canActivate: [authGuard], loadComponent: () => import('@domain/customer/feature-cart/cart.component')
+      { path: 'cart', loadComponent: () => import('@domain/customer/feature-cart/cart.component')
           .then(m => m.CartComponent) },
       { path: 'checkout', canActivate: [authGuard], loadComponent: () => import('@domain/customer/feature-checkout/checkout.component')
           .then(m => m.CheckoutComponent) },

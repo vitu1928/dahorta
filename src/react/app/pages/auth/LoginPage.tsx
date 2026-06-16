@@ -6,7 +6,7 @@ import { useApp } from "../../store/AppContext";
 import logoImg from "figma:asset/db23158a97674c4fe48dc9d4281a185fc5cf6a4b.png";
 
 export default function LoginPage() {
-  const { login } = useApp();
+  const { login, cartCount } = useApp();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -25,6 +25,7 @@ export default function LoginPage() {
       if (result.role === "owner") navigate("/owner");
       else if (result.role === "employee") navigate("/employee");
       else if (result.role === "motoboy") navigate("/motoboy");
+      else if (cartCount > 0) navigate("/cart");
       else navigate("/menu");
     } else {
       setError(result.message);

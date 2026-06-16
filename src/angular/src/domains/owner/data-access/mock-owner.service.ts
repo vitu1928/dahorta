@@ -69,6 +69,10 @@ export class MockOwnerService extends OwnerService {
     this.priceRecords.update(list => list.filter(r => r.id !== id));
   }
 
+  override updatePriceRecord(id: string, record: Partial<PriceRecord>): void {
+    this.priceRecords.update(list => list.map(r => r.id === id ? { ...r, ...record } as PriceRecord : r));
+  }
+
   // Technical Sheets
   override saveTechnicalSheet(sheet: Omit<TechnicalSheet, 'id'> & { id?: string }): void {
     if (sheet.id) {

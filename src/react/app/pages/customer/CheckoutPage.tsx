@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
@@ -23,6 +23,12 @@ const PAYMENT_OPTIONS: { id: PaymentMethod; label: string; icon: React.ReactNode
 export default function CheckoutPage() {
   const { cart, cartTotal, deliveryFee, placeOrder, currentUser, orderNotes, activeCoupon, discountAmount } = useApp();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!currentUser) {
+      navigate("/register", { replace: true });
+    }
+  }, [currentUser, navigate]);
 
   const [step, setStep] = useState<"address" | "payment" | "confirm">("address");
   const [address, setAddress] = useState<Address>({

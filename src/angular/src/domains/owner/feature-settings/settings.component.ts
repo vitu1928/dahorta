@@ -17,7 +17,7 @@ interface Schedule {
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div class="p-6 lg:p-8 max-w-3xl space-y-6 text-foreground font-sans">
+    <div class="p-6 lg:p-8 space-y-6 text-foreground font-sans">
       
       <!-- ── HEADER ── -->
       <div class="flex items-center justify-between pb-4 border-b border-border">

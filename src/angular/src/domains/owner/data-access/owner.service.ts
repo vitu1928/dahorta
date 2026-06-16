@@ -23,6 +23,7 @@ export abstract class OwnerService {
 
   // Price Records
   abstract addPriceRecord(record: Omit<PriceRecord, 'id'>): void;
+  abstract updatePriceRecord(id: string, record: Partial<PriceRecord>): void;
   abstract deletePriceRecord(id: string): void;
 
   // Technical Sheets

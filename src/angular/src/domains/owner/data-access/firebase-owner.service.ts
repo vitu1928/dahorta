@@ -213,10 +213,20 @@ export class FirebaseOwnerService extends OwnerService {
   override addPriceRecord(record: Omit<PriceRecord, 'id'>): void {
     const colRef = collection(this.firestore, 'priceRecords');
     const docRef = doc(colRef);
-    setDoc(docRef, {
-      ...record,
+    
+    // Constrói objeto limpo sem propriedades undefined para o Firestore
+    const data: any = {
+      insumoId: record.insumoId,
+      supplierId: record.supplierId,
+      value: record.value,
       date: record.date || new Date()
-    }).catch(err => {
+    };
+    
+    if (record.observation !== undefined && record.observation !== null && record.observation !== '') {
+      data.observation = record.observation;
+    }
+
+    setDoc(docRef, data).catch(err => {
       console.error('Erro ao adicionar registro de preço:', err);
     });
   }
@@ -225,6 +235,19 @@ export class FirebaseOwnerService extends OwnerService {
     const docRef = doc(this.firestore, `priceRecords/${id}`);
     deleteDoc(docRef).catch(err => {
       console.error('Erro ao excluir registro de preço:', err);
+    });
+  }
+
+  override updatePriceRecord(id: string, record: Partial<PriceRecord>): void {
+    const docRef = doc(this.firestore, `priceRecords/${id}`);
+    const data: any = { ...record };
+    
+    if (data.observation === undefined || data.observation === null || data.observation === '') {
+      data.observation = null; // Firestore accepts null to clear fields
+    }
+
+    updateDoc(docRef, data).catch(err => {
+      console.error('Erro ao atualizar registro de preço:', err);
     });
   }
 

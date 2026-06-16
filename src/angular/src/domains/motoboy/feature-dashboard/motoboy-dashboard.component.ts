@@ -94,11 +94,11 @@ import { ToastService } from '../../../shared/data-access/toast.service';
                 [href]="getMapsUrl(getOrderAddress(order))"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold border transition-colors"
-                style="background: rgba(66,133,244,0.12); color: #4285f4; border-color: rgba(66,133,244,0.35); text-decoration: none;"
+                class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold border transition-all active:scale-[0.97]"
+                style="background: rgba(66,133,244,0.15); color: #4285f4; border-color: rgba(66,133,244,0.45); text-decoration: none; min-height: 32px;"
                 title="Abrir rota no Google Maps"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
                 Navegar
               </a>
             </div>
