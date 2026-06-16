@@ -1,8 +1,8 @@
-<p align="center">
-  <img src="./src/angular/assets/logo.png" alt="DaHorta Logo" width="250">
-</p>
 
-# DaHorta — Comanda Digital
+<h1 align="center">
+  <img src="./src/angular/public/assets/logo.png" alt="DaHorta Logo" width="80" color="transparent" style="vertical-align: middle;">
+  <span>DaHorta — Comanda Digital</span>
+</h1>
 
 > **Transformando a gestão de Dark Kitchens de alimentação saudável através de uma experiência digital integrada, automatizada e em tempo real.**
 
