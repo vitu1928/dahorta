@@ -1,0 +1,386 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,600;1,700;1,800&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&family=Poppins:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+@import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+/* =========================================
+   🎨 DAHORTA – DESIGN SYSTEM VARIABLES
+========================================= */
+:root {
+  --font-size: 16px;
+
+  /* === CORES BASE === */
+  --primary: #4C7C59;
+  --primary-hover: #3E684A;
+  --primary-foreground: #FFFFFF;
+
+  --accent: #E9C46A;
+  --accent-foreground: #1F1F1F;
+
+  --background: #FFFFFF;
+  --background-soft: #F7F9F7;
+  --foreground: #1F1F1F;
+
+  --card: #FFFFFF;
+  --card-foreground: #1F1F1F;
+
+  --popover: #FFFFFF;
+  --popover-foreground: #1F1F1F;
+
+  --secondary: #E6F0EA;
+  --secondary-foreground: #4C7C59;
+
+  --muted: #EEF2EE;
+  --muted-foreground: #5F5F5F;
+
+  --border: #DADADA;
+  --border-light: #EEF2EE;
+  
+  --input: #FFFFFF;
+  --input-background: #FFFFFF;
+
+  --success: #3AA55D;
+  --warning: #F2994A;
+  --destructive: #E63946;
+  --info: #2D9CDB;
+
+  --text-primary: #1F1F1F;
+  --text-secondary: #5F5F5F;
+
+  --ring: rgba(76,124,89,0.4);
+
+  /* === SIDEBAR PADRÃO === */
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #1F1F1F;
+  --sidebar-active: #4C7C59;
+  --sidebar-border: #EEF2EE;
+
+  /* === RADIUS === */
+  --radius-input: 8px;
+  --radius-card: 12px;
+  --radius: 12px;
+
+  /* === SHADOW === */
+  --shadow-default: 0px 4px 16px rgba(0,0,0,0.04);
+  --shadow-hover: 0px 6px 20px rgba(0,0,0,0.08);
+  --shadow-card: 0px 4px 16px rgba(0,0,0,0.04);
+}
+
+/* === THEME SELECTORS === */
+.owner {
+  --sidebar: #152415;
+  --sidebar-foreground: #FFFFFF;
+  --sidebar-active: #5E8F6A;
+  --background: #F7F9F7;
+  --foreground: #1F1F1F;
+  --card: #FFFFFF;
+  --card-foreground: #1F1F1F;
+  --border: #DADADA;
+  --muted: #EEF2EE;
+  --muted-foreground: #5F5F5F;
+}
+
+.employee {
+  --sidebar: #4C7C59;
+  --sidebar-foreground: #FFFFFF;
+  --sidebar-active: rgba(255,255,255,0.1);
+  --sidebar-active-border: #FFFFFF;
+  --background: #F7F9F7;
+  --foreground: #1F1F1F;
+  --card: #FFFFFF;
+  --card-foreground: #1F1F1F;
+  --border: #DADADA;
+  --muted: #EEF2EE;
+  --muted-foreground: #5F5F5F;
+}
+
+.motoboy {
+  --sidebar: #4C7C59;
+  --sidebar-foreground: #FFFFFF;
+  --sidebar-active: rgba(255,255,255,0.1);
+  --sidebar-active-border: #FFFFFF;
+  --background: #F7F9F7;
+  --foreground: #1F1F1F;
+  --card: #FFFFFF;
+  --card-foreground: #1F1F1F;
+  --border: #DADADA;
+  --muted: #EEF2EE;
+  --muted-foreground: #5F5F5F;
+}
+
+
+/* =========================================
+   🎨 TAILWIND THEME CUSTOMIZATIONS
+========================================= */
+@theme {
+  --color-background: var(--background);
+  --color-background-soft: var(--background-soft);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-border-light: var(--border-light);
+  --color-input: var(--input);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-destructive: var(--destructive);
+  --color-info: var(--info);
+  --color-ring: var(--ring);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-active: var(--sidebar-active);
+
+  --radius-sm: var(--radius-input);
+  --radius-md: var(--radius-card);
+  --radius-lg: calc(var(--radius-card) + 4px);
+
+  --shadow-card: var(--shadow-card);
+  --shadow-hover: var(--shadow-hover);
+}
+
+/* =========================================
+   🧱 BASE ELEMENTS & GLOBAL STYLES
+========================================= */
+body {
+  font-family: 'Poppins', 'Inter', sans-serif;
+  background-color: var(--background);
+  color: var(--foreground);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  margin: 0;
+}
+
+html {
+  font-size: var(--font-size);
+  scroll-behavior: smooth;
+}
+
+h1 {
+  font-family: 'Poppins', sans-serif;
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+h2 {
+  font-family: 'Poppins', sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+h3 {
+  font-family: 'Poppins', sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+h4 {
+  font-family: 'Poppins', sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--muted-foreground);
+}
+
+button {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+input, textarea, select {
+  font-size: 16px;
+  font-weight: 400;
+  border-radius: var(--radius-input);
+  background: var(--input);
+}
+
+/* =========================================
+   🌿 SCROLLBAR PADRONIZADA
+========================================= */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: var(--primary);
+  border-radius: 999px;
+  opacity: 0.6;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--primary-hover);
+}
+
+/* =========================================
+   🔕 SCROLLBAR HIDE
+========================================= */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* =========================================
+   🌾 TEXTURA ORGÂNICA (SUAVE)
+========================================= */
+.grain-overlay {
+  position: relative;
+  overflow: hidden;
+}
+
+.grain-overlay::after {
+  content: '';
+  position: absolute;
+  inset: -50%;
+  width: 200%;
+  height: 200%;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 200px 200px;
+  opacity: 0.025;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* =========================================
+   🌿 VIGNETTE SUAVE (APENAS HERO)
+========================================= */
+.vignette::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 50%,
+    rgba(0,0,0,0.15) 100%
+  );
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* =========================================
+   🧱 TIPOGRAFIA UTILITÁRIA
+========================================= */
+.display-heading {
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.display-heading-italic {
+  font-family: 'Inter', sans-serif;
+  font-style: italic;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+}
+
+.overline-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--primary);
+}
+
+/* =========================================
+   🟢 CARD LIFT (PADRÃO SISTEMA)
+========================================= */
+.card-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-hover);
+}
+
+/* =========================================
+   🟢 FOCUS GLOW PADRÃO VERDE
+========================================= */
+.focus-glow {
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.focus-glow:focus-within {
+  box-shadow: 0 0 0 3px var(--ring);
+  border-color: var(--primary);
+}
+
+/* =========================================
+   📏 SEPARADOR EDITORIAL
+========================================= */
+.editorial-sep {
+  width: 40px;
+  height: 2px;
+  background: var(--primary);
+  margin: 12px 0;
+  border-radius: 2px;
+}
+
+/* =========================================
+   ✨ ACCENT LINE NATURAL
+========================================= */
+.accent-line {
+  position: relative;
+}
+
+.accent-line::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -4px;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    var(--accent),
+    transparent
+  );
+}
+
+@media (max-width: 768px) {
+  *::-webkit-scrollbar {
+    width: 4px;
+  }
+}

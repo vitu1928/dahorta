@@ -1,0 +1,315 @@
+<!-- Landing Page — DaHorta Angular Migration -->
+<!-- Source: src/react/app/pages/LandingPage.tsx -->
+<!-- All Tailwind classes preserved 1:1 from React original -->
+
+<div class="min-h-screen bg-white text-[#1F1F1F] font-['Outfit',sans-serif]">
+
+  <!-- ==============================
+       NAVIGATION
+  ================================ -->
+  <nav class="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-lg border-b border-[#EEF2EE] px-6 py-4">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <app-image-with-fallback
+          src="/assets/logo.png"
+          alt="DaHorta"
+          className="h-10 w-auto object-contain"
+        />
+      </div>
+      <div class="hidden md:flex items-center gap-8">
+        <a href="javascript:void(0)" (click)="scrollTo('menu')" class="text-sm font-medium hover:text-[#4C7C59] transition-colors">Cardápio</a>
+        <a href="javascript:void(0)" (click)="scrollTo('sobre')" class="text-sm font-medium hover:text-[#4C7C59] transition-colors">Qualidade</a>
+        <a href="javascript:void(0)" (click)="scrollTo('origem')" class="text-sm font-medium hover:text-[#4C7C59] transition-colors">Nossa Origem</a>
+      </div>
+      <button
+        (click)="handleOrderRedirect()"
+        class="bg-[#E9C46A] text-[#1F1F1F] px-8 py-2.5 rounded-full font-bold text-sm hover:bg-[#dfba5c] transition-all shadow-md shadow-[#E9C46A]/20"
+      >
+        Peça Agora
+      </button>
+    </div>
+  </nav>
+
+  <!-- ==============================
+       HERO SECTION
+  ================================ -->
+  <section class="relative pt-40 pb-20 px-6 overflow-hidden bg-[#F7F9F7]">
+    <!-- Organic Blob Background -->
+    <div
+      class="absolute -top-[10%] -right-[5%] w-[60%] h-[120%] bg-[#E6F0EA] opacity-50 z-0 pointer-events-none"
+      style="clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%); border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;"
+    ></div>
+
+    <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center relative z-10">
+      <!-- Hero Text -->
+      <div>
+        <div class="inline-block font-serif italic text-xl text-[#4C7C59] mb-4">
+          Rápido. Fresco. Orgânico.
+        </div>
+        <h1 class="text-6xl lg:text-7xl font-bold mb-8 leading-[1] tracking-tight text-[#1F1F1F]">
+          DaHorta para <br />
+          <span class="text-[#4C7C59]">o seu Prato.</span>
+        </h1>
+        <p class="text-lg text-[#5F5F5F] mb-10 max-w-lg leading-relaxed font-medium">
+          Culinária viva com ingredientes colhidos hoje. Bowls artesanais preparados com rigor técnico para quem busca performance sem abrir mão do sabor.
+        </p>
+        <div class="flex flex-col sm:row gap-6">
+          <button
+            (click)="handleOrderRedirect()"
+            class="bg-[#4C7C59] text-white px-10 py-5 rounded-2xl font-bold text-lg hover:bg-[#3E684A] transition-all shadow-xl shadow-[#4C7C59]/20 flex items-center justify-center gap-3 group"
+          >
+            Explorar Cardápio
+            <!-- ChevronRight icon (inline SVG — replaces lucide-react) -->
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="group-hover:translate-x-1 transition-transform">
+              <path d="m9 18 6-6-6-6"/>
+            </svg>
+          </button>
+          <!-- Social Proof -->
+          <div class="flex items-center gap-4 mt-4">
+            <div class="flex -space-x-3">
+              @for (i of pravatarUsers; track i) {
+                <div class="w-10 h-10 rounded-full border-2 border-white bg-[#EEF2EE] overflow-hidden">
+                  <app-image-with-fallback
+                    [src]="'https://i.pravatar.cc/150?u=' + (i + 10)"
+                    alt="user"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              }
+            </div>
+            <div class="text-sm font-medium">
+              <span class="font-extrabold text-[#1F1F1F]">+2.000 pedidos</span> entregues hoje.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hero Image -->
+      <div class="relative">
+        <div
+          class="relative z-10 w-full aspect-square overflow-hidden shadow-2xl"
+          style="clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%); border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;"
+        >
+          <app-image-with-fallback
+            src="/assets/hero.png"
+            alt="Ingredientes Frescos DaHorta"
+            className="w-full h-full object-cover"
+          />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==============================
+       DIFERENCIAIS SECTION
+  ================================ -->
+  <section id="sobre" class="py-24 px-6 bg-[#1A2E1F] text-[#FDFCF8]">
+    <div class="max-w-7xl mx-auto">
+      <div class="text-center mb-16">
+        <h2 class="text-4xl font-bold mb-5 text-[#FDFCF8]">A Excelência em cada Bowl.</h2>
+        <p class="text-[#FDFCF8]/70 max-w-2xl mx-auto text-lg leading-relaxed">
+          Nossa dark kitchen foi projetada para entregar a experiência de um restaurante de alta gastronomia na agilidade do delivery.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        @for (feature of features; track feature.title) {
+          <div class="bg-white/5 p-8 rounded-[32px] border border-white/10 hover:bg-white/10 transition-colors">
+            <div class="w-14 h-14 rounded-2xl bg-[#4C7C59] text-white flex items-center justify-center mb-6 shadow-lg shadow-[#4C7C59]/20">
+              <!-- Inline SVGs for each feature icon -->
+              @if (feature.iconName === 'shield-check') {
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/>
+                  <path d="m9 12 2 2 4-4"/>
+                </svg>
+              }
+              @if (feature.iconName === 'chef-hat') {
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"/>
+                  <line x1="6" x2="18" y1="17" y2="17"/>
+                </svg>
+              }
+              @if (feature.iconName === 'zap') {
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                </svg>
+              }
+              @if (feature.iconName === 'leaf') {
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/>
+                  <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>
+                </svg>
+              }
+            </div>
+            <h4 class="text-xl font-bold mb-3 text-[#FDFCF8]">{{ feature.title }}</h4>
+            <p class="text-sm text-[#FDFCF8]/60 leading-relaxed font-medium">{{ feature.description }}</p>
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- ==============================
+       STORYTELLING SECTION
+  ================================ -->
+  <section id="origem" class="py-24 px-6 bg-white">
+    <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+      <!-- Image with Accent Badge -->
+      <div class="relative order-2 lg:order-1">
+        <div class="relative z-10 rounded-[32px] overflow-hidden shadow-2xl">
+          <app-image-with-fallback
+            src="https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=800&auto=format&fit=crop"
+            alt="Mercado de orgânicos"
+            className="w-full h-96 lg:h-[500px] object-cover"
+          />
+        </div>
+        <div class="absolute -bottom-8 -right-8 z-20 bg-[#E9C46A] p-8 rounded-[32px] shadow-2xl text-[#1F1F1F]">
+          <span class="font-serif italic text-4xl block leading-none mb-1">100%</span>
+          <span class="font-bold text-xs uppercase tracking-widest opacity-80">Orgânico e Sustentável</span>
+        </div>
+      </div>
+      <!-- Text Content -->
+      <div class="order-1 lg:order-2">
+        <span class="font-serif italic text-[#4C7C59] text-xl block mb-4">Nossa Essência</span>
+        <h2 class="text-4xl lg:text-5xl font-bold mb-8 leading-[1.1] text-[#1F1F1F]">Do Campo ao Bowl, sem atalhos.</h2>
+        <p class="text-lg text-[#5F5F5F] mb-10 leading-relaxed font-medium">
+          Acreditamos que a comida de verdade não precisa de pressa no cultivo, apenas no preparo. Trabalhamos com pequenos produtores que respeitam o tempo da terra, garantindo que você receba vitalidade absoluta.
+        </p>
+        <div class="grid grid-cols-2 gap-8">
+          <div>
+            <h4 class="text-[#4C7C59] font-bold mb-2">Sem Plástico</h4>
+            <p class="text-sm text-[#5F5F5F] font-medium leading-snug">Embalagens biodegradáveis que retornam ao solo.</p>
+          </div>
+          <div>
+            <h4 class="text-[#4C7C59] font-bold mb-2">Higienização Tripla</h4>
+            <p class="text-sm text-[#5F5F5F] font-medium leading-snug">Protocolo rigoroso de segurança alimentar.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==============================
+       FAVORITES / MENU SECTION
+  ================================ -->
+  <section id="menu" class="py-24 px-6 bg-[#F7F9F7]">
+    <div class="max-w-7xl mx-auto">
+      <div class="text-center mb-16">
+        <h2 class="text-4xl font-bold mb-5 text-[#1F1F1F]">Nossos Favoritos</h2>
+        <p class="text-[#5F5F5F] max-w-2xl mx-auto text-lg leading-relaxed font-medium">
+          Combinações pensadas nutricionalmente para dar energia e leveza ao seu dia.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+        @for (bowl of favoriteBowls; track bowl.name) {
+          <div class="group bg-white rounded-[40px] overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 border border-[#EEF2EE]">
+            <div class="relative aspect-square overflow-hidden bg-[#F7F9F7]">
+              <app-image-with-fallback
+                [src]="bowl.image"
+                [alt]="bowl.name"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 shadow-lg"
+                styleAttr="clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%); border-radius: 40px;"
+              />
+              <div class="absolute top-6 left-6 px-4 py-2 rounded-full bg-white/90 backdrop-blur-sm text-[10px] font-extrabold uppercase tracking-widest text-[#4C7C59] shadow-sm">
+                {{ bowl.tag }}
+              </div>
+            </div>
+            <div class="p-8">
+              <div class="flex justify-between items-start mb-4">
+                <h3 class="text-2xl font-bold text-[#1F1F1F] group-hover:text-[#4C7C59] transition-colors">{{ bowl.name }}</h3>
+                <span class="text-[#4C7C59] font-extrabold text-lg">{{ bowl.price }}</span>
+              </div>
+              <p class="text-[#5F5F5F] mb-8 leading-relaxed font-serif italic text-sm">{{ bowl.description }}</p>
+              <button
+                (click)="addAndRedirect(bowl.id)"
+                class="w-full py-4 rounded-2xl border-2 border-[#4C7C59] text-[#4C7C59] font-bold text-sm hover:bg-[#4C7C59] hover:text-white transition-all flex items-center justify-center gap-3 cursor-pointer"
+              >
+                Adicionar ao pedido
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- ==============================
+       FOOTER
+  ================================ -->
+  <footer class="py-20 px-6 bg-white border-t border-[#EEF2EE]">
+    <div class="max-w-7xl mx-auto">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-16 mb-20">
+        <!-- Brand -->
+        <div class="col-span-1 md:col-span-1">
+          <div class="flex items-center mb-8">
+            <app-image-with-fallback src="/assets/logo.png" alt="DaHorta" className="h-10 w-auto object-contain" />
+          </div>
+          <p class="text-sm text-[#5F5F5F] leading-relaxed font-medium">
+            A revolução da alimentação consciente. Rápido, fresco e transparente. Do campo para sua rotina.
+          </p>
+          <div class="flex gap-4 mt-8">
+            <!-- Instagram Icon -->
+            <div class="w-10 h-10 rounded-full bg-[#E6F0EA] flex items-center justify-center text-[#4C7C59] hover:bg-[#4C7C59] hover:text-white transition-all cursor-pointer">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
+              </svg>
+            </div>
+            <!-- Facebook Icon -->
+            <div class="w-10 h-10 rounded-full bg-[#E6F0EA] flex items-center justify-center text-[#4C7C59] hover:bg-[#4C7C59] hover:text-white transition-all cursor-pointer">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Links -->
+        <div>
+          <h5 class="font-extrabold text-[10px] uppercase tracking-[0.2em] text-[#A0A0A0] mb-8">Links</h5>
+          <ul class="space-y-4 text-sm font-bold text-[#1F1F1F]">
+            <li><a href="javascript:void(0)" (click)="scrollTo('menu')" class="hover:text-[#4C7C59] transition-colors">Cardápio</a></li>
+            <li><a href="javascript:void(0)" (click)="scrollTo('sobre')" class="hover:text-[#4C7C59] transition-colors">Qualidade</a></li>
+            <li><a href="javascript:void(0)" (click)="scrollTo('origem')" class="hover:text-[#4C7C59] transition-colors">Produtores</a></li>
+          </ul>
+        </div>
+
+        <!-- Ajuda -->
+        <div>
+          <h5 class="font-extrabold text-[10px] uppercase tracking-[0.2em] text-[#A0A0A0] mb-8">Ajuda</h5>
+          <ul class="space-y-4 text-sm font-bold text-[#1F1F1F]">
+            <li><a href="#" class="hover:text-[#4C7C59] transition-colors">Entregas</a></li>
+            <li><a href="#" class="hover:text-[#4C7C59] transition-colors">Contato</a></li>
+            <li><a href="#" class="hover:text-[#4C7C59] transition-colors">Privacidade</a></li>
+          </ul>
+        </div>
+
+        <!-- Address -->
+        <div>
+          <h5 class="font-extrabold text-[10px] uppercase tracking-[0.2em] text-[#A0A0A0] mb-8">Onde Estamos</h5>
+          <div class="flex items-start gap-3 mt-4 text-[#1F1F1F]">
+            <!-- MapPin Icon -->
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4C7C59" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="flex-shrink-0 mt-0.5">
+              <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>
+            </svg>
+            <address class="not-italic text-sm font-medium leading-relaxed">
+              Rua da Horta, 123 <br />
+              Pinheiros, São Paulo - SP <br />
+              CEP 05412-000
+            </address>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Bar -->
+      <div class="pt-10 border-t border-[#EEF2EE] flex flex-col md:flex-row justify-between items-center gap-6 text-[10px] text-[#A0A0A0] font-extrabold uppercase tracking-[0.15em]">
+        <div>© 2024 DAHORTA ORGANIC BOWLS. TODOS OS DIREITOS RESERVADOS.</div>
+        <div class="flex gap-10">
+          <span class="text-[#1F1F1F]">EDITORIAL DESIGN BY DAHORTA</span>
+          <span class="hover:text-[#4C7C59] cursor-pointer transition-colors">SÃO PAULO - BRAZIL</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+</div>

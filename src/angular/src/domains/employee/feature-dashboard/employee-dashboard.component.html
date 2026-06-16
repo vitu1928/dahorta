@@ -1,0 +1,653 @@
+<div class="employee min-h-screen bg-[#F7F9F7] text-[#1F1F1F] flex">
+
+  <!-- ==============================
+       SIDEBAR
+  ================================ -->
+  <aside
+    class="fixed left-0 top-0 h-screen z-40 flex flex-col justify-between p-6"
+    style="width: 240px; background: var(--sidebar); border-right: 1px solid var(--sidebar-border);"
+  >
+    <div class="flex flex-col gap-6">
+      <!-- Logo & Title -->
+      <div class="flex flex-col items-center justify-center gap-3">
+        <div
+          class="w-16 h-16 bg-white rounded-full flex items-center justify-center p-1.5 shadow-lg border-2 border-[#4C7C59]"
+        >
+          <img
+            src="/assets/logo.png"
+            alt="DaHorta"
+            class="w-full h-full object-contain rounded-full"
+          />
+        </div>
+        <div class="text-center">
+          <div class="text-base font-extrabold text-white font-['Space_Grotesk']">
+            DaHorta
+          </div>
+          <div class="text-[10px] text-white/60 font-bold uppercase tracking-widest mt-1">
+            Funcionário
+          </div>
+        </div>
+      </div>
+
+      <!-- Logged User Info -->
+      @if (currentUser(); as user) {
+        <div class="flex items-center gap-3 p-3 rounded-xl bg-white/10 border border-white/5">
+          <div
+            class="w-9 h-9 rounded-lg bg-white/20 text-white flex items-center justify-center text-sm font-bold uppercase"
+          >
+            {{ user.avatar || 'FU' }}
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="text-xs font-bold text-white truncate">
+              {{ user.name }}
+            </div>
+            <div class="text-[10px] text-white/50 truncate">
+              {{ user.email }}
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Navigation -->
+      <nav class="flex flex-col gap-1.5">
+        <button
+          (click)="activeView.set('orders')"
+          class="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl border-none cursor-pointer text-left text-xs font-bold transition-all"
+          [style.background]="activeView() === 'orders' ? 'rgba(255,255,255,0.15)' : 'transparent'"
+          [style.color]="activeView() === 'orders' ? '#FFFFFF' : 'rgba(255,255,255,0.6)'"
+        >
+          <!-- LayoutDashboard SVG Icon -->
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <rect width="7" height="9" x="3" y="3" rx="1"/>
+            <rect width="7" height="5" x="14" y="3" rx="1"/>
+            <rect width="7" height="9" x="14" y="12" rx="1"/>
+            <rect width="7" height="5" x="3" y="16" rx="1"/>
+          </svg>
+          <span>Pedidos</span>
+        </button>
+
+        <button
+          (click)="activeView.set('stock')"
+          class="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl border-none cursor-pointer text-left text-xs font-bold transition-all"
+          [style.background]="activeView() === 'stock' ? 'rgba(255,255,255,0.15)' : 'transparent'"
+          [style.color]="activeView() === 'stock' ? '#FFFFFF' : 'rgba(255,255,255,0.6)'"
+        >
+          <!-- Package SVG Icon -->
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+            <line x1="12" y1="22.08" x2="12" y2="12"/>
+          </svg>
+          <span>Estoque</span>
+        </button>
+
+        <button
+          (click)="activeView.set('account')"
+          class="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl border-none cursor-pointer text-left text-xs font-bold transition-all"
+          [style.background]="activeView() === 'account' ? 'rgba(255,255,255,0.15)' : 'transparent'"
+          [style.color]="activeView() === 'account' ? '#FFFFFF' : 'rgba(255,255,255,0.6)'"
+        >
+          <!-- User SVG Icon -->
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          <span>Minha Conta</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- Status & Logout -->
+    <div class="flex flex-col gap-3">
+      <!-- Restaurant Status Information Badge -->
+      <div
+        class="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left border"
+        [style.background]="restaurantOpen() ? 'rgba(58,165,93,0.15)' : 'rgba(230,57,70,0.15)'"
+        [style.borderColor]="restaurantOpen() ? 'var(--success)' : 'var(--destructive)'"
+      >
+        <div
+          class="w-2.5 h-2.5 rounded-full animate-pulse"
+          [style.background]="restaurantOpen() ? 'var(--success)' : 'var(--destructive)'"
+        ></div>
+        <span class="text-white text-xs font-bold">
+          {{ restaurantOpen() ? 'Restaurante Aberto' : 'Restaurante Fechado' }}
+        </span>
+      </div>
+
+      <!-- Logout Button -->
+      <button
+        (click)="handleLogout()"
+        class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-white/20 text-white font-bold text-xs cursor-pointer bg-transparent hover:bg-white/10 transition-colors"
+      >
+        <!-- LogOut SVG Icon -->
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+        <span>Sair do Painel</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ==============================
+       MAIN CONTENT
+  ================================ -->
+  <main class="flex-1 p-8" style="margin-left: 240px;">
+
+    <!-- ==============================
+         VIEW: PEDIDOS (ORDERS)
+    ================================ -->
+    @if (activeView() === 'orders') {
+      <div class="flex flex-col gap-6">
+        <!-- Stats Cards Grid -->
+        <div class="grid grid-cols-3 gap-6">
+          <!-- Total Hoje -->
+          <div class="bg-white rounded-2xl p-6 border border-[#EEF2EE] shadow-sm text-center">
+            <div class="text-3xl font-extrabold text-[#4C7C59]">
+              {{ totalToday() }}
+            </div>
+            <div class="text-xs font-bold text-[#5F5F5F] mt-1.5 uppercase tracking-wider">
+              Total Hoje
+            </div>
+          </div>
+          <!-- Em Preparo -->
+          <div class="bg-white rounded-2xl p-6 border border-[#EEF2EE] shadow-sm text-center">
+            <div class="text-3xl font-extrabold text-[#F2994A]">
+              {{ preparingCount() }}
+            </div>
+            <div class="text-xs font-bold text-[#5F5F5F] mt-1.5 uppercase tracking-wider">
+              Preparando
+            </div>
+          </div>
+          <!-- Prontos -->
+          <div class="bg-white rounded-2xl p-6 border border-[#EEF2EE] shadow-sm text-center">
+            <div class="text-3xl font-extrabold text-[#3AA55D]">
+              {{ readyCount() }}
+            </div>
+            <div class="text-xs font-bold text-[#5F5F5F] mt-1.5 uppercase tracking-wider">
+              Prontos
+            </div>
+          </div>
+        </div>
+
+        <!-- Search Input -->
+        <div class="relative w-full">
+          <div class="absolute left-4 top-1/2 -translate-y-1/2 text-[#5F5F5F] flex items-center">
+            <!-- Search SVG Icon -->
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+          </div>
+          <input
+            type="text"
+            [value]="search()"
+            (input)="search.set($any($event.target).value)"
+            placeholder="Buscar pedido por ID ou nome do cliente..."
+            class="w-full pl-11 pr-4 py-3.5 rounded-2xl border border-[#DADADA] focus:border-[#4C7C59] outline-none transition-all shadow-sm text-sm"
+          />
+        </div>
+
+        <!-- Kanban Board Columns -->
+        <div class="flex gap-6 overflow-x-auto pb-6">
+          @for (col of columns; track col.status) {
+            <div class="flex-shrink-0 w-80 flex flex-col gap-4">
+              <!-- Column Header -->
+              <div class="flex items-center justify-between px-1">
+                <div class="flex items-center gap-2">
+                  <div
+                    class="w-3 h-3 rounded-full"
+                    [style.background]="col.color"
+                  ></div>
+                  <span class="text-sm font-bold text-[#1F1F1F]">
+                    {{ col.label }}
+                  </span>
+                </div>
+                <!-- Count Badge -->
+                <span
+                  class="px-2.5 py-0.5 rounded-full text-xs font-black"
+                  [style.background]="col.bg"
+                  [style.color]="col.color"
+                >
+                  {{ ordersByStatus()[col.status].length }}
+                </span>
+              </div>
+
+              <!-- Column Body (List of Order Cards) -->
+              <div class="flex flex-col gap-3 min-h-[400px]">
+                @let hasAny = ordersByStatus()[col.status].length > 0;
+
+                @for (order of ordersByStatus()[col.status]; track order.id) {
+                  <!-- Order Card Component -->
+                  <div
+                    class="bg-white rounded-2xl border border-[#EEF2EE] shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md hover:translate-y-[-1px]"
+                  >
+                    <!-- Top Color Border Line -->
+                    <div class="h-1" [style.background]="col.color"></div>
+
+                    <div class="p-4 flex flex-col gap-3">
+                      <!-- Card Header -->
+                      <div class="flex justify-between items-start gap-2">
+                        <div>
+                          <span class="text-[10px] font-black tracking-wider uppercase" [style.color]="col.color">
+                            {{ order.id }}
+                          </span>
+                          <h4 class="text-sm font-bold text-[#1F1F1F] mt-0.5">
+                            {{ order.customerName || 'Cliente Anônimo' }}
+                          </h4>
+                          <div class="flex items-center gap-1 text-[10px] text-[#5F5F5F] mt-1">
+                            <!-- Clock SVG Icon -->
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="10"
+                              height="10"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2.5"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                            >
+                              <circle cx="12" cy="12" r="10"/>
+                              <polyline points="12 6 12 12 16 14"/>
+                            </svg>
+                            <span>{{ formatTime(order.createdAt) }}</span>
+                          </div>
+                        </div>
+                        <!-- Price and Payment Method -->
+                        <div class="text-right flex-shrink-0">
+                          <span class="text-sm font-extrabold text-[#1F1F1F]">
+                            {{ formatCurrency(order.total || order.totalAmount || 0) }}
+                          </span>
+                          <div class="text-[10px] text-[#5F5F5F] mt-0.5">
+                            {{ paymentLabels[order.paymentMethod] }}
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Card Items List -->
+                      <div class="py-2.5 border-t border-b border-[#F7F9F7] flex flex-col gap-2">
+                        @for (item of order.items; track item.productId) {
+                          <div class="flex flex-col gap-1">
+                            <div class="flex items-center gap-2">
+                              <div
+                                class="w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-extrabold flex-shrink-0"
+                                [style.background]="col.bg"
+                                [style.color]="col.color"
+                              >
+                                {{ item.quantity }}x
+                              </div>
+                              <span class="text-xs font-bold text-[#1F1F1F]">
+                                {{ item.name }}
+                              </span>
+                            </div>
+
+                            <!-- Custom subItems (such as combos) -->
+                            @if (item.subItems && item.subItems.length > 0) {
+                              <div class="pl-7 flex flex-col gap-0.5">
+                                @for (sub of item.subItems; track sub.productId) {
+                                  <div class="text-[10px] text-[#5F5F5F] flex items-center gap-1.5">
+                                    <span class="opacity-40">•</span>
+                                    <span class="font-bold text-[9px] uppercase opacity-60 text-[#4C7C59]">{{ sub.slotName }}:</span>
+                                    <span>{{ sub.name }}</span>
+                                  </div>
+                                }
+                              </div>
+                            }
+                          </div>
+                        }
+
+                        <!-- Order Notes (Observações) -->
+                        @if (order.notes) {
+                          <div class="mt-2 p-2.5 rounded-xl bg-[#E9C46A]/10 border border-[#E9C46A]/20 text-[11px] text-[#1F1F1F]">
+                            <p class="font-extrabold text-[#4C7C59] mb-1">📝 Observações:</p>
+                            <p class="leading-relaxed">{{ order.notes }}</p>
+                          </div>
+                        }
+                      </div>
+
+                      <!-- Card Footer (Delivery Address) -->
+                      <div class="flex items-start gap-1.5 text-[10px] text-[#5F5F5F] leading-snug">
+                        <!-- MapPin SVG Icon -->
+                        <div class="mt-0.5 flex-shrink-0" [style.color]="col.color">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2.5"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          >
+                            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+                            <circle cx="12" cy="10" r="3"/>
+                          </svg>
+                        </div>
+                        <span class="truncate">
+                          {{ getDeliveryAddressText(order) }}
+                        </span>
+                      </div>
+                      <!-- Card Action Button -->
+                      @let nextStatus = nextStatusMap[order.status];
+                      @let nextLabel = nextLabelsMap[order.status];
+ 
+                      @if (nextStatus && nextLabel && order.status !== 'ready') {
+                        <button
+                          (click)="updateOrderStatus(order.id, nextStatus)"
+                          class="w-full py-2.5 rounded-xl border-none font-bold text-xs text-white cursor-pointer transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-[0.98]"
+                          [style.background]="col.color"
+                          onmouseenter="this.style.opacity = '0.9'"
+                          onmouseleave="this.style.opacity = '1'"
+                        >
+                          <span>{{ nextLabel }}</span>
+                          <!-- ChevronRight SVG Icon -->
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2.5"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          >
+                            <polyline points="9 18 15 12 9 6"/>
+                          </svg>
+                        </button>
+                      } @else if (order.status === 'ready') {
+                        <!-- Ready Status Alert -->
+                        <div
+                          class="w-full py-2.5 rounded-xl border border-dashed text-[#3AA55D] font-bold text-xs flex items-center justify-center gap-1.5"
+                          style="background: rgba(58,165,93,0.08); border-color: var(--success);"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2.5"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                          >
+                            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                          </svg>
+                          <span>Aguardando motoboy</span>
+                        </div>
+                      } @else if (order.status === 'delivering') {
+                        <!-- Delivering Status Alert -->
+                        <div
+                          class="w-full py-2.5 rounded-xl border border-solid text-[#2D9CDB] font-bold text-xs flex items-center justify-center gap-1.5"
+                          style="background: rgba(45,156,219,0.08); border-color: #2D9CDB;"
+                        >
+                          <span>🛵</span>
+                          <span>Saiu para entrega</span>
+                        </div>
+                      }
+                    </div>
+                  </div>
+                }
+
+                <!-- Empty Column State -->
+                @if (!hasAny) {
+                  <div
+                    class="py-12 text-center rounded-2xl border border-dashed border-[#DADADA]"
+                    style="background: var(--muted);"
+                  >
+                    <p class="text-xs font-bold text-[#5F5F5F]">
+                      Nenhum pedido nesta etapa
+                    </p>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- ==============================
+         VIEW: ESTOQUE (STOCK)
+    ================================ -->
+    @if (activeView() === 'stock') {
+      <div class="flex flex-col gap-6">
+        <!-- Stock View Header -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-2xl font-extrabold text-[#1F1F1F]">
+              Resumo de Estoque
+            </h2>
+            <p class="text-sm text-[#5F5F5F] mt-1 font-medium">
+              Acompanhe os níveis dos insumos para a produção diária.
+            </p>
+          </div>
+          <div class="relative w-full sm:max-w-xs">
+            <div class="absolute left-3.5 top-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none text-muted-foreground">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+            </div>
+            <input 
+              type="text" 
+              placeholder="Buscar insumo..."
+              [ngModel]="stockSearch()"
+              (ngModelChange)="stockSearch.set($event)"
+              class="w-full pl-11 pr-4 py-3 rounded-2xl border border-[#DADADA] focus:border-[#4C7C59] outline-none transition-all shadow-sm text-sm"
+            />
+          </div>
+        </div>
+
+        <!-- Attention Box (Low Stock Items Alert) -->
+        @if (lowStockItems().length > 0) {
+          <div
+            class="p-4 rounded-2xl flex items-center gap-4 border"
+            style="background: rgba(230,57,70,0.08); border-color: var(--destructive);"
+          >
+            <!-- AlertTriangle SVG Icon -->
+            <div
+              class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-white"
+              style="background: var(--destructive);"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+            </div>
+            <div>
+              <h4 class="text-sm font-bold" style="color: var(--destructive);">
+                Atenção: Estoque Baixo
+              </h4>
+              <p class="text-xs text-[#1F1F1F] mt-0.5">
+                Existem <strong>{{ lowStockItems().length }}</strong> insumos que precisam de reposição imediata.
+              </p>
+            </div>
+          </div>
+        }
+
+        <!-- Stock Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          @for (item of filteredStockItems(); track item.id) {
+            @let isLow = item.currentQuantity <= item.minQuantity;
+            @let pct = getPercent(item.currentQuantity, item.minQuantity);
+
+            <div
+              class="bg-white rounded-2xl p-5 border shadow-sm transition-all duration-300 hover:shadow-md"
+              [style.borderColor]="isLow ? 'var(--destructive)' : '#EEF2EE'"
+            >
+              <!-- Card Header -->
+              <div class="flex items-start justify-between gap-2 mb-4">
+                <div class="min-w-0">
+                  <h4 class="text-sm font-bold text-[#1F1F1F] truncate">
+                    {{ item.name }}
+                  </h4>
+                  <span class="text-[10px] text-[#5F5F5F] font-semibold uppercase tracking-wider block mt-0.5">
+                    Unidade: {{ item.unit }}
+                  </span>
+                </div>
+                <!-- Status Badge -->
+                <span
+                  class="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border"
+                  [style.background]="isLow ? 'rgba(230,57,70,0.08)' : 'rgba(58,165,93,0.08)'"
+                  [style.color]="isLow ? 'var(--destructive)' : 'var(--success)'"
+                  [style.borderColor]="isLow ? 'var(--destructive)' : 'var(--success)'"
+                >
+                  {{ isLow ? 'Crítico' : 'OK' }}
+                </span>
+              </div>
+
+              <!-- Quantity Details -->
+              <div class="flex items-end justify-between mb-3">
+                <div
+                  class="text-2xl font-extrabold"
+                  [style.color]="isLow ? 'var(--destructive)' : 'var(--primary)'"
+                >
+                  {{ item.currentQuantity.toLocaleString('pt-BR') }}
+                  <span class="text-xs font-bold text-[#5F5F5F] ml-1">
+                    {{ item.unit }}
+                  </span>
+                </div>
+                <div class="text-right text-[10px] text-[#5F5F5F] font-bold">
+                  Meta: {{ item.minQuantity }} {{ item.unit }}
+                </div>
+              </div>
+
+              <!-- Progress Bar -->
+              <div class="h-2 w-full rounded-full bg-[#EEF2EE] overflow-hidden">
+                <div
+                  class="h-full rounded-full transition-all duration-500"
+                  [style.width.%]="pct"
+                  [style.background]="isLow ? 'var(--destructive)' : 'var(--success)'"
+                ></div>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- ==============================
+         VIEW: MINHA CONTA (ACCOUNT)
+    ================================ -->
+    @if (activeView() === 'account') {
+      <div class="flex flex-col gap-6 max-w-lg">
+        <div>
+          <h2 class="text-2xl font-extrabold text-[#1F1F1F]">
+            Minha Conta
+          </h2>
+          <p class="text-sm text-[#5F5F5F] mt-1 font-medium">
+            Gerencie e atualize os dados de acesso da sua conta.
+          </p>
+        </div>
+
+        <div class="bg-white rounded-2xl p-6 border border-[#EEF2EE] shadow-sm flex flex-col gap-6">
+          <h3 class="text-base font-extrabold text-[#1F1F1F]">
+            Alterar Senha
+          </h3>
+          
+          <form (submit)="$event.preventDefault(); handleUpdatePassword()" class="flex flex-col gap-4">
+            <div class="flex flex-col gap-1.5">
+              <label for="newPassword" class="text-xs font-bold text-[#5F5F5F] uppercase tracking-wider">
+                Nova Senha
+              </label>
+              <input
+                id="newPassword"
+                type="password"
+                [(ngModel)]="newPassword"
+                name="newPassword"
+                placeholder="Mínimo de 6 caracteres"
+                class="w-full px-4 py-3 rounded-xl border border-[#DADADA] focus:border-[#4C7C59] outline-none transition-all shadow-sm text-sm"
+                required
+              />
+            </div>
+
+            @if (passwordError()) {
+              <div class="text-xs font-bold text-red-500 bg-red-50 p-3 rounded-lg border border-red-100">
+                {{ passwordError() }}
+              </div>
+            }
+
+            <button
+              type="submit"
+              [disabled]="passwordSubmitting() || !newPassword.trim()"
+              class="w-full py-3 rounded-xl font-bold text-xs text-white cursor-pointer transition-all flex items-center justify-center gap-1.5 shadow-md active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+              style="background: #4C7C59;"
+              onmouseenter="this.style.opacity = '0.9'"
+              onmouseleave="this.style.opacity = '1'"
+            >
+              <span>{{ passwordSubmitting() ? 'Atualizando...' : 'Atualizar Senha' }}</span>
+            </button>
+          </form>
+        </div>
+      </div>
+    }
+
+  </main>
+</div>
+

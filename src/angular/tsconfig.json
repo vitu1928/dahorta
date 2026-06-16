@@ -1,0 +1,45 @@
+/* To learn more about Typescript configuration file: https://www.typescriptlang.org/docs/handbook/tsconfig-json.html. */
+/* To learn more about Angular compiler options: https://angular.dev/reference/configs/angular-compiler-options. */
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "outDir": "./dist/out-tsc",
+    "strict": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "experimentalDecorators": true,
+    "moduleResolution": "bundler",
+    "importHelpers": true,
+    "target": "ES2022",
+    "module": "ES2022",
+    "baseUrl": ".",
+    "paths": {
+      "@domain/customer": ["src/domains/customer"],
+      "@domain/customer/*": ["src/domains/customer/*"],
+      "@domain/auth": ["src/domains/auth"],
+      "@domain/auth/*": ["src/domains/auth/*"],
+      "@domain/employee": ["src/domains/employee"],
+      "@domain/employee/*": ["src/domains/employee/*"],
+      "@domain/motoboy": ["src/domains/motoboy"],
+      "@domain/motoboy/*": ["src/domains/motoboy/*"],
+      "@domain/owner": ["src/domains/owner"],
+      "@domain/owner/*": ["src/domains/owner/*"],
+      "@shared/ui": ["src/shared/ui"],
+      "@shared/ui/*": ["src/shared/ui/*"],
+      "@shared/models": ["src/shared/models"],
+      "@shared/data-access": ["src/shared/data-access"],
+      "@shared/data-access/*": ["src/shared/data-access/*"]
+    }
+  },
+  "angularCompilerOptions": {
+    "enableI18nLegacyMessageIdFormat": false,
+    "strictInjectionParameters": true,
+    "strictInputAccessModifiers": true,
+    "strictTemplates": true
+  }
+}

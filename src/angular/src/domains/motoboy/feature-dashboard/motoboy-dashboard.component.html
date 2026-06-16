@@ -1,0 +1,481 @@
+<div class="motoboy min-h-screen flex flex-col bg-[#F7F9F7] text-[#1F1F1F]">
+
+  <!-- ─── LOADING STATE ─── -->
+  @if (locationStatus() === 'checking') {
+    <div class="flex-1 flex items-center justify-center bg-white">
+      <div class="text-center">
+        <div class="w-8 h-8 rounded-full border-4 border-[#4C7C59] border-t-transparent animate-spin mx-auto mb-3"></div>
+        <p class="text-[#5F5F5F] text-sm font-medium">
+          Verificando localização...
+        </p>
+      </div>
+    </div>
+  }
+
+  <!-- ─── LOCATION GATE ─── -->
+  @else if (locationStatus() === 'denied' || locationStatus() === 'unsupported') {
+    <div class="flex-1 flex items-center justify-center px-6 bg-[#F7F9F7]">
+      <div class="w-full max-w-sm text-center">
+        <!-- Map Pin Icon -->
+        <div
+          class="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 bg-[#E9C46A]/15 border border-[#E9C46A] animate-bounce"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="36"
+            height="36"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#E9C46A"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+            <circle cx="12" cy="10" r="3"/>
+          </svg>
+        </div>
+        <h2 class="text-[#1F1F1F] text-2xl font-extrabold mb-3 font-['Space_Grotesk']">
+          Localização Necessária
+        </h2>
+        <p class="text-[#5F5F5F] text-sm leading-relaxed mb-8">
+          Para usar o sistema de entregas, você precisa ativar sua localização.
+          Isso permite que o cliente acompanhe sua entrega em tempo real.
+        </p>
+        <div class="space-y-3 text-left mb-8 px-5 py-4 rounded-xl bg-white border border-[#EEF2EE]">
+          <div class="flex items-center gap-3">
+            <div class="w-5 h-5 rounded-full flex items-center justify-center bg-[#3AA55D]/15 border border-[#3AA55D] flex-shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3AA55D" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            </div>
+            <span class="text-[#5F5F5F] text-xs">O cliente verá sua localização no mapa</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="w-5 h-5 rounded-full flex items-center justify-center bg-[#3AA55D]/15 border border-[#3AA55D] flex-shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3AA55D" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            </div>
+            <span class="text-[#5F5F5F] text-xs">Garante a segurança da entrega</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="w-5 h-5 rounded-full flex items-center justify-center bg-[#3AA55D]/15 border border-[#3AA55D] flex-shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3AA55D" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            </div>
+            <span class="text-[#5F5F5F] text-xs">Otimiza o rastreamento em tempo real</span>
+          </div>
+        </div>
+        <button
+          (click)="requestLocation()"
+          class="w-full py-4 rounded-xl flex items-center justify-center gap-3 font-bold text-white bg-primary hover:bg-[#3d6347] border-none cursor-pointer text-base shadow-sm transition-all active:scale-[0.98]"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+            <circle cx="12" cy="10" r="3"/>
+          </svg>
+          Ativar Localização
+        </button>
+        <p class="text-[#5F5F5F] text-[10px] mt-4 opacity-75">
+          Sua privacidade é protegida. A localização só é compartilhada durante a entrega.
+        </p>
+      </div>
+    </div>
+  }
+
+  <!-- ─── MAIN DASHBOARD ─── -->
+  @else {
+    <!-- Sticky Header -->
+    <header class="sticky top-0 z-40 bg-[#1A2E1F] border-b border-white/10 shadow-md">
+      <div class="flex items-center justify-between px-4 py-3">
+        <!-- Logo & Branding -->
+        <div class="flex items-center gap-2.5">
+          <div
+            class="w-10 h-10 rounded-full bg-white flex items-center justify-center p-1 shadow-sm border border-white/20"
+          >
+            <img
+              src="/assets/logo.png"
+              alt="DaHorta"
+              class="w-full h-full object-contain rounded-full"
+            />
+          </div>
+          <div>
+            <div class="text-sm font-extrabold text-white font-['Space_Grotesk'] leading-none">
+              DaHorta
+            </div>
+            <div class="text-[9px] text-white/60 font-bold uppercase tracking-widest mt-1">
+              Entregas
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Header Actions -->
+        <div class="flex items-center gap-3">
+          <!-- Active Location Status Indicator -->
+          <div class="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-[#3AA55D]/15 border border-[#3AA55D]">
+            <div class="w-1.5 h-1.5 rounded-full bg-[#3AA55D] animate-ping"></div>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#FFFFFF"
+              stroke-width="2.5"
+            >
+              <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+              <circle cx="12" cy="10" r="3"/>
+            </svg>
+          </div>
+
+          <!-- User Profile Menu -->
+          <div class="relative">
+            <button
+              (click)="showUserMenu.set(!showUserMenu())"
+              class="w-9 h-9 rounded-lg flex items-center justify-center cursor-pointer bg-white/10 border border-white/20 text-white font-bold text-sm hover:bg-white/20 transition-all duration-150"
+            >
+              @if (currentUser(); as user) {
+                {{ user.avatar || 'M' }}
+              } @else {
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+              }
+            </button>
+
+            <!-- Dropdown Menu -->
+            @if (showUserMenu()) {
+              <div
+                class="fixed inset-0 z-10"
+                (click)="showUserMenu.set(false)"
+              ></div>
+              <div
+                class="absolute right-0 mt-2 w-52 rounded-xl overflow-hidden z-20 bg-white border border-[#EEF2EE]"
+                style="box-shadow: var(--shadow-card);"
+              >
+                @if (currentUser(); as user) {
+                  <div class="p-3 border-b border-[#EEF2EE]">
+                    <div class="text-[#1F1F1F] text-xs font-bold truncate">
+                      {{ user.name }}
+                    </div>
+                    <div class="text-[#5F5F5F] text-[10px] truncate mt-0.5">
+                      {{ user.email }}
+                    </div>
+                  </div>
+                }
+                <button
+                  (click)="showPasswordModal.set(true); showUserMenu.set(false);"
+                  class="w-full flex items-center gap-2 px-3 py-2.5 text-left border-none cursor-pointer bg-transparent text-[#5F5F5F] hover:bg-[#F7F9F7] hover:text-[#4C7C59] transition-all text-xs font-semibold"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+                  Alterar Senha
+                </button>
+                <button
+                  (click)="handleLogout()"
+                  class="w-full flex items-center gap-2 px-3 py-2.5 text-left border-none cursor-pointer bg-transparent text-[#5F5F5F] hover:bg-[#F7F9F7] hover:text-[#E62525] transition-all text-xs font-semibold"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                    <polyline points="16 17 21 12 16 7"/>
+                    <line x1="21" y1="12" x2="9" y2="12"/>
+                  </svg>
+                  Sair
+                </button>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Location Warning Banner -->
+    @if (showLocationWarning()) {
+      <div
+        class="mx-4 mt-3 p-3 rounded-lg flex items-center gap-3 bg-[#E9C46A]/10 border border-[#E9C46A]"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="#E9C46A"
+          stroke-width="2.5"
+          class="flex-shrink-0"
+        >
+          <line x1="2" x2="22" y1="2" y2="22"/><path d="M12 2a8 8 0 0 0-8 8c0 1.42.5 3.11 1.15 4.59L12 22l6.85-7.41C19.5 13.11 20 11.42 20 10a8 8 0 0 0-3.13-6.29"/><circle cx="12" cy="10" r="3"/>
+        </svg>
+        <p class="text-[#E9C46A] text-xs font-medium flex-1">
+          Localização desativada. O cliente não consegue acompanhar sua entrega.
+        </p>
+        <button
+          (click)="showLocationWarning.set(false)"
+          class="bg-transparent border-none cursor-pointer text-[#E9C46A] hover:opacity-80 p-0 flex items-center justify-center"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+            <path d="M3 3v5h5"/>
+            <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/>
+            <path d="M16 16h5v5"/>
+          </svg>
+        </button>
+      </div>
+    }
+
+    <!-- Main Content Area -->
+    <main class="flex-1 p-4 pb-20">
+      <div class="max-w-lg mx-auto">
+        
+        <!-- Greeting Header -->
+        <div class="mb-5">
+          <h1 class="text-[#1F1F1F] text-2xl font-extrabold font-['Space_Grotesk'] leading-none">
+            Olá, {{ (currentUser()?.name || '').split(' ')[0] }}! 🏍️
+          </h1>
+          <p class="text-[#5F5F5F] text-sm mt-1.5 font-medium">
+            @if (myOrders().length > 0) {
+              {{ myOrders().length }} entrega{{ myOrders().length > 1 ? 's' : '' }} {{ myOrders().length > 1 ? 'pendentes' : 'pendente' }}
+            } @else {
+              Nenhuma entrega no momento
+            }
+          </p>
+        </div>
+
+        <!-- Quick Stats Grid -->
+        <div class="grid grid-cols-3 gap-3 mb-6">
+          <!-- Ready Count Card -->
+          <div class="rounded-xl p-3 text-center bg-white border border-[#EEF2EE]" style="box-shadow: var(--shadow-card);">
+            <div class="text-[#E9C46A] flex justify-center mb-1">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="m7.5 4.27 9 5.15"/>
+                <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
+                <path d="m3.3 7 8.7 5 8.7-5"/>
+                <path d="M12 22V12"/>
+              </svg>
+            </div>
+            <div class="text-[#E9C46A] text-2xl font-black">
+              {{ readyOrdersCount() }}
+            </div>
+            <div class="text-[#5F5F5F] text-[10px] font-bold uppercase tracking-wider mt-0.5">
+              Prontas
+            </div>
+          </div>
+
+          <!-- Delivering Count Card -->
+          <div class="rounded-xl p-3 text-center bg-white border border-[#EEF2EE]" style="box-shadow: var(--shadow-card);">
+            <div class="text-[#4C7C59] flex justify-center mb-1">
+              <span>🛵</span>
+            </div>
+            <div class="text-[#4C7C59] text-2xl font-black">
+              {{ deliveringOrdersCount() }}
+            </div>
+            <div class="text-[#5F5F5F] text-[10px] font-bold uppercase tracking-wider mt-0.5">
+              Em Rota
+            </div>
+          </div>
+
+          <!-- Delivered Count Card -->
+          <div class="rounded-xl p-3 text-center bg-white border border-[#EEF2EE]" style="box-shadow: var(--shadow-card);">
+            <div class="text-[#3AA55D] flex justify-center mb-1">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="10"/>
+                <path d="m9 12 2 2 4-4"/>
+              </svg>
+            </div>
+            <div class="text-[#3AA55D] text-2xl font-black">
+              {{ deliveredCount() }}
+            </div>
+            <div class="text-[#5F5F5F] text-[10px] font-bold uppercase tracking-wider mt-0.5">
+              Entregues
+            </div>
+          </div>
+        </div>
+
+        <!-- Deliveries List -->
+        @if (myOrders().length > 0) {
+          <div class="space-y-4">
+            <h2 class="text-[#5F5F5F] text-xs font-extrabold uppercase tracking-wider">
+              Suas Entregas
+            </h2>
+            <div class="space-y-4">
+              @for (order of myOrders(); track order.id) {
+                <app-delivery-card
+                  [order]="order"
+                  (startDelivery)="handleStartDelivery($event)"
+                ></app-delivery-card>
+              }
+            </div>
+          </div>
+        } @else {
+          <!-- Empty State -->
+          <div
+            class="py-12 text-center rounded-xl border border-dashed border-[#DADADA] bg-[#EEF2EE]/50"
+          >
+            <div class="text-5xl mb-3">🛵</div>
+            <h3 class="text-[#1F1F1F] text-base font-bold">
+              Aguardando pedidos
+            </h3>
+            <p class="text-[#5F5F5F] text-xs mt-1 leading-relaxed">
+              Novos pedidos aparecerão aqui quando estiverem prontos.
+            </p>
+          </div>
+        }
+
+        <!-- Delivered History Today -->
+        @if (deliveredCount() > 0) {
+          <div class="mt-8">
+            <h2 class="text-[#5F5F5F] text-xs font-extrabold uppercase tracking-wider mb-3">
+              Histórico de Hoje
+            </h2>
+            <div class="space-y-2">
+              @for (order of deliveredOrders(); track order.id) {
+                <div
+                  class="flex items-center justify-between py-3 px-4 rounded-xl bg-white border border-[#EEF2EE]"
+                  style="box-shadow: var(--shadow-card);"
+                >
+                  <div class="flex items-center gap-3">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#3AA55D"
+                      stroke-width="2.5"
+                    >
+                      <circle cx="12" cy="12" r="10"/>
+                      <path d="m9 12 2 2 4-4"/>
+                    </svg>
+                    <div>
+                      <p class="text-[#1F1F1F] text-xs font-bold">
+                        {{ order.customerName || 'Cliente Anônimo' }}
+                      </p>
+                      <p class="text-[#5F5F5F] text-[10px] font-medium mt-0.5">
+                        {{ order.id }}
+                      </p>
+                    </div>
+                  </div>
+                  <span class="text-[#1F1F1F] text-sm font-extrabold">
+                    {{ formatCurrency(order.total || order.totalAmount || 0) }}
+                  </span>
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+      </div>
+    </main>
+    
+    <!-- Change Password Modal -->
+    @if (showPasswordModal()) {
+      <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+        <div
+          class="w-full max-w-md rounded-2xl p-6 border bg-white text-[#1F1F1F] shadow-xl space-y-4"
+          style="border-color: var(--border);"
+        >
+          <div>
+            <h2 class="text-lg font-bold">Alterar Minha Senha</h2>
+            <p class="text-xs text-[#5F5F5F] mt-1">
+              Escolha uma nova senha segura para acessar sua conta.
+            </p>
+          </div>
+
+          @if (passwordError()) {
+            <div class="p-3 rounded-lg text-xs font-semibold text-red-600 bg-red-50 border border-red-200">
+              {{ passwordError() }}
+            </div>
+          }
+
+          <form (submit)="handleUpdatePassword(); $event.preventDefault();" class="space-y-4">
+            <div>
+              <label class="block text-xs font-bold text-[#5F5F5F] uppercase mb-1.5">Nova Senha</label>
+              <input
+                type="password"
+                [(ngModel)]="newPassword"
+                name="newPassword"
+                required
+                placeholder="••••••••"
+                class="w-full px-3 py-2.5 rounded-xl border bg-[#F7F9F7] text-[#1F1F1F] text-sm outline-none font-sans"
+                style="border-color: var(--border); height: 44px;"
+              />
+            </div>
+
+            <div class="flex gap-3 pt-2">
+              <button
+                type="button"
+                (click)="showPasswordModal.set(false)"
+                class="flex-1 py-3 rounded-xl font-bold bg-transparent hover:bg-slate-100 border border-slate-200 text-[#5F5F5F] text-xs cursor-pointer transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                [disabled]="passwordSubmitting()"
+                class="flex-1 py-3 rounded-xl font-bold text-white border-none text-xs cursor-pointer transition-colors bg-primary hover:bg-[#3d6347]"
+              >
+                {{ passwordSubmitting() ? 'Atualizando...' : 'Confirmar' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    }
+  }
+</div>
