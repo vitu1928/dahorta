@@ -1,11 +1,11 @@
 
 <h1 align="center">
-  <img src="src/public/assets/logo.png" alt="DaHorta Logo" width="80" style="vertical-align: middle;">
+  <img src="src/angular/public/assets/logo.png" alt="DaHorta Logo" width="80" style="vertical-align: middle;">
   <span>DaHorta — Comanda Digital</span>
 </h1>
 
 <p align="center">
-  > **Transformando a gestão de Dark Kitchens de alimentação saudável através de uma experiência digital integrada, automatizada e em tempo real.**
+ <em><strong>Transformando a gestão de Dark Kitchens de alimentação saudável através de uma experiência digital integrada, automatizada e em tempo real.</strong></em>
 </p>
 
 <p align="center">
