@@ -208,33 +208,11 @@ Todas as alterações são sincronizadas em tempo real pelo Firebase Firestore.
 
 ## 🔐 Segurança
 
-O sistema utiliza:
+O projeto utiliza Firebase Authentication, RBAC (Role Based Access Control)
+e regras de segurança do Firestore para restringir acesso aos recursos
+de acordo com o perfil do usuário.
 
-- Firebase Authentication
-- Guards de Rotas Angular
-- Controle de Acesso Baseado em Papéis (RBAC)
-- Regras de Segurança do Firestore
-- Proteção contra acesso não autorizado aos módulos administrativos
-
-Exemplo de regra Firestore:
-
-```javascript
-rules_version = '2';
-
-service cloud.firestore {
-  match /databases/{database}/documents {
-
-    match /pedidos/{pedidoId} {
-      allow read, write: if request.auth != null;
-    }
-
-    match /users/{userId} {
-      allow read, write: if request.auth != null
-      && request.auth.uid == userId;
-    }
-  }
-}
-```
+As regras completas não são divulgadas neste repositório por motivos de segurança operacional.
 
 ---
 
@@ -293,34 +271,16 @@ firebase deploy
 - [ ] Integração com WhatsApp
 - [ ] Notificações Push
 - [ ] Relatórios avançados
-- [ ] Cupons de desconto
+- [ ] Desenvolvimento de testes unitários, integrados e e2e
 
 ---
 
-## 🤝 Contribuição
+## 🤝 Contribuidores
 
-Contribuições são sempre bem-vindas.
+Este Projeto foi desenvolvido com a colaboração de:
 
-1. Faça um Fork do projeto
-2. Crie uma Branch:
-
-```bash
-git checkout -b feature/minha-feature
-```
-
-3. Faça suas alterações:
-
-```bash
-git commit -m "feat: adiciona nova funcionalidade"
-```
-
-4. Envie para o repositório remoto:
-
-```bash
-git push origin feature/minha-feature
-```
-
-5. Abra um Pull Request
+- **Anna Clara Gomes de Souza**
+- **Victor Garcia Torrens**
 
 ---
 
