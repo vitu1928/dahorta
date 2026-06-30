@@ -7,7 +7,7 @@ import { ToastService } from '../../data-access/toast.service';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="fixed top-6 right-6 z-[9999] flex flex-col gap-3 pointer-events-none max-w-sm w-full">
+    <div class="fixed top-6 left-1/2 -translate-x-1/2 z-[9999] flex flex-col items-center gap-3 pointer-events-none max-w-sm w-full px-4">
       @for (toast of toasts(); track toast.id) {
         <div 
           class="flex items-center gap-3 p-4 rounded-xl shadow-lg border pointer-events-auto toast-card animate-toast-in"

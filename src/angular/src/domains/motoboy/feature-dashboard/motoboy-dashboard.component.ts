@@ -217,6 +217,9 @@ import { ToastService } from '../../../shared/data-access/toast.service';
               </p>
               <div class="flex gap-2">
                 <input
+                  type="text"
+                  inputmode="numeric"
+                  pattern="[0-9]*"
                   [value]="code()"
                   (input)="code.set($any($event.target).value); error.set('')"
                   placeholder="000000"
