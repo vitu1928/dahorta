@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { CouponsService } from '../../customer/data-access/coupons.service';
 import { Coupon, CouponType } from '../../customer/data-access/customer.models';
 import { OrdersService } from '../../customer/data-access/orders.service';
+import { ToastService } from '../../../shared/data-access/toast.service';
 
 @Component({
   selector: 'app-coupons',
@@ -277,6 +278,7 @@ import { OrdersService } from '../../customer/data-access/orders.service';
 export class CouponsComponent {
   private couponsService = inject(CouponsService);
   private ordersService = inject(OrdersService);
+  private readonly toast = inject(ToastService);
 
   readonly searchQuery = signal<string>('');
   readonly isCreatorOpen = signal(false);
@@ -367,7 +369,7 @@ export class CouponsComponent {
     this.editingCoupon.set(null);
   }
 
-  saveCoupon() {
+  async saveCoupon(): Promise<void> {
     if (!this.formState.code) return;
 
     const couponData = {
@@ -379,19 +381,30 @@ export class CouponsComponent {
       expirationDate: this.formState.expirationDate ? new Date(this.formState.expirationDate + 'T12:00:00') : undefined
     };
 
-    const editing = this.editingCoupon();
-    if (editing) {
-      this.couponsService.update(editing.id, couponData);
-    } else {
-      this.couponsService.add(couponData);
+    try {
+      const editing = this.editingCoupon();
+      if (editing) {
+        await this.couponsService.update(editing.id, couponData);
+      } else {
+        await this.couponsService.add(couponData);
+      }
+      this.closeCreator();
+      this.toast.success(editing ? 'Cupom atualizado com sucesso!' : 'Cupom criado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao salvar cupom pela API:', error);
+      this.toast.error('Não foi possível salvar o cupom. Verifique os dados e tente novamente.');
     }
-
-    this.closeCreator();
   }
 
-  deleteCoupon(id: string) {
+  async deleteCoupon(id: string): Promise<void> {
     if (confirm('Deseja realmente deletar esta oferta?')) {
-      this.couponsService.delete(id);
+      try {
+        await this.couponsService.delete(id);
+        this.toast.success('Cupom desativado com sucesso!');
+      } catch (error) {
+        console.error('Erro ao desativar cupom pela API:', error);
+        this.toast.error('Não foi possível desativar o cupom. Tente novamente.');
+      }
     }
   }
 

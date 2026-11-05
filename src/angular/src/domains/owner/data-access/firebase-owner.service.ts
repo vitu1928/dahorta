@@ -1,15 +1,74 @@
+import { HttpClient } from '@angular/common/http';
 import { Injectable, signal, inject, computed, effect } from '@angular/core';
+import { EMPTY, Observable, Subscription, catchError, forkJoin, of, switchMap, tap, timer } from 'rxjs';
 import { OwnerService } from './owner.service';
 import { Supplier, Insumo, PriceRecord, TechnicalSheet, StockMovement, TechnicalSheetIngredient, RestaurantInfo } from './owner.models';
 import { AuthService } from '../../auth/data-access/auth.service';
 import { EmployeeService } from '../../employee/data-access/employee.service';
-import { Firestore, collection, doc, setDoc, deleteDoc, updateDoc, onSnapshot, writeBatch, runTransaction } from '@angular/fire/firestore';
+import { ProductsService } from '../../customer/data-access/products.service';
+import { Product } from '../../customer/data-access/customer.models';
+import { environment } from '../../../environments/environment';
+import { Firestore, collection, doc, setDoc, deleteDoc, updateDoc, onSnapshot } from '@angular/fire/firestore';
+
+interface InsumoApi {
+  id: number;
+  nome: string;
+  unidade: string;
+  quantidadeAtual: number;
+  quantidadeMinima: number;
+  ativo: boolean;
+}
+
+interface ProdutoApi {
+  id: number;
+  nome: string;
+  descricao: string;
+  imagem: string;
+  categoria: string;
+  preco: number;
+  disponivel: boolean;
+  ingredientes: { insumoId: number; nome: string; unidade: string; quantidade: number }[];
+}
+
+interface MovimentacaoApi {
+  id: number;
+  insumoId: number;
+  usuarioId: number;
+  usuarioNome: string;
+  pedidoId: number | null;
+  tipo: string;
+  quantidade: number;
+  observacao: string | null;
+  criadoEm: string;
+}
+
+interface RegistroPrecoApi {
+  id: number;
+  insumoId: number;
+  fornecedorId: string;
+  valor: number;
+  data: string;
+  observacao: string | null;
+}
+
+interface FornecedorApi {
+  id: number;
+  nome: string;
+  cnpj: string | null;
+  telefone: string;
+  email: string;
+  endereco: string;
+}
 
 @Injectable({ providedIn: 'root' })
 export class FirebaseOwnerService extends OwnerService {
   private firestore = inject(Firestore);
   private authService = inject(AuthService);
   private employeeService = inject(EmployeeService);
+  private http = inject(HttpClient);
+  private productsService = inject(ProductsService);
+  private readonly apiUrl = environment.apiUrl;
+  private apiProducts: ProdutoApi[] = [];
 
   private sanitizeObject(obj: any): any {
     if (obj === undefined) return null;
@@ -39,11 +98,7 @@ export class FirebaseOwnerService extends OwnerService {
   constructor() {
     super();
 
-    let unsubscribeSuppliers: any = null;
-    let unsubscribePriceRecords: any = null;
-    let unsubscribeMovements: any = null;
-    let unsubscribeInsumos: any = null;
-    let unsubscribeSheets: any = null;
+    let unsubscribeRestData: Subscription | null = null;
     let unsubscribePlate: any = null;
     let unsubscribeRestaurant: any = null;
 
@@ -52,11 +107,7 @@ export class FirebaseOwnerService extends OwnerService {
       const user = this.authService.currentUser();
       
       // Cleanup previous subscriptions
-      if (unsubscribeSuppliers) { unsubscribeSuppliers(); unsubscribeSuppliers = null; }
-      if (unsubscribePriceRecords) { unsubscribePriceRecords(); unsubscribePriceRecords = null; }
-      if (unsubscribeMovements) { unsubscribeMovements(); unsubscribeMovements = null; }
-      if (unsubscribeInsumos) { unsubscribeInsumos(); unsubscribeInsumos = null; }
-      if (unsubscribeSheets) { unsubscribeSheets(); unsubscribeSheets = null; }
+      if (unsubscribeRestData) { unsubscribeRestData.unsubscribe(); unsubscribeRestData = null; }
       if (unsubscribePlate) { unsubscribePlate(); unsubscribePlate = null; }
       if (unsubscribeRestaurant) { unsubscribeRestaurant(); unsubscribeRestaurant = null; }
 
@@ -64,30 +115,21 @@ export class FirebaseOwnerService extends OwnerService {
         const isStaff = user.role === 'owner' || user.role === 'employee';
         
         if (isStaff) {
-          const insumosCol = collection(this.firestore, 'insumos');
-          unsubscribeInsumos = onSnapshot(insumosCol, (snapshot) => {
-            const list: Insumo[] = [];
-            snapshot.forEach((doc) => {
-              list.push({ id: doc.id, ...doc.data() } as Insumo);
-            });
-            this.insumos.set(list);
-          }, (err) => {
-            console.error('Erro ao carregar insumos:', err);
-          });
-
-          const sheetsCol = collection(this.firestore, 'technicalSheets');
-          unsubscribeSheets = onSnapshot(sheetsCol, (snapshot) => {
-            const list: TechnicalSheet[] = [];
-            snapshot.forEach((doc) => {
-              list.push({ id: doc.id, ...doc.data() } as TechnicalSheet);
-            });
-            this.technicalSheets.set(list);
-          }, (err) => {
-            console.error('Erro ao carregar fichas técnicas:', err);
-          });
+          unsubscribeRestData = timer(0, 10000).pipe(
+            switchMap(() => this.loadRestData(user.role).pipe(
+              catchError(err => {
+                console.error('Erro ao carregar estoque e fichas técnicas pela API:', err);
+                return EMPTY;
+              })
+            ))
+          ).subscribe();
         } else {
           this.insumos.set([]);
+          this.suppliers.set([]);
+          this.priceRecords.set([]);
           this.technicalSheets.set([]);
+          this.stockMovements.set([]);
+          this.apiProducts = [];
         }
 
         // 3. Listen to plate of day settings (available to all)
@@ -117,201 +159,389 @@ export class FirebaseOwnerService extends OwnerService {
           console.error('Erro ao ouvir configuração do restaurante:', err);
         });
 
-        if (isStaff) {
-          // 4. Listen to suppliers
-          const suppliersCol = collection(this.firestore, 'suppliers');
-          unsubscribeSuppliers = onSnapshot(suppliersCol, (snapshot) => {
-            const list: Supplier[] = [];
-            snapshot.forEach((doc) => {
-              list.push({ id: doc.id, ...doc.data() } as Supplier);
-            });
-            this.suppliers.set(list);
-          }, (err) => {
-            console.error('Erro ao carregar fornecedores:', err);
-          });
-
-          // 5. Listen to price records
-          const priceRecordsCol = collection(this.firestore, 'priceRecords');
-          unsubscribePriceRecords = onSnapshot(priceRecordsCol, (snapshot) => {
-            const list: PriceRecord[] = [];
-            snapshot.forEach((doc) => {
-              const data = doc.data();
-              list.push({
-                id: doc.id,
-                insumoId: data['insumoId'],
-                supplierId: data['supplierId'],
-                value: data['value'],
-                date: data['date']?.toDate() || new Date(),
-                observation: data['observation']
-              } as PriceRecord);
-            });
-            this.priceRecords.set(list);
-          }, (err) => {
-            console.error('Erro ao carregar registros de preços:', err);
-          });
-
-          // 6. Listen to stock movements
-          const movementsCol = collection(this.firestore, 'stockMovements');
-          unsubscribeMovements = onSnapshot(movementsCol, (snapshot) => {
-            const list: StockMovement[] = [];
-            snapshot.forEach((doc) => {
-              const data = doc.data();
-              list.push({
-                id: doc.id,
-                stockItemId: data['stockItemId'],
-                type: data['type'],
-                quantity: data['quantity'],
-                userId: data['userId'],
-                userName: data['userName'],
-                timestamp: data['timestamp']?.toDate() || new Date(),
-                notes: data['notes'],
-                orderId: data['orderId']
-              } as StockMovement);
-            });
-            this.stockMovements.set(list);
-          }, (err) => {
-            console.error('Erro ao carregar movimentações de estoque:', err);
-          });
-        }
       } else {
         this.suppliers.set([]);
         this.insumos.set([]);
         this.priceRecords.set([]);
         this.technicalSheets.set([]);
         this.stockMovements.set([]);
+        this.apiProducts = [];
         this.plateOfDay.set({});
         this.restaurantInfo.set(null);
       }
     }, { allowSignalWrites: true });
   }
 
+  private loadRestData(role: string): Observable<unknown> {
+    const products$ = role === 'owner'
+      ? this.http.get<ProdutoApi[]>(`${this.apiUrl}/admin/produtos`)
+      : of([] as ProdutoApi[]);
+
+    return forkJoin({
+      insumos: this.http.get<InsumoApi[]>(`${this.apiUrl}/estoque/insumos`),
+      movements: this.http.get<MovimentacaoApi[]>(`${this.apiUrl}/estoque/movimentacoes`),
+      products: products$,
+      suppliers: role === 'owner'
+        ? this.http.get<FornecedorApi[]>(`${this.apiUrl}/admin/fornecedores`)
+        : of([] as FornecedorApi[]),
+      priceRecords: role === 'owner'
+        ? this.http.get<RegistroPrecoApi[]>(`${this.apiUrl}/admin/historico-precos`)
+        : of([] as RegistroPrecoApi[])
+    }).pipe(tap(({ insumos, movements, products, suppliers, priceRecords }) => {
+      this.apiProducts = products;
+      this.insumos.set(insumos.map(item => this.toInsumo(item)));
+      this.stockMovements.set(movements.map(item => this.toStockMovement(item)));
+      this.suppliers.set(suppliers.map(item => this.toSupplier(item)));
+      this.priceRecords.set(priceRecords.map(item => this.toPriceRecord(item)));
+      this.technicalSheets.set(products.flatMap(product => {
+        if (!product.ingredientes?.length) return [];
+        const frontendProduct = this.findFrontendProduct(product);
+        return [{
+          id: String(product.id),
+          productId: frontendProduct?.id ?? String(product.id),
+          internalName: frontendProduct?.internalName ?? product.nome,
+          desiredMargin: frontendProduct?.desiredMargin ?? 40,
+          ingredients: product.ingredientes.map(ingredient => ({
+            id: `${product.id}-${ingredient.insumoId}`,
+            insumoId: String(ingredient.insumoId),
+            quantity: Number(ingredient.quantidade),
+            unit: ingredient.unidade
+          }))
+        }];
+      }));
+    }));
+  }
+
+  private refreshRestData(): void {
+    const role = this.authService.currentUser()?.role;
+    if (role !== 'owner' && role !== 'employee') return;
+
+    this.loadRestData(role).pipe(
+      catchError(err => {
+        console.error('Erro ao atualizar estoque e fichas técnicas pela API:', err);
+        return EMPTY;
+      })
+    ).subscribe();
+  }
+
+  private toInsumo(item: InsumoApi): Insumo {
+    return {
+      id: String(item.id),
+      name: item.nome,
+      unit: item.unidade,
+      category: 'Outros',
+      currentQuantity: Number(item.quantidadeAtual),
+      maxCapacity: Math.max(Number(item.quantidadeAtual), 1000),
+      minAlert: Number(item.quantidadeMinima)
+    };
+  }
+
+  private toStockMovement(item: MovimentacaoApi): StockMovement {
+    const type = item.tipo === 'ENTRADA' ? 'entry'
+      : item.tipo === 'BAIXA_PEDIDO' ? 'exit_auto'
+      : item.tipo === 'AJUSTE' ? 'adjustment'
+      : 'exit_manual';
+    return {
+      id: String(item.id),
+      stockItemId: String(item.insumoId),
+      type,
+      quantity: Number(item.quantidade),
+      userId: String(item.usuarioId),
+      userName: item.usuarioNome,
+      timestamp: new Date(item.criadoEm),
+      notes: item.observacao ?? undefined,
+      orderId: item.pedidoId == null ? undefined : String(item.pedidoId)
+    };
+  }
+
+  private toPriceRecord(item: RegistroPrecoApi): PriceRecord {
+    return {
+      id: String(item.id),
+      insumoId: String(item.insumoId),
+      supplierId: item.fornecedorId,
+      value: Number(item.valor),
+      date: new Date(item.data),
+      observation: item.observacao ?? undefined
+    };
+  }
+
+  private toSupplier(item: FornecedorApi): Supplier {
+    return {
+      id: String(item.id),
+      name: item.nome,
+      cnpj: item.cnpj ?? undefined,
+      phone: item.telefone,
+      email: item.email,
+      address: item.endereco
+    };
+  }
+
+  private findFrontendProduct(product: ProdutoApi): Product | undefined {
+    const normalizedName = this.normalizeName(product.nome);
+    return this.productsService.products().find(item => this.normalizeName(item.name) === normalizedName);
+  }
+
+  private findApiProduct(productId: string): ProdutoApi | undefined {
+    const numericId = Number(productId);
+    const byId = Number.isSafeInteger(numericId)
+      ? this.apiProducts.find(product => product.id === numericId)
+      : undefined;
+    if (byId) return byId;
+
+    const existingSheet = this.technicalSheets().find(sheet => sheet.productId === productId);
+    if (existingSheet) {
+      const sheetId = Number(existingSheet.id);
+      const productBySheetId = this.apiProducts.find(product => product.id === sheetId);
+      if (productBySheetId) return productBySheetId;
+    }
+
+    const frontendProduct = this.productsService.getById(productId);
+    if (!frontendProduct) return undefined;
+    const normalizedName = this.normalizeName(frontendProduct.name);
+    return this.apiProducts.find(product => this.normalizeName(product.nome) === normalizedName);
+  }
+
+  private normalizeName(value: string): string {
+    return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLocaleLowerCase('pt-BR');
+  }
+
+  private toApiInsumoRequest(item: Insumo): {
+    nome: string;
+    unidade: string;
+    quantidadeInicial: number;
+    quantidadeMinima: number;
+  } {
+    return {
+      nome: item.name,
+      unidade: item.unit,
+      quantidadeInicial: Number(item.currentQuantity ?? 0),
+      quantidadeMinima: Number(item.minAlert ?? 0)
+    };
+  }
+
+  private saveApiTechnicalSheet(
+    product: ProdutoApi,
+    ingredients: TechnicalSheetIngredient[]
+  ): void {
+    const apiIngredients = ingredients.map(ingredient => ({
+      insumoId: Number(ingredient.insumoId),
+      quantidade: Number(ingredient.quantity)
+    }));
+    if (apiIngredients.some(ingredient =>
+      !Number.isSafeInteger(ingredient.insumoId) || ingredient.insumoId <= 0 ||
+      !Number.isFinite(ingredient.quantidade) || ingredient.quantidade <= 0
+    )) {
+      console.error(`Não foi possível salvar a ficha técnica do produto "${product.nome}": ingredientes inválidos.`);
+      return;
+    }
+
+    this.http.put<ProdutoApi>(`${this.apiUrl}/admin/produtos/${product.id}`, {
+      nome: product.nome,
+      descricao: product.descricao,
+      imagem: product.imagem,
+      categoria: product.categoria,
+      preco: product.preco,
+      disponivel: product.disponivel,
+      ingredientes: apiIngredients
+    }).subscribe({
+      next: updated => {
+        this.apiProducts = this.apiProducts.map(item => item.id === updated.id ? updated : item);
+        this.refreshRestData();
+      },
+      error: err => console.error(`Erro ao salvar ficha técnica do produto "${product.nome}" pela API:`, err)
+    });
+  }
+
   // Suppliers CRUD
   override addSupplier(supplier: Omit<Supplier, 'id'>): void {
-    const colRef = collection(this.firestore, 'suppliers');
-    const docRef = doc(colRef);
-    setDoc(docRef, supplier).catch(err => {
-      console.error('Erro ao adicionar fornecedor:', err);
+    this.http.post<FornecedorApi>(`${this.apiUrl}/admin/fornecedores`, this.toApiSupplier(supplier)).subscribe({
+      next: item => this.suppliers.update(items => [...items, this.toSupplier(item)]),
+      error: err => console.error('Erro ao adicionar fornecedor pela API:', err)
     });
   }
 
   override updateSupplier(id: string, supplier: Partial<Supplier>): void {
-    const docRef = doc(this.firestore, `suppliers/${id}`);
-    updateDoc(docRef, supplier).catch(err => {
-      console.error('Erro ao atualizar fornecedor:', err);
+    const numericId = Number(id);
+    const existing = this.suppliers().find(item => item.id === id);
+    if (!Number.isSafeInteger(numericId) || numericId <= 0 || !existing) {
+      console.error('Não foi possível atualizar o fornecedor: identificador inválido ou fornecedor ausente.');
+      return;
+    }
+
+    this.http.put<FornecedorApi>(`${this.apiUrl}/admin/fornecedores/${numericId}`,
+      this.toApiSupplier({ ...existing, ...supplier })).subscribe({
+      next: updated => this.suppliers.update(items => items.map(item =>
+        item.id === id ? this.toSupplier(updated) : item
+      )),
+      error: err => console.error('Erro ao atualizar fornecedor pela API:', err)
     });
   }
 
   override deleteSupplier(id: string): void {
-    const docRef = doc(this.firestore, `suppliers/${id}`);
-    deleteDoc(docRef).catch(err => {
-      console.error('Erro ao excluir fornecedor:', err);
+    const numericId = Number(id);
+    if (!Number.isSafeInteger(numericId) || numericId <= 0) {
+      console.error('Não foi possível excluir o fornecedor: identificador inválido.');
+      return;
+    }
+
+    this.http.delete<void>(`${this.apiUrl}/admin/fornecedores/${numericId}`).subscribe({
+      next: () => this.suppliers.update(items => items.filter(item => item.id !== id)),
+      error: err => console.error('Erro ao excluir fornecedor pela API:', err)
     });
   }
 
-  // Insumos CRUD (Unificado com estoque)
-  override async addInsumo(insumo: Omit<Insumo, 'id'>): Promise<void> {
-    try {
-      const insumosCol = collection(this.firestore, 'insumos');
-      const insumoDocRef = doc(insumosCol);
-      const id = insumoDocRef.id;
+  private toApiSupplier(supplier: Omit<Supplier, 'id'> | Supplier): {
+    nome: string;
+    cnpj: string | null;
+    telefone: string;
+    email: string;
+    endereco: string;
+  } {
+    return {
+      nome: supplier.name.trim(),
+      cnpj: supplier.cnpj?.trim() || null,
+      telefone: supplier.phone.trim(),
+      email: supplier.email.trim().toLowerCase(),
+      endereco: supplier.address.trim()
+    };
+  }
 
-      await setDoc(insumoDocRef, {
-        ...insumo,
-        currentQuantity: insumo.currentQuantity ?? 0,
-        maxCapacity: insumo.maxCapacity ?? 1000,
-        minAlert: insumo.minAlert ?? 100
-      });
-    } catch (err) {
-      console.error('Erro ao cadastrar insumo:', err);
-    }
+  // Insumos CRUD
+  override async addInsumo(insumo: Omit<Insumo, 'id'>): Promise<void> {
+    const request = this.toApiInsumoRequest({ ...insumo, id: '' });
+    this.http.post<InsumoApi>(`${this.apiUrl}/estoque/insumos`, request).subscribe({
+      next: item => this.insumos.update(items => [...items, this.toInsumo(item)]),
+      error: err => console.error('Erro ao cadastrar insumo pela API:', err)
+    });
   }
 
   override async updateInsumo(id: string, insumo: Partial<Insumo>): Promise<void> {
-    try {
-      const insumoDocRef = doc(this.firestore, `insumos/${id}`);
-      await updateDoc(insumoDocRef, insumo);
-    } catch (err) {
-      console.error('Erro ao atualizar insumo:', err);
+    const numericId = Number(id);
+    const current = this.insumos().find(item => item.id === id);
+    if (!Number.isSafeInteger(numericId) || numericId <= 0 || !current) {
+      console.error('Não foi possível atualizar o insumo: identificador inválido ou item ausente.');
+      return;
     }
+
+    const request = this.toApiInsumoRequest({ ...current, ...insumo });
+    this.http.put<InsumoApi>(`${this.apiUrl}/estoque/insumos/${numericId}`, request).subscribe({
+      next: item => this.insumos.update(items => items.map(existing =>
+        existing.id === id ? this.toInsumo(item) : existing
+      )),
+      error: err => console.error('Erro ao atualizar insumo pela API:', err)
+    });
   }
 
   override async deleteInsumo(id: string): Promise<void> {
-    try {
-      const insumoDocRef = doc(this.firestore, `insumos/${id}`);
-      await deleteDoc(insumoDocRef);
-    } catch (err) {
-      console.error('Erro ao excluir insumo:', err);
+    const numericId = Number(id);
+    if (!Number.isSafeInteger(numericId) || numericId <= 0) {
+      console.error('Não foi possível excluir o insumo: identificador inválido.');
+      return;
     }
+
+    this.http.delete<void>(`${this.apiUrl}/estoque/insumos/${numericId}`).subscribe({
+      next: () => this.insumos.update(items => items.filter(item => item.id !== id)),
+      error: err => console.error('Erro ao excluir insumo pela API:', err)
+    });
   }
 
   // Price Records
   override addPriceRecord(record: Omit<PriceRecord, 'id'>): void {
-    const colRef = collection(this.firestore, 'priceRecords');
-    const docRef = doc(colRef);
-    
-    // Constrói objeto limpo sem propriedades undefined para o Firestore
-    const data: any = {
-      insumoId: record.insumoId,
-      supplierId: record.supplierId,
-      value: record.value,
-      date: record.date || new Date()
-    };
-    
-    if (record.observation !== undefined && record.observation !== null && record.observation !== '') {
-      data.observation = record.observation;
+    let body: ReturnType<FirebaseOwnerService['toApiPriceRecord']>;
+    try {
+      body = this.toApiPriceRecord(record);
+    } catch (err) {
+      console.error('Não foi possível adicionar registro de preço: dados inválidos.', err);
+      return;
     }
 
-    setDoc(docRef, data).catch(err => {
-      console.error('Erro ao adicionar registro de preço:', err);
+    this.http.post<RegistroPrecoApi>(`${this.apiUrl}/admin/historico-precos`, body).subscribe({
+      next: item => this.priceRecords.update(records => [...records, this.toPriceRecord(item)]),
+      error: err => console.error('Erro ao adicionar registro de preço pela API:', err)
     });
   }
 
   override deletePriceRecord(id: string): void {
-    const docRef = doc(this.firestore, `priceRecords/${id}`);
-    deleteDoc(docRef).catch(err => {
-      console.error('Erro ao excluir registro de preço:', err);
+    const numericId = Number(id);
+    if (!Number.isSafeInteger(numericId) || numericId <= 0) {
+      console.error('Não foi possível excluir o registro de preço: identificador inválido.');
+      return;
+    }
+
+    this.http.delete<void>(`${this.apiUrl}/admin/historico-precos/${numericId}`).subscribe({
+      next: () => this.priceRecords.update(records => records.filter(record => record.id !== id)),
+      error: err => console.error('Erro ao excluir registro de preço pela API:', err)
     });
   }
 
   override updatePriceRecord(id: string, record: Partial<PriceRecord>): void {
-    const docRef = doc(this.firestore, `priceRecords/${id}`);
-    const data: any = { ...record };
-    
-    if (data.observation === undefined || data.observation === null || data.observation === '') {
-      data.observation = null; // Firestore accepts null to clear fields
+    const numericId = Number(id);
+    const existing = this.priceRecords().find(item => item.id === id);
+    if (!Number.isSafeInteger(numericId) || numericId <= 0 || !existing) {
+      console.error('Não foi possível atualizar o registro de preço: identificador inválido ou registro ausente.');
+      return;
     }
 
-    updateDoc(docRef, data).catch(err => {
-      console.error('Erro ao atualizar registro de preço:', err);
+    let body: ReturnType<FirebaseOwnerService['toApiPriceRecord']>;
+    try {
+      body = this.toApiPriceRecord({ ...existing, ...record });
+    } catch (err) {
+      console.error('Não foi possível atualizar o registro de preço: dados inválidos.', err);
+      return;
+    }
+
+    this.http.put<RegistroPrecoApi>(`${this.apiUrl}/admin/historico-precos/${numericId}`, body).subscribe({
+      next: updated => this.priceRecords.update(records => records.map(item =>
+        item.id === id ? this.toPriceRecord(updated) : item
+      )),
+      error: err => console.error('Erro ao atualizar registro de preço pela API:', err)
     });
+  }
+
+  private toApiPriceRecord(record: Omit<PriceRecord, 'id'> | PriceRecord): {
+    insumoId: number;
+    fornecedorId: number;
+    valor: number;
+    data: string;
+    observacao: string | null;
+  } {
+    const insumoId = Number(record.insumoId);
+    const fornecedorId = Number(record.supplierId);
+    if (!Number.isSafeInteger(insumoId) || insumoId <= 0 ||
+        !Number.isSafeInteger(fornecedorId) || fornecedorId <= 0 ||
+        !Number.isFinite(record.value) || record.value <= 0 ||
+        Number.isNaN(record.date.getTime())) {
+      throw new Error('Dados inválidos para registro de preço.');
+    }
+
+    return {
+      insumoId,
+      fornecedorId,
+      valor: record.value,
+      data: record.date.toISOString(),
+      observacao: record.observation?.trim() || null
+    };
   }
 
   // Technical Sheets
   override saveTechnicalSheet(sheet: Omit<TechnicalSheet, 'id'> & { id?: string }): void {
-    const colRef = collection(this.firestore, 'technicalSheets');
-    if (sheet.id) {
-      const docRef = doc(this.firestore, `technicalSheets/${sheet.id}`);
-      setDoc(docRef, sheet, { merge: true }).catch(err => console.error(err));
-    } else {
-      const existing = this.technicalSheets().find(s => s.productId === sheet.productId);
-      if (existing) {
-        const docRef = doc(this.firestore, `technicalSheets/${existing.id}`);
-        setDoc(docRef, sheet, { merge: true }).catch(err => console.error(err));
-      } else {
-        const docRef = doc(colRef);
-        setDoc(docRef, sheet).catch(err => console.error(err));
-      }
+    const product = this.findApiProduct(sheet.productId);
+    if (!product) {
+      console.error(`Não foi possível salvar a ficha técnica: produto "${sheet.productId}" não encontrado na API.`);
+      return;
     }
+
+    this.saveApiTechnicalSheet(product, sheet.ingredients);
   }
 
   override deleteTechnicalSheet(productId: string): void {
-    const sheet = this.technicalSheets().find(s => s.productId === productId);
-    if (!sheet) return;
+    const product = this.findApiProduct(productId);
+    if (!product) {
+      console.error(`Não foi possível remover a ficha técnica: produto "${productId}" não encontrado na API.`);
+      return;
+    }
 
-    const docRef = doc(this.firestore, `technicalSheets/${sheet.id}`);
-    deleteDoc(docRef).catch(err => {
-      console.error('Erro ao deletar ficha técnica:', err);
-    });
+    this.saveApiTechnicalSheet(product, []);
   }
 
   override getTechnicalSheetByProduct(productId: string): TechnicalSheet | undefined {
@@ -320,64 +550,45 @@ export class FirebaseOwnerService extends OwnerService {
 
   // Stock Movements & Adjustments
   override async addStockMovement(movement: Omit<StockMovement, 'id' | 'timestamp'>): Promise<void> {
-    try {
-      const newMovRef = doc(collection(this.firestore, 'stockMovements'));
-      const stockRef = doc(this.firestore, `insumos/${movement.stockItemId}`);
-
-      await runTransaction(this.firestore, async (transaction) => {
-        const stockSnap = await transaction.get(stockRef);
-        if (!stockSnap.exists()) {
-          throw new Error('Item de estoque não existe no Firestore.');
-        }
-
-        const currentQty = stockSnap.data()['currentQuantity'] || 0;
-        const delta = movement.type === 'entry' ? movement.quantity : -movement.quantity;
-        const newQty = Math.max(0, currentQty + delta);
-
-        transaction.set(newMovRef, this.sanitizeObject({
-          ...movement,
-          timestamp: new Date()
-        }));
-        transaction.update(stockRef, {
-          currentQuantity: newQty
-        });
-      });
-    } catch (err) {
-      console.error('Erro na transação de movimento de estoque:', err);
+    const insumoId = Number(movement.stockItemId);
+    const tipo = movement.type === 'entry' ? 'ENTRADA'
+      : movement.type === 'adjustment' ? 'AJUSTE'
+      : movement.type === 'exit_auto' ? 'BAIXA_PEDIDO'
+      : 'SAIDA_MANUAL';
+    if (!Number.isSafeInteger(insumoId) || insumoId <= 0 || movement.quantity <= 0 || tipo === 'BAIXA_PEDIDO') {
+      console.error('Não foi possível registrar a movimentação: insumo ou quantidade inválidos.');
+      return;
     }
+
+    this.http.post<InsumoApi>(`${this.apiUrl}/estoque/movimentacoes`, {
+      insumoId,
+      tipo,
+      quantidade: movement.quantity,
+      observacao: movement.notes ?? null
+    }).subscribe({
+      next: () => this.refreshRestData(),
+      error: err => console.error('Erro ao registrar movimentação pela API:', err)
+    });
   }
 
   override async adjustStock(stockItemId: string, quantity: number, notes?: string): Promise<void> {
-    const user = this.authService.currentUser();
-    if (!user) return;
-
-    try {
-      const newMovRef = doc(collection(this.firestore, 'stockMovements'));
-      const stockRef = doc(this.firestore, `insumos/${stockItemId}`);
-
-      await runTransaction(this.firestore, async (transaction) => {
-        const stockSnap = await transaction.get(stockRef);
-        if (!stockSnap.exists()) return;
-
-        const currentQty = stockSnap.data()['currentQuantity'] || 0;
-        const newQty = Math.max(0, currentQty + quantity);
-
-        transaction.set(newMovRef, {
-          stockItemId,
-          type: 'adjustment',
-          quantity,
-          userId: user.id,
-          userName: user.name,
-          timestamp: new Date(),
-          notes
-        });
-        transaction.update(stockRef, {
-          currentQuantity: newQty
-        });
-      });
-    } catch (err) {
-      console.error('Erro na transação de ajuste de estoque:', err);
+    const insumoId = Number(stockItemId);
+    const current = this.insumos().find(item => item.id === stockItemId);
+    if (!Number.isSafeInteger(insumoId) || insumoId <= 0 || !current || current.currentQuantity === undefined) {
+      console.error('Não foi possível ajustar o estoque: identificador inválido ou item ausente.');
+      return;
     }
+
+    const quantidade = Math.max(0, current.currentQuantity + quantity);
+    this.http.post<InsumoApi>(`${this.apiUrl}/estoque/movimentacoes`, {
+      insumoId,
+      tipo: 'AJUSTE',
+      quantidade,
+      observacao: notes ?? null
+    }).subscribe({
+      next: () => this.refreshRestData(),
+      error: err => console.error('Erro ao ajustar estoque pela API:', err)
+    });
   }
 
   override checkStockAvailability(productId: string, quantity: number): { available: boolean; missing: string[] } {

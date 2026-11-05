@@ -70,6 +70,8 @@ não consomem estoque.
 - `/api/v1/usuarios/me`: consultar/editar perfil e alterar senha; ao editar e-mail,
   a resposta inclui um novo JWT.
 - `/api/v1/admin/equipe`: CRUD de contas `COZINHA` e `MOTOBOY`.
+- `/api/v1/admin/fornecedores`: CRUD de fornecedores, restrito a ADMIN.
+- `/api/v1/admin/historico-precos`: CRUD do histórico de preços por insumo e fornecedor, restrito a ADMIN.
 - `GET /api/v1/produtos` e `/api/v1/produtos/{id}`: catálogo público. Composição
   interna não é exposta ao cliente.
 - `/api/v1/admin/produtos`: CRUD administrativo do cardápio e fichas técnicas.

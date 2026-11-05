@@ -42,7 +42,6 @@ public class CupomController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
     public List<CupomResponseDTO> listar() {
         return cupomService.listar();
     }

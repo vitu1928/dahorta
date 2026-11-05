@@ -22,6 +22,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(properties = {
         "spring.datasource.url=jdbc:h2:mem:dahorta-test;DB_CLOSE_DELAY=-1",
         "spring.datasource.username=sa",
+        "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
         "spring.datasource.password=",
         "spring.jpa.hibernate.ddl-auto=create-drop",
         "dahorta.jwt.secret=test-only-secret-that-is-at-least-32-bytes-long",

@@ -1,8 +1,37 @@
-import { Component, inject, signal, computed } from '@angular/core';
+import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { OwnerService } from '../data-access/owner.service';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 import { Supplier, Insumo, PriceRecord } from '../data-access/owner.models';
+import { environment } from '../../../environments/environment';
+import { ToastService } from '../../../shared/data-access/toast.service';
+
+interface SupplierApi {
+  id: number;
+  nome: string;
+  cnpj: string | null;
+  telefone: string;
+  email: string;
+  endereco: string;
+}
+
+interface InsumoApi {
+  id: number;
+  nome: string;
+  unidade: string;
+  quantidadeAtual: number;
+  quantidadeMinima: number;
+}
+
+interface PriceRecordApi {
+  id: number;
+  insumoId: number;
+  fornecedorId: string;
+  valor: number;
+  data: string;
+  observacao: string | null;
+}
 
 @Component({
   selector: 'app-suppliers',
@@ -300,12 +329,14 @@ import { Supplier, Insumo, PriceRecord } from '../data-access/owner.models';
     }
   `]
 })
-export class SuppliersComponent {
-  private ownerService = inject(OwnerService);
+export class SuppliersComponent implements OnInit {
+  private readonly http = inject(HttpClient);
+  private readonly toast = inject(ToastService);
+  private readonly suppliersUrl = `${environment.apiUrl}/admin/fornecedores`;
 
-  readonly suppliers = this.ownerService.suppliers;
-  readonly priceRecords = this.ownerService.priceRecords;
-  readonly insumos = this.ownerService.insumos;
+  readonly suppliers = signal<Supplier[]>([]);
+  readonly priceRecords = signal<PriceRecord[]>([]);
+  readonly insumos = signal<Insumo[]>([]);
 
   readonly expandedSupplierId = signal<string | null>(null);
   readonly showFormModal = signal(false);
@@ -319,6 +350,80 @@ export class SuppliersComponent {
     email: '',
     address: ''
   };
+
+  ngOnInit(): void {
+    void this.loadSuppliers();
+    void this.loadInsumos();
+    void this.loadPriceRecords();
+  }
+
+  private async loadInsumos(): Promise<void> {
+    try {
+      const items = await firstValueFrom(
+        this.http.get<InsumoApi[]>(`${environment.apiUrl}/estoque/insumos`)
+      );
+      this.insumos.set(items.map(item => ({
+        id: String(item.id),
+        name: item.nome,
+        unit: item.unidade,
+        category: 'Outros',
+        currentQuantity: Number(item.quantidadeAtual),
+        minAlert: Number(item.quantidadeMinima)
+      })));
+    } catch (error) {
+      console.error('Erro ao carregar insumos para fornecedores pela API:', error);
+      this.toast.error(this.errorMessage(error, 'Não foi possível carregar os insumos.'));
+    }
+  }
+
+  private async loadSuppliers(): Promise<void> {
+    try {
+      const suppliers = await firstValueFrom(this.http.get<SupplierApi[]>(this.suppliersUrl));
+      this.suppliers.set(suppliers.map(supplier => this.toSupplier(supplier)));
+    } catch (error) {
+      console.error('Erro ao carregar fornecedores pela API:', error);
+      this.toast.error(this.errorMessage(error, 'Não foi possível carregar os fornecedores.'));
+    }
+  }
+
+  private async loadPriceRecords(): Promise<void> {
+    try {
+      const records = await firstValueFrom(
+        this.http.get<PriceRecordApi[]>(`${environment.apiUrl}/admin/historico-precos`)
+      );
+      this.priceRecords.set(records.map(record => ({
+        id: String(record.id),
+        insumoId: String(record.insumoId),
+        supplierId: record.fornecedorId,
+        value: Number(record.valor),
+        date: new Date(record.data),
+        observation: record.observacao ?? undefined
+      })));
+    } catch (error) {
+      console.error('Erro ao carregar histórico de preços pela API:', error);
+      this.toast.error(this.errorMessage(error, 'Não foi possível carregar o histórico de preços.'));
+    }
+  }
+
+  private toSupplier(supplier: SupplierApi): Supplier {
+    return {
+      id: String(supplier.id),
+      name: supplier.nome,
+      cnpj: supplier.cnpj ?? undefined,
+      phone: supplier.telefone,
+      email: supplier.email,
+      address: supplier.endereco
+    };
+  }
+
+  private errorMessage(error: unknown, fallback: string): string {
+    if (error instanceof HttpErrorResponse) {
+      const message = error.error?.detail ?? error.error?.message;
+      if (typeof message === 'string' && message.trim()) return message;
+      if (error.status === 0) return 'Não foi possível conectar à API. Verifique se o backend está em execução.';
+    }
+    return fallback;
+  }
 
   // Stats calculation
   readonly mappedInsumosCount = computed(() => {
@@ -351,7 +456,12 @@ export class SuppliersComponent {
         .filter(r => r.insumoId === id)
         .sort((a, b) => b.date.getTime() - a.date.getTime());
       
-      const best = this.ownerService.getBestPrice(id);
+      const best = itemRecords.reduce<Pick<PriceRecord, 'value' | 'supplierId'> | null>(
+        (currentBest, record) => !currentBest || record.value < currentBest.value
+          ? { value: record.value, supplierId: record.supplierId }
+          : currentBest,
+        null
+      );
       const isCurrentBest = best?.supplierId === supplierId;
 
       return {
@@ -409,31 +519,44 @@ export class SuppliersComponent {
     this.formSupplier.set(undefined);
   }
 
-  saveSupplier() {
+  async saveSupplier(): Promise<void> {
     if (!this.supplierFormState.name) return;
 
     const data = {
-      name: this.supplierFormState.name,
-      cnpj: this.supplierFormState.cnpj || undefined,
-      phone: this.supplierFormState.phone,
-      email: this.supplierFormState.email,
-      address: this.supplierFormState.address
+      nome: this.supplierFormState.name.trim(),
+      cnpj: this.supplierFormState.cnpj.trim() || null,
+      telefone: this.supplierFormState.phone.trim(),
+      email: this.supplierFormState.email.trim().toLowerCase(),
+      endereco: this.supplierFormState.address.trim()
     };
 
-    const editing = this.formSupplier();
-    if (editing) {
-      this.ownerService.updateSupplier(editing.id, data);
-    } else {
-      this.ownerService.addSupplier(data);
+    try {
+      const editing = this.formSupplier();
+      if (editing) {
+        await firstValueFrom(this.http.put<SupplierApi>(`${this.suppliersUrl}/${editing.id}`, data));
+      } else {
+        await firstValueFrom(this.http.post<SupplierApi>(this.suppliersUrl, data));
+      }
+      await this.loadSuppliers();
+      this.toast.success(editing ? 'Fornecedor atualizado com sucesso!' : 'Fornecedor cadastrado com sucesso!');
+      this.closeFormModal();
+    } catch (error) {
+      console.error('Erro ao salvar fornecedor pela API:', error);
+      this.toast.error(this.errorMessage(error, 'Não foi possível salvar o fornecedor.'));
     }
-
-    this.closeFormModal();
   }
 
-  executeDeleteSupplier(id: string) {
-    this.ownerService.deleteSupplier(id);
-    if (this.expandedSupplierId() === id) {
-      this.expandedSupplierId.set(null);
+  async executeDeleteSupplier(id: string): Promise<void> {
+    try {
+      await firstValueFrom(this.http.delete<void>(`${this.suppliersUrl}/${id}`));
+      await this.loadSuppliers();
+      if (this.expandedSupplierId() === id) {
+        this.expandedSupplierId.set(null);
+      }
+      this.toast.success('Fornecedor removido com sucesso!');
+    } catch (error) {
+      console.error('Erro ao excluir fornecedor pela API:', error);
+      this.toast.error(this.errorMessage(error, 'Não foi possível excluir o fornecedor.'));
     }
     this.deleteConfirmId.set(null);
   }

@@ -1,9 +1,8 @@
 import { Component, inject, signal, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Firestore, collection, onSnapshot, doc, setDoc, deleteDoc, updateDoc } from '@angular/fire/firestore';
-import { initializeApp, getApp, getApps } from 'firebase/app';
-import { getAuth, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ToastService } from '../../../shared/data-access/toast.service';
 
@@ -12,9 +11,18 @@ interface TeamMember {
   name: string;
   email: string;
   role: 'employee' | 'motoboy';
-  phone: string;
+  phone: string | null;
+  active: boolean;
   avatar?: string;
-  createdAt?: any;
+}
+
+interface TeamMemberApi {
+  id: number;
+  nome: string;
+  email: string;
+  telefone: string | null;
+  perfil: 'COZINHA' | 'MOTOBOY';
+  ativo: boolean;
 }
 
 @Component({
@@ -237,8 +245,9 @@ interface TeamMember {
   `]
 })
 export class TeamComponent implements OnInit {
-  private firestore = inject(Firestore);
+  private readonly http = inject(HttpClient);
   private toast = inject(ToastService);
+  private readonly teamUrl = `${environment.apiUrl}/admin/equipe`;
 
   readonly members = signal<TeamMember[]>([]);
   readonly loading = signal(true);
@@ -254,38 +263,45 @@ export class TeamComponent implements OnInit {
     email: '',
     role: 'employee' as 'employee' | 'motoboy',
     phone: '',
-    password: '123456'
+    password: ''
   };
 
-  ngOnInit() {
-    // Listen to users from Firestore
-    const colRef = collection(this.firestore, 'users');
-    onSnapshot(colRef, (snapshot) => {
-      const list: TeamMember[] = [];
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        const role = data['role'];
-        if (role === 'employee' || role === 'motoboy') {
-          list.push({
-            id: doc.id,
-            name: data['name'] || '',
-            email: data['email'] || '',
-            role: role,
-            phone: data['phone'] || '',
-            avatar: data['avatar'],
-            createdAt: data['createdAt']
-          });
-        }
-      });
-      // Sort alphabetically by name
-      list.sort((a, b) => a.name.localeCompare(b.name));
-      this.members.set(list);
+  ngOnInit(): void {
+    void this.loadMembers();
+  }
+
+  private async loadMembers(): Promise<void> {
+    try {
+      const members = await firstValueFrom(this.http.get<TeamMemberApi[]>(this.teamUrl));
+      this.members.set(members.filter(member => member.ativo).map(member => this.toTeamMember(member)));
+    } catch (error) {
+      console.error('Erro ao carregar equipe pela API:', error);
+      this.toast.error(this.errorMessage(error, 'Não foi possível carregar a equipe.'));
+    } finally {
       this.loading.set(false);
-    }, (err) => {
-      console.error('Erro ao carregar equipe:', err);
-      this.toast.error('Erro ao ouvir alterações da equipe.');
-      this.loading.set(false);
-    });
+    }
+  }
+
+  private toTeamMember(member: TeamMemberApi): TeamMember {
+    const name = member.nome;
+    return {
+      id: String(member.id),
+      name,
+      email: member.email,
+      role: member.perfil === 'COZINHA' ? 'employee' : 'motoboy',
+      phone: member.telefone,
+      active: member.ativo,
+      avatar: this.getInitials(name)
+    };
+  }
+
+  private errorMessage(error: unknown, fallback: string): string {
+    if (error instanceof HttpErrorResponse) {
+      const message = error.error?.detail ?? error.error?.message;
+      if (typeof message === 'string' && message.trim()) return message;
+      if (error.status === 0) return 'Não foi possível conectar à API. Verifique se o backend está em execução.';
+    }
+    return fallback;
   }
 
   getInitials(name: string): string {
@@ -301,7 +317,7 @@ export class TeamComponent implements OnInit {
       email: '',
       role: 'employee',
       phone: '',
-      password: '123456'
+      password: ''
     };
     this.showModal.set(true);
   }
@@ -314,7 +330,7 @@ export class TeamComponent implements OnInit {
       name: m.name,
       email: m.email,
       role: m.role,
-      phone: m.phone,
+      phone: m.phone ?? '',
       password: ''
     };
     this.showModal.set(true);
@@ -325,20 +341,6 @@ export class TeamComponent implements OnInit {
     this.formError.set('');
   }
 
-  async registerUserInAuth(email: string, pass: string): Promise<string> {
-    let secondaryApp;
-    if (getApps().some(app => app.name === 'SecondaryApp')) {
-      secondaryApp = getApp('SecondaryApp');
-    } else {
-      secondaryApp = initializeApp(environment.firebase, 'SecondaryApp');
-    }
-    const secondaryAuth = getAuth(secondaryApp);
-    const credential = await createUserWithEmailAndPassword(secondaryAuth, email, pass);
-    const uid = credential.user.uid;
-    await signOut(secondaryAuth);
-    return uid;
-  }
-
   async saveMember(event: Event) {
     event.preventDefault();
     this.formError.set('');
@@ -346,51 +348,40 @@ export class TeamComponent implements OnInit {
 
     try {
       if (this.isEditing()) {
-        // Edit flow (updates only profile in Firestore)
-        const docRef = doc(this.firestore, `users/${this.form.id}`);
-        await updateDoc(docRef, {
-          name: this.form.name,
-          role: this.form.role,
-          phone: this.form.phone,
-          avatar: this.getInitials(this.form.name)
-        });
+        await firstValueFrom(this.http.put<TeamMemberApi>(`${this.teamUrl}/${this.form.id}`, {
+          nome: this.form.name.trim(),
+          perfil: this.form.role === 'employee' ? 'COZINHA' : 'MOTOBOY',
+          ativo: true,
+          telefone: this.form.phone || null
+        }));
+        await this.loadMembers();
         this.toast.success('Perfil atualizado com sucesso!');
         this.closeModal();
       } else {
-        // Creation flow (Create account in Auth first, then profile in Firestore)
-        if (this.form.password.length < 6) {
-          throw new Error('A senha inicial deve conter pelo menos 6 caracteres.');
+        if (this.form.password.length < 8) {
+          throw new Error('A senha inicial deve conter pelo menos 8 caracteres.');
         }
 
+        const email = this.form.email.trim().toLowerCase();
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(this.form.email.trim())) {
+        if (!emailRegex.test(email)) {
           throw new Error('Insira um e-mail válido.');
         }
 
-        const uid = await this.registerUserInAuth(this.form.email.trim(), this.form.password);
-
-        const docRef = doc(this.firestore, `users/${uid}`);
-        await setDoc(docRef, {
-          name: this.form.name,
-          email: this.form.email.trim().toLowerCase(),
-          role: this.form.role,
-          phone: this.form.phone,
-          avatar: this.getInitials(this.form.name),
-          createdAt: new Date()
-        });
-
+        await firstValueFrom(this.http.post<TeamMemberApi>(this.teamUrl, {
+          nome: this.form.name.trim(),
+          email,
+          senha: this.form.password,
+          perfil: this.form.role === 'employee' ? 'COZINHA' : 'MOTOBOY',
+          telefone: this.form.phone || null
+        }));
+        await this.loadMembers();
         this.toast.success('Membro da equipe cadastrado com sucesso!');
         this.closeModal();
       }
-    } catch (err: any) {
-      console.error(err);
-      let msg = err.message || 'Erro ao salvar membro da equipe.';
-      if (err.code === 'auth/email-already-in-use') {
-        msg = 'Este e-mail já está cadastrado em outra conta.';
-      } else if (err.code === 'auth/invalid-email') {
-        msg = 'O e-mail inserido é inválido.';
-      }
-      this.formError.set(msg);
+    } catch (error) {
+      console.error('Erro ao salvar membro da equipe pela API:', error);
+      this.formError.set(this.errorMessage(error, 'Não foi possível salvar o membro da equipe.'));
     } finally {
       this.submitting.set(false);
     }
@@ -399,12 +390,12 @@ export class TeamComponent implements OnInit {
   async deleteMember(m: TeamMember) {
     if (confirm(`Deseja revogar o acesso de "${m.name}" ao sistema? O perfil dele será excluído.`)) {
       try {
-        const docRef = doc(this.firestore, `users/${m.id}`);
-        await deleteDoc(docRef);
+        await firstValueFrom(this.http.delete<void>(`${this.teamUrl}/${m.id}`));
+        await this.loadMembers();
         this.toast.success('Acesso do membro revogado com sucesso!');
-      } catch (err) {
-        console.error(err);
-        this.toast.error('Erro ao excluir membro da equipe.');
+      } catch (error) {
+        console.error('Erro ao revogar acesso do membro pela API:', error);
+        this.toast.error(this.errorMessage(error, 'Não foi possível excluir o membro da equipe.'));
       }
     }
   }
