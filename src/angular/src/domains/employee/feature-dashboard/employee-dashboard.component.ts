@@ -128,6 +128,7 @@ export class EmployeeDashboardComponent {
   });
 
   newPassword = '';
+  currentPassword = '';
   readonly passwordSubmitting = signal(false);
   readonly passwordError = signal('');
 
@@ -139,12 +140,13 @@ export class EmployeeDashboardComponent {
     }
 
     this.passwordSubmitting.set(true);
-    const res = await this.authService.updatePassword(this.newPassword.trim());
+    const res = await this.authService.updatePassword(this.newPassword.trim(), this.currentPassword);
     this.passwordSubmitting.set(false);
 
     if (res.success) {
       this.toast.success('Senha atualizada com sucesso!');
       this.newPassword = '';
+      this.currentPassword = '';
       this.activeView.set('orders');
     } else {
       this.passwordError.set(res.message);

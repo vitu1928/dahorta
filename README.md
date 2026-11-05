@@ -58,8 +58,18 @@ Este projeto foi construído utilizando as melhores práticas do ecossistema fro
 
 * **[Angular v19.2.27](https://angular.io/):** Framework robusto para a construção da Single Page Application (SPA), garantindo componentização, tipagem estática com TypeScript e performance ideal.
 * **[Firebase Firestore](https://firebase.google.com/docs/firestore):** Banco de dados NoSQL flexível e escalável que mantém os dados sincronizados entre os clientes em tempo real através de WebSockets nativos.
-* **[Firebase Authentication](https://firebase.google.com/docs/auth):** Serviço seguro de gerenciamento de identidade para autenticação de usuários e controle de níveis de acesso (Admin, Cozinha, Motoboy, Cliente).
+* **[Firebase](https://firebase.google.com/):** Continua atendendo módulos ainda não migrados; autenticação e pedidos já usam a API Spring Boot com JWT.
 * **HTML5 & CSS3:** Estruturação semântica e estilização customizada focada em uma UI limpa, orgânica e que remete ao conceito de alimentação saudável.
+
+---
+
+## 🧩 Backend Java
+
+O início da API em Java 17, Spring Boot 3 e MySQL está em [`src/backend`](src/backend/README.md).
+O módulo documenta configuração, autenticação JWT, pedidos, estoque, cupons e eventos SSE.
+A aplicação Angular aponta para `http://localhost:8080/api/v1` em desenvolvimento e
+envia o JWT nas chamadas à API. Em produção, `/api/v1` deve ser encaminhado ao backend
+por um proxy reverso. Configure a origem CORS no backend para `http://localhost:4200`.
 
 ---
 

@@ -496,6 +496,7 @@ export class MotoboyDashboardComponent implements OnInit, OnDestroy {
 
   readonly showPasswordModal = signal(false);
   newPassword = '';
+  currentPassword = '';
   passwordSubmitting = signal(false);
   passwordError = signal('');
 
@@ -507,13 +508,14 @@ export class MotoboyDashboardComponent implements OnInit, OnDestroy {
     }
 
     this.passwordSubmitting.set(true);
-    const res = await this.authService.updatePassword(this.newPassword.trim());
+    const res = await this.authService.updatePassword(this.newPassword.trim(), this.currentPassword);
     this.passwordSubmitting.set(false);
 
     if (res.success) {
       this.toast.success('Senha atualizada com sucesso!');
       this.showPasswordModal.set(false);
       this.newPassword = '';
+      this.currentPassword = '';
     } else {
       this.passwordError.set(res.message);
     }

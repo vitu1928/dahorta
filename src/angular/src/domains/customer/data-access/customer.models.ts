@@ -2,9 +2,54 @@ import type { User, UserRole } from '../../auth/data-access/auth.models';
 export type { User, UserRole };
 
 export type OrderStatus = 'received' | 'preparing' | 'ready' | 'delivering' | 'delivered';
+export type StatusPedidoApi =
+  | 'RECEBIDO'
+  | 'EM_PREPARO'
+  | 'PRONTO_ENTREGA'
+  | 'SAIU_ENTREGA'
+  | 'ENTREGUE'
+  | 'CANCELADO';
 export type InsumoUnit = 'g' | 'kg' | 'ml' | 'l' | 'un' | 'fatia' | 'folha' | 'colher' | 'porção';
 export type PaymentMethod = 'pix' | 'credit_card' | 'debit_card' | 'meal_voucher' | 'cash';
 export type CouponType = 'percentage' | 'fixed' | 'shipping' | 'inactive';
+
+export interface EnderecoEntregaApiDTO {
+  rotulo: string | null;
+  rua: string;
+  numero: string;
+  complemento: string | null;
+  bairro: string;
+  cidade: string;
+  cep: string;
+}
+
+export interface ItemPedidoResponseDTO {
+  nomeProduto: string;
+  precoUnitario: number;
+  quantidade: number;
+  subtotal: number;
+}
+
+export interface PedidoResponseDTO {
+  id: number;
+  clienteId: number;
+  clienteNome: string;
+  motoboyId: number | null;
+  motoboyNome: string | null;
+  status: StatusPedidoApi;
+  metodoPagamento: PaymentMethod;
+  enderecoEntrega: EnderecoEntregaApiDTO;
+  itens: ItemPedidoResponseDTO[];
+  subtotal: number;
+  taxaEntrega: number;
+  desconto: number;
+  cupomCodigo: string | null;
+  total: number;
+  observacoes: string | null;
+  criadoEm: string;
+  atualizadoEm: string;
+  codigoEntrega: string | null;
+}
 
 export interface Category {
   id: string;

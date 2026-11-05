@@ -613,6 +613,19 @@
           
           <form (submit)="$event.preventDefault(); handleUpdatePassword()" class="flex flex-col gap-4">
             <div class="flex flex-col gap-1.5">
+              <label for="currentPassword" class="text-xs font-bold text-[#5F5F5F] uppercase tracking-wider">
+                Senha Atual
+              </label>
+              <input
+                id="currentPassword"
+                type="password"
+                [(ngModel)]="currentPassword"
+                name="currentPassword"
+                class="w-full px-4 py-3 rounded-xl border border-[#DADADA] focus:border-[#4C7C59] outline-none transition-all shadow-sm text-sm"
+                required
+              />
+            </div>
+            <div class="flex flex-col gap-1.5">
               <label for="newPassword" class="text-xs font-bold text-[#5F5F5F] uppercase tracking-wider">
                 Nova Senha
               </label>
@@ -650,4 +663,3 @@
 
   </main>
 </div>
-

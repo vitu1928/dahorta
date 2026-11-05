@@ -63,29 +63,32 @@ export class FirebaseOwnerService extends OwnerService {
       if (user) {
         const isStaff = user.role === 'owner' || user.role === 'employee';
         
-        // 1. Listen to insumos (available to all authenticated users for stock validation/checkout)
-        const insumosCol = collection(this.firestore, 'insumos');
-        unsubscribeInsumos = onSnapshot(insumosCol, (snapshot) => {
-          const list: Insumo[] = [];
-          snapshot.forEach((doc) => {
-            list.push({ id: doc.id, ...doc.data() } as Insumo);
+        if (isStaff) {
+          const insumosCol = collection(this.firestore, 'insumos');
+          unsubscribeInsumos = onSnapshot(insumosCol, (snapshot) => {
+            const list: Insumo[] = [];
+            snapshot.forEach((doc) => {
+              list.push({ id: doc.id, ...doc.data() } as Insumo);
+            });
+            this.insumos.set(list);
+          }, (err) => {
+            console.error('Erro ao carregar insumos:', err);
           });
-          this.insumos.set(list);
-        }, (err) => {
-          console.error('Erro ao carregar insumos:', err);
-        });
 
-        // 2. Listen to technical sheets (available to all for checkout recipe matching)
-        const sheetsCol = collection(this.firestore, 'technicalSheets');
-        unsubscribeSheets = onSnapshot(sheetsCol, (snapshot) => {
-          const list: TechnicalSheet[] = [];
-          snapshot.forEach((doc) => {
-            list.push({ id: doc.id, ...doc.data() } as TechnicalSheet);
+          const sheetsCol = collection(this.firestore, 'technicalSheets');
+          unsubscribeSheets = onSnapshot(sheetsCol, (snapshot) => {
+            const list: TechnicalSheet[] = [];
+            snapshot.forEach((doc) => {
+              list.push({ id: doc.id, ...doc.data() } as TechnicalSheet);
+            });
+            this.technicalSheets.set(list);
+          }, (err) => {
+            console.error('Erro ao carregar fichas técnicas:', err);
           });
-          this.technicalSheets.set(list);
-        }, (err) => {
-          console.error('Erro ao carregar fichas técnicas:', err);
-        });
+        } else {
+          this.insumos.set([]);
+          this.technicalSheets.set([]);
+        }
 
         // 3. Listen to plate of day settings (available to all)
         const plateDocRef = doc(this.firestore, 'settings/plateOfDay');

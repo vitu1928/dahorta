@@ -7,6 +7,7 @@ import { AuthService } from '@domain/auth/data-access/auth.service';
 import { AddressService } from '../data-access/address.service';
 import { NotificationService } from '../data-access/notification.service';
 import { Order, Address } from '../data-access/customer.models';
+import { ToastService } from '../../../shared/data-access/toast.service';
 
 @Component({
   selector: 'app-profile',
@@ -430,6 +431,7 @@ export class ProfileComponent {
   addressService = inject(AddressService);
   notificationService = inject(NotificationService);
   router = inject(Router);
+  toastService = inject(ToastService);
 
   currentUser = this.authService.currentUser;
   orders = this.ordersService.orders;
@@ -507,11 +509,15 @@ export class ProfileComponent {
     return 'Cliente';
   }
 
-  toggleEditMode() {
+  async toggleEditMode() {
     if (this.editMode()) {
-      // Save changes
-      this.authService.updateProfile(this.formName, this.formEmail, this.formPhone);
-      this.editMode.set(false);
+      try {
+        await this.authService.updateProfile(this.formName, this.formEmail, this.formPhone);
+        this.editMode.set(false);
+        this.toastService.success('Perfil atualizado com sucesso!');
+      } catch {
+        this.toastService.error('Não foi possível atualizar o perfil.');
+      }
     } else {
       const user = this.currentUser();
       if (user) {

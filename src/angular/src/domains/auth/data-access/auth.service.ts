@@ -12,5 +12,5 @@ export abstract class AuthService {
   abstract logout(): Promise<void> | void;
   abstract register(name: string, email: string, password: string, phone: string): Promise<{ success: boolean; message: string }>;
   abstract updateProfile(name: string, email: string, phone: string): Promise<void> | void;
-  abstract updatePassword(newPassword: string): Promise<{ success: boolean; message: string }>;
+  abstract updatePassword(newPassword: string, currentPassword?: string): Promise<{ success: boolean; message: string }>;
 }

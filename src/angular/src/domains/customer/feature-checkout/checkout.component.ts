@@ -544,8 +544,8 @@ export class CheckoutComponent {
     return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   }
 
-  onlyNumbers(val: string): string {
-    return val.replace(/[^0-9]/g, '');
+  onlyNumbers(val: string | number | null | undefined): string {
+    return String(val ?? '').replace(/[^0-9]/g, '');
   }
 
   async onCepChange(cep: string) {

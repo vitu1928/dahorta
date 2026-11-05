@@ -1,7 +1,7 @@
 import { ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { routes } from './app.routes';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 
 // Firebase Modules
 import { getApp, initializeApp, provideFirebaseApp } from '@angular/fire/app';
@@ -20,22 +20,23 @@ import { OwnerService } from '../domains/owner/data-access/owner.service';
 import { ReviewsService } from '../domains/customer/data-access/reviews.service';
 
 // Firebase Concrete Implementations
-import { FirebaseAuthService } from '../domains/auth/data-access/firebase-auth.service';
+import { RestAuthService } from '../domains/auth/data-access/rest-auth.service';
 import { FirebaseProductsService } from '../domains/customer/data-access/firebase-products.service';
-import { FirebaseOrdersService } from '../domains/customer/data-access/firebase-orders.service';
-import { FirebaseEmployeeService } from '../domains/employee/data-access/firebase-employee.service';
-import { FirebaseAddressService } from '../domains/customer/data-access/firebase-address.service';
+import { RestOrdersService } from '../domains/customer/data-access/rest-orders.service';
+import { RestEmployeeService } from '../domains/employee/data-access/rest-employee.service';
+import { LocalAddressService } from '../domains/customer/data-access/local-address.service';
 import { FirebaseOwnerService } from '../domains/owner/data-access/firebase-owner.service';
 import { FirebaseReviewsService } from '../domains/customer/data-access/firebase-reviews.service';
 
 import { NotificationService } from '../domains/customer/data-access/notification.service';
 import { FirebaseNotificationService } from '../domains/customer/data-access/firebase-notification.service';
+import { jwtInterceptor } from '../shared/data-access/jwt.interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(routes),
-    provideHttpClient(),
+    provideHttpClient(withInterceptors([jwtInterceptor])),
     
     // Inicialização do Firebase real
     provideFirebaseApp(() => initializeApp(environment.firebase)),
@@ -50,12 +51,12 @@ export const appConfig: ApplicationConfig = {
     }),
     provideDatabase(() => getDatabase()),
 
-    // Injeções de Dependência das Classes Firebase Reais (Sem fallbacks locais)
-    { provide: AuthService, useClass: FirebaseAuthService },
+    // Auth, pedidos, estoque e endereços não dependem de autenticação Firebase.
+    { provide: AuthService, useClass: RestAuthService },
     { provide: ProductsService, useClass: FirebaseProductsService },
-    { provide: OrdersService, useClass: FirebaseOrdersService },
-    { provide: EmployeeService, useClass: FirebaseEmployeeService },
-    { provide: AddressService, useClass: FirebaseAddressService },
+    { provide: OrdersService, useClass: RestOrdersService },
+    { provide: EmployeeService, useClass: RestEmployeeService },
+    { provide: AddressService, useClass: LocalAddressService },
     { provide: OwnerService, useClass: FirebaseOwnerService },
     { provide: ReviewsService, useClass: FirebaseReviewsService },
     { provide: NotificationService, useClass: FirebaseNotificationService }

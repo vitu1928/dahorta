@@ -1,5 +1,6 @@
 export const environment = {
   production: true,
+  apiUrl: '/api/v1',
   firebase: {
     apiKey: "AIzaSyDNMW1rUTsJwimGA9i0HssFLxurhKslIVU",
     authDomain: "dahorta-dark.firebaseapp.com",
