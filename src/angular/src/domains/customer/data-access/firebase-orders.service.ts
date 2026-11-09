@@ -328,7 +328,12 @@ export class FirebaseOrdersService extends OrdersService {
     if (existing) {
       return existing;
     }
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const randomValue = new Uint32Array(1);
+    const maxValue = Math.floor(0x1_0000_0000 / 900000) * 900000;
+    do {
+      crypto.getRandomValues(randomValue);
+    } while (randomValue[0] >= maxValue);
+    const code = String(100000 + randomValue[0] % 900000);
     const docRef = doc(this.firestore, `orders/${orderId}`);
     await updateDoc(docRef, { deliveryCode: code });
     this.orders.update(orders => orders.map(order =>
