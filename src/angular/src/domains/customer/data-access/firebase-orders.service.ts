@@ -323,6 +323,20 @@ export class FirebaseOrdersService extends OrdersService {
     return false;
   }
 
+  override async gerarCodigoEntrega(orderId: string): Promise<string> {
+    const existing = this.orders().find(order => order.id === orderId)?.deliveryCode;
+    if (existing) {
+      return existing;
+    }
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const docRef = doc(this.firestore, `orders/${orderId}`);
+    await updateDoc(docRef, { deliveryCode: code });
+    this.orders.update(orders => orders.map(order =>
+      order.id === orderId ? { ...order, deliveryCode: code } : order
+    ));
+    return code;
+  }
+
   override subscribeToOrder(orderId: string): Observable<Order | null> {
     const docRef = doc(this.firestore, `orders/${orderId}`);
     return new Observable<Order | null>((subscriber) => {

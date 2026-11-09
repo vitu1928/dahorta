@@ -6,6 +6,8 @@ public record ItemPedidoResponseDTO(
         String nomeProduto,
         BigDecimal precoUnitario,
         int quantidade,
-        BigDecimal subtotal
+        BigDecimal subtotal,
+        Long produtoId,
+        String imagem
 ) {
 }

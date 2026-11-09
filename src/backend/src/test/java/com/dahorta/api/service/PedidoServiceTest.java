@@ -34,10 +34,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.eq;
 
 class PedidoServiceTest {
 
@@ -114,6 +116,78 @@ class PedidoServiceTest {
                         authentication));
 
         assertEquals(HttpStatus.FORBIDDEN, exception.getStatusCode());
+        verify(pedidoRepository, never()).save(any());
+    }
+
+    @Test
+    void cozinhaContinuaVendoPedidosProntosAguardandoMotoboy() {
+        Usuario cozinha = new Usuario("Cozinha", "cozinha@dahorta.test", "hash", PerfilUsuario.COZINHA);
+        when(authentication.getName()).thenReturn("cozinha@dahorta.test");
+        when(usuarioRepository.findByEmailIgnoreCase("cozinha@dahorta.test")).thenReturn(Optional.of(cozinha));
+        when(pedidoRepository.findAllByStatusInOrderByCriadoEmAsc(any())).thenReturn(List.of());
+
+        pedidoService.listar(authentication);
+
+        verify(pedidoRepository).findAllByStatusInOrderByCriadoEmAsc(eq(List.of(
+                StatusPedido.RECEBIDO, StatusPedido.EM_PREPARO, StatusPedido.PRONTO_ENTREGA)));
+    }
+
+    @Test
+    void clientePodeGerarNovoCodigoAntesDaSaidaParaEntrega() {
+        Usuario cliente = mock(Usuario.class);
+        when(cliente.getId()).thenReturn(7L);
+        when(cliente.getPerfil()).thenReturn(PerfilUsuario.CLIENTE);
+        when(usuarioRepository.findByEmailIgnoreCase("cliente@dahorta.test")).thenReturn(Optional.of(cliente));
+        Pedido pedido = mock(Pedido.class);
+        when(pedido.getCliente()).thenReturn(cliente);
+        when(pedido.getStatus()).thenReturn(StatusPedido.PRONTO_ENTREGA);
+        when(pedidoRepository.findForUpdateById(1L)).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.save(pedido)).thenReturn(pedido);
+
+        String codigo = pedidoService.gerarNovoCodigoEntrega(1L, authentication);
+
+        assertEquals(6, codigo.length());
+        verify(pedido).atualizarCodigoEntregaHash(anyString(), any());
+        verify(pedidoRepository).save(pedido);
+    }
+
+    @Test
+    void clienteNaoPodeGerarCodigoDePedidoAlheio() {
+        Usuario clienteAutenticado = mock(Usuario.class);
+        when(clienteAutenticado.getId()).thenReturn(7L);
+        when(clienteAutenticado.getPerfil()).thenReturn(PerfilUsuario.CLIENTE);
+        when(usuarioRepository.findByEmailIgnoreCase("cliente@dahorta.test"))
+                .thenReturn(Optional.of(clienteAutenticado));
+        Usuario donoDoPedido = mock(Usuario.class);
+        when(donoDoPedido.getId()).thenReturn(8L);
+        Pedido pedido = mock(Pedido.class);
+        when(pedido.getCliente()).thenReturn(donoDoPedido);
+        when(pedidoRepository.findForUpdateById(1L)).thenReturn(Optional.of(pedido));
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> pedidoService.gerarNovoCodigoEntrega(1L, authentication));
+
+        assertEquals(HttpStatus.FORBIDDEN, exception.getStatusCode());
+        verify(pedidoRepository, never()).save(any());
+    }
+
+    @Test
+    void codigoDeEntregaNaoPodeSerAlteradoDepoisDaSaidaDoPedido() {
+        Usuario cliente = mock(Usuario.class);
+        when(cliente.getId()).thenReturn(7L);
+        when(cliente.getPerfil()).thenReturn(PerfilUsuario.CLIENTE);
+        when(usuarioRepository.findByEmailIgnoreCase("cliente@dahorta.test")).thenReturn(Optional.of(cliente));
+        Pedido pedido = mock(Pedido.class);
+        when(pedido.getCliente()).thenReturn(cliente);
+        when(pedido.getStatus()).thenReturn(StatusPedido.SAIU_ENTREGA);
+        when(pedidoRepository.findForUpdateById(1L)).thenReturn(Optional.of(pedido));
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> pedidoService.gerarNovoCodigoEntrega(1L, authentication));
+
+        assertEquals(HttpStatus.CONFLICT, exception.getStatusCode());
         verify(pedidoRepository, never()).save(any());
     }
 

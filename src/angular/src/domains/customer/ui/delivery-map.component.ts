@@ -124,6 +124,15 @@ export class DeliveryMapComponent implements AfterViewInit, OnDestroy, OnInit {
     return Math.floor((this._now() - ts) / 1000);
   });
 
+  private readonly freshMotoboyLocation = computed(() => {
+    const location = this.motoboyLocation();
+    const updatedAt = this.lastLocationUpdate();
+    if (!location || updatedAt === null || this._now() - updatedAt > 120_000) {
+      return null;
+    }
+    return location;
+  });
+
   readonly locationBadgeColor = computed(() => {
     const age = this.locationAge();
     if (age < 30) return '#22c55e';   // verde — fresco
@@ -225,7 +234,7 @@ export class DeliveryMapComponent implements AfterViewInit, OnDestroy, OnInit {
   constructor() {
     // Reactively update motoboy position when coordinates signal updates
     effect(() => {
-      const loc = this.motoboyLocation();
+      const loc = this.freshMotoboyLocation();
       this.updateMotoboyPosition(loc);
     });
 
@@ -312,16 +321,21 @@ export class DeliveryMapComponent implements AfterViewInit, OnDestroy, OnInit {
     }
 
     // Update motoboy location immediately if already available
-    if (this.motoboyLocation()) {
-      this.updateMotoboyPosition(this.motoboyLocation());
+    if (this.freshMotoboyLocation()) {
+      this.updateMotoboyPosition(this.freshMotoboyLocation());
     }
   }
 
   private updateRoute() {
     if (!this.map) return;
 
-    const loc = this.motoboyLocation();
-    const start = loc ? [loc.lat, loc.lng] as L.LatLngExpression : this.RESTAURANT_COORDS;
+    const loc = this.freshMotoboyLocation();
+    if (!loc) {
+      this.routeLine?.remove();
+      this.routeLine = undefined;
+      return;
+    }
+    const start = [loc.lat, loc.lng] as L.LatLngExpression;
     const end = this.resolvedCustomerCoords();
 
     if (this.routeLine) {
@@ -336,18 +350,14 @@ export class DeliveryMapComponent implements AfterViewInit, OnDestroy, OnInit {
     }
 
     // Adjust bounds to keep everything in view
-    const boundsPoints: L.LatLngExpression[] = [start, end];
-    if (!loc) {
-      boundsPoints.push(this.RESTAURANT_COORDS);
-    }
-    const bounds = L.latLngBounds(boundsPoints);
+    const bounds = L.latLngBounds([start, end]);
     this.map.fitBounds(bounds, { padding: [40, 40] });
   }
 
   private updateMotoboyPosition(loc: { lat: number; lng: number } | null) {
     if (!this.map) return;
 
-    if (loc && loc.lat && loc.lng) {
+    if (loc && Number.isFinite(loc.lat) && Number.isFinite(loc.lng)) {
       const coords: L.LatLngExpression = [loc.lat, loc.lng];
 
       const motoboyIcon = L.divIcon({

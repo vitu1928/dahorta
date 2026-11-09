@@ -28,6 +28,8 @@ export interface ItemPedidoResponseDTO {
   precoUnitario: number;
   quantidade: number;
   subtotal: number;
+  produtoId: number;
+  imagem: string | null;
 }
 
 export interface PedidoResponseDTO {

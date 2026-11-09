@@ -1,4 +1,5 @@
 import { Component, inject, signal, computed } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -205,10 +206,11 @@ const ETA_VALUES: Record<OrderStatus, string> = {
                   class="flex-1 py-4 rounded-xl text-center font-bold tracking-widest border"
                   style="background: var(--muted); color: var(--primary); font-size: 28px; letter-spacing: 8px; border-color: rgba(212,116,95,0.3); border-style: dashed;"
                 >
-                  {{ order()!.deliveryCode || '123456' }}
+                  {{ order()!.deliveryCode || (deliveryCodeLoading() ? 'Gerando...' : 'Indisponível') }}
                 </div>
                 <button 
-                  (click)="copyCode(order()!.deliveryCode || '123456')"
+                  (click)="copyCode(order()!.deliveryCode || '')"
+                  [disabled]="!order()!.deliveryCode"
                   class="w-12 h-12 rounded-xl flex items-center justify-center border transition-all cursor-pointer"
                   [style.color]="copiedCode() ? '#4CAF50' : 'var(--muted-foreground)'"
                   style="background: var(--muted); border-color: var(--border);"
@@ -220,6 +222,16 @@ const ETA_VALUES: Record<OrderStatus, string> = {
                   }
                 </button>
               </div>
+              @if (deliveryCodeError()) {
+                <p class="mt-2 text-sm" style="color: var(--destructive);">{{ deliveryCodeError() }}</p>
+                <button
+                  (click)="tentarGerarCodigoEntrega()"
+                  class="mt-2 text-sm font-semibold underline"
+                  style="color: var(--primary);"
+                >
+                  Tentar novamente
+                </button>
+              }
             </div>
           }
 
@@ -372,6 +384,9 @@ export class OrderTrackingComponent {
   });
 
   copiedCode = signal(false);
+  deliveryCodeLoading = signal(false);
+  deliveryCodeError = signal('');
+  private deliveryCodeRequestStarted = false;
   reviewSubmitted = signal(false);
   
   motoboyLocation = signal<{ lat: number; lng: number; updatedAt: number } | null>(null);
@@ -416,16 +431,21 @@ export class OrderTrackingComponent {
         .pipe(takeUntilDestroyed())
         .subscribe(o => {
           this.order.set(o);
+          if (o && !o.deliveryCode && ['received', 'preparing', 'ready'].includes(o.status)
+              && !this.deliveryCodeRequestStarted) {
+            this.deliveryCodeRequestStarted = true;
+            void this.solicitarCodigoEntrega();
+          }
           
           if (o && o.status === 'delivering' && o.motoboyId) {
             if (!this.locationSub) {
-              this.locationSub = this.ordersService.getMotoboyLocation(o.motoboyId)
+              this.locationSub = this.ordersService.getMotoboyLocation(o.motoboyId, o.id)
                 .subscribe(loc => {
-                  console.log('[TRACKING] Localização recebida do motoboy:', loc);
                   this.motoboyLocation.set(loc);
                   if (loc) {
-                    console.log('[TRACKING] updatedAt:', loc.updatedAt, new Date(loc.updatedAt).toLocaleTimeString('pt-BR'));
                     this.lastLocationUpdate.set(loc.updatedAt);
+                  } else {
+                    this.lastLocationUpdate.set(null);
                   }
                 });
 
@@ -481,9 +501,42 @@ export class OrderTrackingComponent {
   }
 
   copyCode(code: string) {
+    if (!code) return;
     navigator.clipboard.writeText(code).catch(() => {});
     this.copiedCode.set(true);
     setTimeout(() => this.copiedCode.set(false), 2000);
+  }
+
+  async solicitarCodigoEntrega() {
+    const pedido = this.order();
+    if (!pedido || this.deliveryCodeLoading()) return;
+    this.deliveryCodeRequestStarted = true;
+    this.deliveryCodeLoading.set(true);
+    this.deliveryCodeError.set('');
+    try {
+      const codigo = await this.ordersService.gerarCodigoEntrega(pedido.id);
+      this.order.update(atual => atual?.id === pedido.id
+        ? { ...atual, deliveryCode: codigo }
+        : atual);
+    } catch (error: unknown) {
+      if (error instanceof HttpErrorResponse) {
+        const detail = error.error?.detail;
+        this.deliveryCodeError.set(typeof detail === 'string' && detail.trim()
+          ? detail
+          : error.status === 0
+            ? 'Não foi possível conectar à API para gerar o código.'
+            : `Não foi possível gerar o código (HTTP ${error.status}).`);
+      } else {
+        this.deliveryCodeError.set('Não foi possível gerar o código. Tente novamente.');
+      }
+    } finally {
+      this.deliveryCodeLoading.set(false);
+    }
+  }
+
+  tentarGerarCodigoEntrega() {
+    this.deliveryCodeRequestStarted = false;
+    void this.solicitarCodigoEntrega();
   }
 
   setStars(s: number) {

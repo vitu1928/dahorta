@@ -23,8 +23,11 @@ export abstract class OrdersService {
   abstract updateStatus(orderId: string, status: OrderStatus, motoboyId?: string, motoboyName?: string): void;
   abstract getByCustomer(customerId: string): Order[];
   abstract confirmDelivery(orderId: string, code: string): Promise<boolean> | boolean;
+  abstract gerarCodigoEntrega(orderId: string): Promise<string>;
   abstract subscribeToOrder(orderId: string): Observable<Order | null>;
   abstract updateMotoboyLocation(motoboyId: string, lat: number, lng: number): void;
-  abstract getMotoboyLocation(motoboyId: string): Observable<{ lat: number; lng: number; updatedAt: number } | null>;
+  abstract getMotoboyLocation(
+    motoboyId: string,
+    orderId?: string
+  ): Observable<{ lat: number; lng: number; updatedAt: number } | null>;
 }
-

@@ -3,6 +3,7 @@ package com.dahorta.api.controller;
 import com.dahorta.api.dto.AtualizarStatusPedidoRequestDTO;
 import com.dahorta.api.dto.ConfirmarEntregaRequestDTO;
 import com.dahorta.api.dto.CriarPedidoRequestDTO;
+import com.dahorta.api.dto.CodigoEntregaResponseDTO;
 import com.dahorta.api.dto.PedidoResponseDTO;
 import com.dahorta.api.service.CheckoutFacade;
 import com.dahorta.api.service.PedidoEventPublisher;
@@ -60,6 +61,13 @@ public class PedidoController {
     @GetMapping("/{id}")
     public PedidoResponseDTO buscar(@PathVariable Long id, Authentication authentication) {
         return pedidoService.buscar(id, authentication);
+    }
+
+    @PostMapping("/{id}/codigo-entrega")
+    public CodigoEntregaResponseDTO gerarNovoCodigoEntrega(
+            @PathVariable Long id,
+            Authentication authentication) {
+        return new CodigoEntregaResponseDTO(pedidoService.gerarNovoCodigoEntrega(id, authentication));
     }
 
     @GetMapping(path = "/{id}/eventos", produces = MediaType.TEXT_EVENT_STREAM_VALUE)

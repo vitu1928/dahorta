@@ -47,6 +47,8 @@ por um `ADMIN`. Senhas são armazenadas com BCrypt.
 - `POST /api/v1/pedidos`: cliente autenticado cria pedido.
 - `GET /api/v1/pedidos` e `GET /api/v1/pedidos/{id}`: consulta com escopo por
   perfil/usuário.
+- `POST /api/v1/pedidos/{id}/codigo-entrega`: cliente dono do pedido gera um novo
+  código antes de o pedido sair para entrega; apenas o hash é persistido.
 - `PATCH /api/v1/pedidos/{id}/status`: cozinha avança
   `RECEBIDO → EM_PREPARO → PRONTO_ENTREGA`; motoboy assume o pedido como
   `SAIU_ENTREGA`.
@@ -58,6 +60,10 @@ por um `ADMIN`. Senhas são armazenadas com BCrypt.
   (por exemplo Redis) ao executar múltiplas instâncias da API. Como o `EventSource`
   nativo do browser não permite enviar `Authorization`, conecte usando `fetch`
   streaming ou um cliente SSE que aceite headers; não passe JWT na query string.
+- `POST /api/v1/motoboys/me/localizacao`: motoboy autenticado envia latitude e
+  longitude durante uma entrega; `GET /api/v1/pedidos/{id}/localizacao` permite
+  ao cliente do pedido e à equipe autorizada consultar a última posição recente.
+  As posições ficam em memória por até dois minutos e não são persistidas.
 
 Checkout bloqueia a configuração da loja, o cupom aplicado e as linhas de
 estoque relevantes, valida disponibilidade/limites e cria pedido, itens,

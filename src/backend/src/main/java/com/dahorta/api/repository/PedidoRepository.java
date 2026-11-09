@@ -15,30 +15,30 @@ import java.util.Optional;
 public interface PedidoRepository extends JpaRepository<Pedido, Long> {
 
     @Override
-    @EntityGraph(attributePaths = {"cliente", "motoboy", "itens", "cupom"})
+    @EntityGraph(attributePaths = {"cliente", "motoboy", "itens", "itens.produto", "cupom"})
     List<Pedido> findAll();
 
-    @EntityGraph(attributePaths = {"cliente", "motoboy", "itens", "cupom"})
+    @EntityGraph(attributePaths = {"cliente", "motoboy", "itens", "itens.produto", "cupom"})
     List<Pedido> findAllByClienteIdOrderByCriadoEmDesc(Long clienteId);
 
-    @EntityGraph(attributePaths = {"cliente", "motoboy", "itens", "cupom"})
+    @EntityGraph(attributePaths = {"cliente", "motoboy", "itens", "itens.produto", "cupom"})
     List<Pedido> findAllByStatusOrderByCriadoEmAsc(StatusPedido status);
 
-    @EntityGraph(attributePaths = {"cliente", "motoboy", "itens", "cupom"})
+    @EntityGraph(attributePaths = {"cliente", "motoboy", "itens", "itens.produto", "cupom"})
     List<Pedido> findAllByStatusInOrderByCriadoEmAsc(List<StatusPedido> statuses);
 
-    @EntityGraph(attributePaths = {"cliente", "motoboy", "itens", "cupom"})
+    @EntityGraph(attributePaths = {"cliente", "motoboy", "itens", "itens.produto", "cupom"})
     List<Pedido> findAllByMotoboyIdOrderByCriadoEmDesc(Long motoboyId);
 
-    @EntityGraph(attributePaths = {"cliente", "motoboy", "itens", "cupom"})
+    @EntityGraph(attributePaths = {"cliente", "motoboy", "itens", "itens.produto", "cupom"})
     List<Pedido> findAllByMotoboyIdAndStatusOrderByCriadoEmDesc(Long motoboyId, StatusPedido status);
 
     @Override
-    @EntityGraph(attributePaths = {"cliente", "motoboy", "itens", "cupom"})
+    @EntityGraph(attributePaths = {"cliente", "motoboy", "itens", "itens.produto", "cupom"})
     Optional<Pedido> findById(Long id);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @EntityGraph(attributePaths = {"cliente", "motoboy", "itens", "cupom"})
+    @EntityGraph(attributePaths = {"cliente", "motoboy", "itens", "itens.produto", "cupom"})
     @Query("select p from Pedido p where p.id = :id")
     Optional<Pedido> findForUpdateById(@Param("id") Long id);
 

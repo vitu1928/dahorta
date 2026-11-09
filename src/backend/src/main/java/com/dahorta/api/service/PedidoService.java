@@ -163,7 +163,7 @@ public class PedidoService {
         List<Pedido> pedidos = switch (usuario.getPerfil()) {
             case CLIENTE -> pedidoRepository.findAllByClienteIdOrderByCriadoEmDesc(usuario.getId());
             case COZINHA -> pedidoRepository.findAllByStatusInOrderByCriadoEmAsc(
-                    List.of(StatusPedido.RECEBIDO, StatusPedido.EM_PREPARO));
+                    List.of(StatusPedido.RECEBIDO, StatusPedido.EM_PREPARO, StatusPedido.PRONTO_ENTREGA));
             case ADMIN -> pedidoRepository.findAll();
             case MOTOBOY -> listarPedidosMotoboy(usuario);
         };
@@ -176,6 +176,27 @@ public class PedidoService {
         Pedido pedido = buscarEntidade(pedidoId);
         validarAcesso(pedido, usuario);
         return paraResposta(pedido, null);
+    }
+
+    @Transactional
+    public String gerarNovoCodigoEntrega(Long pedidoId, Authentication authentication) {
+        Usuario cliente = usuarioAtual(authentication);
+        exigirPerfil(cliente, PerfilUsuario.CLIENTE);
+        Pedido pedido = buscarComBloqueio(pedidoId);
+        if (!pedido.getCliente().getId().equals(cliente.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Você não pode alterar o código deste pedido.");
+        }
+        if (pedido.getStatus() == StatusPedido.SAIU_ENTREGA
+                || pedido.getStatus() == StatusPedido.ENTREGUE
+                || pedido.getStatus() == StatusPedido.CANCELADO) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT, "O código não pode ser alterado após o início da entrega.");
+        }
+
+        String codigo = gerarCodigoEntrega();
+        pedido.atualizarCodigoEntregaHash(hashCodigo(codigo), Instant.now());
+        pedidoRepository.save(pedido);
+        return codigo;
     }
 
     @Transactional
@@ -363,7 +384,9 @@ public class PedidoService {
                         item.getNomeProdutoSnapshot(),
                         item.getPrecoUnitarioSnapshot(),
                         item.getQuantidade(),
-                        item.getSubtotal()))
+                        item.getSubtotal(),
+                        item.getProduto().getId(),
+                        item.getProduto().getImagem()))
                 .toList();
 
         return new PedidoResponseDTO(

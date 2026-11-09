@@ -146,6 +146,17 @@ export class RestOrdersService extends OrdersService {
     return true;
   }
 
+  override async gerarCodigoEntrega(orderId: string): Promise<string> {
+    const id = this.parseOrderId(orderId);
+    const response = await firstValueFrom(this.http.post<{ codigo: string }>(
+      `${this.baseUrl}/${id}/codigo-entrega`, {}
+    ));
+    this.orders.update(orders => orders.map(order =>
+      order.id === orderId ? { ...order, deliveryCode: response.codigo } : order
+    ));
+    return response.codigo;
+  }
+
   override subscribeToOrder(orderId: string): Observable<Order | null> {
     const id = this.parseOrderId(orderId);
     return timer(0, 5000).pipe(
@@ -166,15 +177,43 @@ export class RestOrdersService extends OrdersService {
     );
   }
 
-  override updateMotoboyLocation(_motoboyId: string, _lat: number, _lng: number): void {
-    console.warn('A API ainda não disponibiliza endpoint para localização do motoboy.');
+  override updateMotoboyLocation(_motoboyId: string, lat: number, lng: number): void {
+    this.http.post<void>(`${environment.apiUrl}/motoboys/me/localizacao`, {
+      latitude: lat,
+      longitude: lng
+    }).subscribe({
+      error: error => console.error('Não foi possível transmitir a localização do motoboy:', error)
+    });
   }
 
   override getMotoboyLocation(
-    _motoboyId: string
+    _motoboyId: string,
+    orderId?: string
   ): Observable<{ lat: number; lng: number; updatedAt: number } | null> {
-    console.warn('A API ainda não disponibiliza endpoint para localização do motoboy.');
-    return of(null);
+    if (!orderId) {
+      return of(null);
+    }
+    const id = this.parseOrderId(orderId);
+    return timer(0, 5000).pipe(
+      switchMap(() => this.http.get<{
+        latitude: number;
+        longitude: number;
+        updatedAt: number;
+      }>(`${this.baseUrl}/${id}/localizacao`).pipe(
+        map(location => ({
+          lat: location.latitude,
+          lng: location.longitude,
+          updatedAt: location.updatedAt
+        })),
+        catchError((error: unknown) => {
+          if (error instanceof HttpErrorResponse && error.status === 404) {
+            return of(null);
+          }
+          console.error('Não foi possível atualizar a localização do motoboy:', error);
+          return of(null);
+        })
+      ))
+    );
   }
 
   private parseOrderId(orderId: string): number {
@@ -190,6 +229,8 @@ export class RestOrdersService extends OrdersService {
   }
 
   private toOrder(dto: PedidoResponseDTO): Order {
+    const id = String(dto.id);
+    const cachedDeliveryCode = this.orders().find(order => order.id === id)?.deliveryCode;
     const address: Address = {
       id: '',
       label: dto.enderecoEntrega.rotulo ?? '',
@@ -201,17 +242,17 @@ export class RestOrdersService extends OrdersService {
       zipCode: dto.enderecoEntrega.cep
     };
     const items: CartItem[] = dto.itens.map(item => ({
-      productId: '',
+      productId: String(item.produtoId),
       name: item.nomeProduto,
       quantity: item.quantidade,
       price: item.precoUnitario,
-      image: ''
+      image: item.imagem ?? ''
     }));
     const createdAt = new Date(dto.criadoEm);
     const updatedAt = new Date(dto.atualizadoEm);
 
     return {
-      id: String(dto.id),
+      id,
       customerId: String(dto.clienteId),
       customerName: dto.clienteNome,
       items,
@@ -225,7 +266,7 @@ export class RestOrdersService extends OrdersService {
       status: STATUS_FROM_API[dto.status],
       createdAt,
       updatedAt,
-      deliveryCode: dto.codigoEntrega ?? undefined,
+      deliveryCode: dto.codigoEntrega ?? cachedDeliveryCode,
       motoboyId: dto.motoboyId === null ? undefined : String(dto.motoboyId),
       motoboyName: dto.motoboyNome ?? undefined,
       notes: dto.observacoes ?? undefined,

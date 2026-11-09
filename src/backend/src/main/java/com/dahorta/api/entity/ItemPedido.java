@@ -59,6 +59,10 @@ public class ItemPedido {
         return nomeProdutoSnapshot;
     }
 
+    public Produto getProduto() {
+        return produto;
+    }
+
     public BigDecimal getPrecoUnitarioSnapshot() {
         return precoUnitarioSnapshot;
     }

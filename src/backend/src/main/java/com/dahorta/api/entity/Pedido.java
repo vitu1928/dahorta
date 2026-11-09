@@ -134,6 +134,11 @@ public class Pedido {
         this.total = subtotal.add(taxaEntrega).subtract(desconto);
     }
 
+    public void atualizarCodigoEntregaHash(String codigoEntregaHash, Instant atualizadoEm) {
+        this.codigoEntregaHash = codigoEntregaHash;
+        this.atualizadoEm = atualizadoEm;
+    }
+
     public void atribuirMotoboy(Usuario motoboy, Instant atualizadoEm) {
         this.motoboy = motoboy;
         this.atualizadoEm = atualizadoEm;

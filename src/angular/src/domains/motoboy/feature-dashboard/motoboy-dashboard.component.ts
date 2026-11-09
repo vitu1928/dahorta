@@ -1,4 +1,5 @@
 import { Component, inject, signal, computed, effect, OnInit, OnDestroy, Input, Output, EventEmitter } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -295,9 +296,22 @@ export class DeliveryCardComponent {
       } else {
         this.error.set('Código incorreto. Tente novamente.');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      this.error.set('Falha de permissão ou rede ao registrar a entrega.');
+      if (err instanceof HttpErrorResponse) {
+        const detail = err.error?.detail;
+        if (typeof detail === 'string' && detail.trim()) {
+          this.error.set(detail);
+        } else if (err.status === 0) {
+          this.error.set('Não foi possível conectar à API. Verifique a rede e tente novamente.');
+        } else if (err.status === 401 || err.status === 403) {
+          this.error.set('Sua sessão não tem autorização para confirmar esta entrega. Entre novamente.');
+        } else {
+          this.error.set(`Não foi possível confirmar a entrega (HTTP ${err.status}).`);
+        }
+      } else {
+        this.error.set('Não foi possível confirmar a entrega. Confira o código e tente novamente.');
+      }
     }
   }
   /** Retorna o objeto de endereço do pedido, independente do campo usado */
