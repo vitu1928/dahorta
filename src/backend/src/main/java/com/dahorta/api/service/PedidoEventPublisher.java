@@ -1,6 +1,7 @@
 package com.dahorta.api.service;
 
 import com.dahorta.api.dto.PedidoStatusEventoDTO;
+import com.dahorta.api.pattern.behavioral.observer.PedidoObserver;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -8,13 +9,20 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
 import java.util.Set;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 
+/** Padrão GoF: Observer */
 @Component
 public class PedidoEventPublisher {
 
     private final ConcurrentHashMap<Long, Set<SseEmitter>> emitters = new ConcurrentHashMap<>();
+    private final List<PedidoObserver> observers;
+
+    public PedidoEventPublisher(List<PedidoObserver> observers) {
+        this.observers = List.copyOf(observers);
+    }
 
     public SseEmitter assinar(Long pedidoId) {
         SseEmitter emitter = new SseEmitter(30 * 60 * 1000L);
@@ -49,6 +57,7 @@ public class PedidoEventPublisher {
     }
 
     private void publicar(PedidoStatusEventoDTO evento) {
+        observers.forEach(observer -> observer.aoAlterarStatus(evento));
         Set<SseEmitter> assinantes = emitters.get(evento.pedidoId());
         if (assinantes == null) {
             return;

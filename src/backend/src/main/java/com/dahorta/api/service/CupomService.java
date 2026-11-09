@@ -8,28 +8,54 @@ import com.dahorta.api.dto.ValidarCupomResponseDTO;
 import com.dahorta.api.entity.Cupom;
 import com.dahorta.api.entity.Produto;
 import com.dahorta.api.entity.TipoDesconto;
+import com.dahorta.api.pattern.behavioral.strategy.CalculoDescontoStrategy;
+import com.dahorta.api.pattern.behavioral.strategy.DescontoFixoStrategy;
+import com.dahorta.api.pattern.behavioral.strategy.DescontoFreteStrategy;
+import com.dahorta.api.pattern.behavioral.strategy.DescontoPercentualStrategy;
+import com.dahorta.api.pattern.creational.CupomFactories;
 import com.dahorta.api.repository.CupomRepository;
 import com.dahorta.api.repository.ProdutoRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.Instant;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
+/** Padrão GoF: Factory Method, Strategy */
 @Service
 public class CupomService {
 
     private final CupomRepository cupomRepository;
     private final ProdutoRepository produtoRepository;
+    private final Map<TipoDesconto, CalculoDescontoStrategy> estrategias;
 
-    public CupomService(CupomRepository cupomRepository, ProdutoRepository produtoRepository) {
+    @Autowired
+    public CupomService(CupomRepository cupomRepository, ProdutoRepository produtoRepository,
+                        List<CalculoDescontoStrategy> estrategias) {
         this.cupomRepository = cupomRepository;
         this.produtoRepository = produtoRepository;
+        EnumMap<TipoDesconto, CalculoDescontoStrategy> mapa = new EnumMap<>(TipoDesconto.class);
+        estrategias.forEach(estrategia -> {
+            if (mapa.putIfAbsent(estrategia.tipo(), estrategia) != null) {
+                throw new IllegalStateException("Estratégia duplicada para " + estrategia.tipo());
+            }
+        });
+        if (!mapa.keySet().containsAll(List.of(TipoDesconto.values()))) {
+            throw new IllegalStateException("É necessária uma estratégia para cada tipo de desconto.");
+        }
+        this.estrategias = Map.copyOf(mapa);
+    }
+
+    CupomService(CupomRepository cupomRepository, ProdutoRepository produtoRepository) {
+        this(cupomRepository, produtoRepository, List.of(
+                new DescontoPercentualStrategy(), new DescontoFixoStrategy(), new DescontoFreteStrategy()));
     }
 
     @Transactional(readOnly = true)
@@ -54,8 +80,9 @@ public class CupomService {
         if (cupomRepository.findByCodigoIgnoreCase(codigo).isPresent()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Código de cupom já cadastrado.");
         }
-        return paraResposta(cupomRepository.save(new Cupom(codigo, request.tipo(), request.valor(),
-                request.valorMinimo(), request.limiteUsos(), request.expiraEm(), request.ativo())));
+        Cupom cupom = CupomFactories.para(request.tipo()).criar(codigo, request.valor(),
+                request.valorMinimo(), request.limiteUsos(), request.expiraEm(), request.ativo());
+        return paraResposta(cupomRepository.save(cupom));
     }
 
     @Transactional
@@ -84,16 +111,11 @@ public class CupomService {
 
     public BigDecimal calcularDesconto(Cupom cupom, BigDecimal subtotal, BigDecimal taxaEntrega) {
         validarDisponibilidade(cupom, subtotal);
-        if (cupom.getTipo() == TipoDesconto.PERCENTUAL
-                && cupom.getValor().compareTo(new BigDecimal("100")) > 0) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Cupom percentual inválido.");
+        try {
+            return estrategias.get(cupom.getTipo()).calcular(cupom, subtotal, taxaEntrega);
+        } catch (IllegalArgumentException exception) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, exception.getMessage(), exception);
         }
-        return switch (cupom.getTipo()) {
-            case PERCENTUAL -> subtotal.multiply(cupom.getValor())
-                    .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
-            case FIXO -> cupom.getValor().min(subtotal.add(taxaEntrega));
-            case FRETE -> taxaEntrega;
-        };
     }
 
     public void validarDisponibilidade(Cupom cupom, BigDecimal subtotal) {

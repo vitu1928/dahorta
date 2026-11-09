@@ -7,7 +7,6 @@ import com.dahorta.api.dto.ItemPedidoResponseDTO;
 import com.dahorta.api.dto.PedidoResponseDTO;
 import com.dahorta.api.dto.PedidoStatusEventoDTO;
 import com.dahorta.api.entity.EnderecoEntrega;
-import com.dahorta.api.entity.ItemPedido;
 import com.dahorta.api.entity.ConfiguracaoRestaurante;
 import com.dahorta.api.entity.Cupom;
 import com.dahorta.api.entity.InsumoEstoque;
@@ -18,6 +17,8 @@ import com.dahorta.api.entity.Produto;
 import com.dahorta.api.entity.StatusPedido;
 import com.dahorta.api.entity.TipoMovimentacaoEstoque;
 import com.dahorta.api.entity.Usuario;
+import com.dahorta.api.pattern.creational.GerenciadorSessaoLocal;
+import com.dahorta.api.pattern.creational.PedidoBuilder;
 import com.dahorta.api.repository.ConfiguracaoRestauranteRepository;
 import com.dahorta.api.repository.CupomRepository;
 import com.dahorta.api.repository.InsumoEstoqueRepository;
@@ -36,20 +37,17 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-import java.util.HexFormat;
 import java.util.TreeMap;
 
+/** Padrão GoF: Builder, Singleton */
 @Service
 public class PedidoService {
-
-    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final PedidoRepository pedidoRepository;
     private final ProdutoRepository produtoRepository;
@@ -98,15 +96,10 @@ public class PedidoService {
         }
 
         String codigoEntrega = gerarCodigoEntrega();
-        Pedido pedido = new Pedido(
-                cliente,
-                request.metodoPagamento(),
-                paraEntidade(request.enderecoEntrega()),
-                BigDecimal.ZERO,
-                taxaEntrega,
-                request.observacoes(),
-                hashCodigo(codigoEntrega),
-                Instant.now());
+        PedidoBuilder pedidoBuilder = PedidoBuilder.umPedido(
+                cliente, request.metodoPagamento(), paraEntidade(request.enderecoEntrega()),
+                taxaEntrega, hashCodigo(codigoEntrega), Instant.now())
+                .observacoes(request.observacoes());
 
         Map<Long, BigDecimal> consumoPorInsumo = new TreeMap<>();
         for (var itemRequest : request.itens()) {
@@ -119,14 +112,14 @@ public class PedidoService {
                         HttpStatus.CONFLICT, "Produto indisponível: " + produto.getNome());
             }
 
-            ItemPedido item = new ItemPedido(produto, itemRequest.quantidade());
-            pedido.adicionarItem(item);
+            pedidoBuilder.adicionarItem(produto, itemRequest.quantidade());
             produto.getIngredientes().forEach(ingrediente -> consumoPorInsumo.merge(
                     ingrediente.getInsumo().getId(),
                     ingrediente.getQuantidade().multiply(BigDecimal.valueOf(itemRequest.quantidade())),
                     BigDecimal::add));
         }
 
+        Pedido pedido = pedidoBuilder.construir();
         Cupom cupom = null;
         if (request.cupomCodigo() != null && !request.cupomCodigo().isBlank()) {
             cupom = cupomRepository.findForUpdateByCodigo(request.cupomCodigo().trim())
@@ -395,7 +388,7 @@ public class PedidoService {
     }
 
     private String gerarCodigoEntrega() {
-        return String.format(Locale.ROOT, "%06d", SECURE_RANDOM.nextInt(1_000_000));
+        return GerenciadorSessaoLocal.INSTANCIA.gerarCodigoEntrega();
     }
 
     private String hashCodigo(String codigo) {

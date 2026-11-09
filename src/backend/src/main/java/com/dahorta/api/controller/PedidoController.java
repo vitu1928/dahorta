@@ -4,6 +4,7 @@ import com.dahorta.api.dto.AtualizarStatusPedidoRequestDTO;
 import com.dahorta.api.dto.ConfirmarEntregaRequestDTO;
 import com.dahorta.api.dto.CriarPedidoRequestDTO;
 import com.dahorta.api.dto.PedidoResponseDTO;
+import com.dahorta.api.service.CheckoutFacade;
 import com.dahorta.api.service.PedidoEventPublisher;
 import com.dahorta.api.service.PedidoService;
 import jakarta.validation.Valid;
@@ -23,15 +24,19 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import java.net.URI;
 import java.util.List;
 
+/** Padrão GoF: Facade */
 @RestController
 @RequestMapping("/api/v1/pedidos")
 public class PedidoController {
 
     private final PedidoService pedidoService;
+    private final CheckoutFacade checkoutFacade;
     private final PedidoEventPublisher pedidoEventPublisher;
 
-    public PedidoController(PedidoService pedidoService, PedidoEventPublisher pedidoEventPublisher) {
+    public PedidoController(PedidoService pedidoService, CheckoutFacade checkoutFacade,
+                            PedidoEventPublisher pedidoEventPublisher) {
         this.pedidoService = pedidoService;
+        this.checkoutFacade = checkoutFacade;
         this.pedidoEventPublisher = pedidoEventPublisher;
     }
 
@@ -39,7 +44,7 @@ public class PedidoController {
     public ResponseEntity<PedidoResponseDTO> criar(
             @Valid @RequestBody CriarPedidoRequestDTO request,
             Authentication authentication) {
-        PedidoResponseDTO response = pedidoService.criar(request, authentication);
+        PedidoResponseDTO response = checkoutFacade.finalizarCompra(request, authentication);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")
                 .buildAndExpand(response.id())

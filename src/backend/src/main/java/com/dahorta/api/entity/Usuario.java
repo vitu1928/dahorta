@@ -15,6 +15,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.util.Collection;
 import java.util.List;
 
+/** Padrão GoF: Adapter */
 @Entity
 @Table(name = "usuarios")
 public class Usuario implements UserDetails {

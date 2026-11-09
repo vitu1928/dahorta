@@ -15,12 +15,15 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
+import com.dahorta.api.pattern.behavioral.memento.PedidoMemento;
+import com.dahorta.api.pattern.behavioral.state.StatusPedidoStates;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
+/** Padrão GoF: State, Memento */
 @Entity
 @Table(name = "pedidos")
 public class Pedido {
@@ -117,6 +120,9 @@ public class Pedido {
     }
 
     public void atualizarStatus(StatusPedido status, Instant atualizadoEm) {
+        if (!StatusPedidoStates.para(this.status).permite(status)) {
+            throw new IllegalStateException("Transição inválida: " + this.status + " para " + status + ".");
+        }
         this.status = status;
         this.atualizadoEm = atualizadoEm;
     }
@@ -134,9 +140,18 @@ public class Pedido {
     }
 
     public void confirmarEntrega(Instant atualizadoEm) {
-        this.status = StatusPedido.ENTREGUE;
+        atualizarStatus(StatusPedido.ENTREGUE, atualizadoEm);
         this.codigoEntregaHash = null;
-        this.atualizadoEm = atualizadoEm;
+    }
+
+    public PedidoMemento criarMemento() {
+        return new PedidoMemento(status, atualizadoEm, motoboy);
+    }
+
+    public void restaurar(PedidoMemento memento) {
+        this.status = memento.status();
+        this.atualizadoEm = memento.atualizadoEm();
+        this.motoboy = memento.motoboy();
     }
 
     public Long getId() {
