@@ -86,6 +86,35 @@ não consomem estoque.
 - `GET/PATCH /api/v1/restaurante`: estado de abertura; cozinha/admin pode alterar.
 - `/api/v1/cupons`: CRUD administrativo e `POST /validacao` para clientes.
 
+## Padrões GoF no domínio
+
+As implementações explícitas estão organizadas em `com.dahorta.api.pattern`,
+com o nome do padrão indicado no Javadoc de cada classe:
+
+- **Criacionais:** Abstract Factory (`NotificacaoAbstractFactory` e fábricas
+  de e-mail/SSE), Builder (`PedidoBuilder`, usado pelo checkout), Factory Method
+  (`CupomFactories`, usado para criar cupons), Prototype (`ConfiguracaoRelatorio`)
+  e Singleton (`GerenciadorSessaoLocal`, usado na geração segura do código de
+  entrega).
+- **Estruturais:** Adapter (`Usuario`/`UserDetails`), Bridge (`RelatorioVendas`
+  com PDF/CSV), Composite (`ItemEstrutura`), Decorator (`NotificadorDecorator`),
+  Facade (`CheckoutFacade`, usada no endpoint de criação), Flyweight
+  (`StatusPedidoFlyweightFactory`) e Proxy (`PedidoRepositoryProxy`).
+- **Comportamentais:** Chain of Responsibility (validadores de checkout),
+  Command (aprovação/cancelamento e executor), Interpreter (regras de cupom),
+  Iterator (coleção filtrada de pedidos), Mediator (`PedidoMediator`), Memento
+  (histórico de status), Observer (eventos pós-commit SSE/log), State
+  (transições de `Pedido`), Strategy (cálculo de desconto no `CupomService`),
+  Template Method (fluxo usado pela facade) e Visitor (relatório fiscal/cálculo
+  de imposto sobre a estrutura composta).
+
+O checkout atual continua sendo efetivado atomicamente pelo `PedidoService`,
+que já bloqueia estoque e cupom dentro da mesma transação. Não há integração de
+gateway de pagamento nem serviços separados de entrega/notificação no backend;
+por isso, as factories de notificação recebem o mecanismo de entrega por
+injeção e o Mediator recebe seus participantes como portas `Consumer`, sem
+simular pagamentos ou cobranças externas.
+
 Exemplo de criação (o cliente é obtido da conta autenticada; preços e totais
 vêm do catálogo no servidor):
 
