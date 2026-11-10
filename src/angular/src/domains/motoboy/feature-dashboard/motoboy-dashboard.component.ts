@@ -451,6 +451,15 @@ export class MotoboyDashboardComponent implements OnInit, OnDestroy {
   }
 
   requestLocation() {
+    if (!window.isSecureContext) {
+      this.locationStatus.set('denied');
+      this.toast.error(
+        'O navegador só permite localização em uma conexão segura (HTTPS). Abra o link HTTPS do aplicativo e tente novamente.',
+        8000
+      );
+      return;
+    }
+
     this.locationStatus.set('checking');
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -464,9 +473,24 @@ export class MotoboyDashboardComponent implements OnInit, OnDestroy {
         (err) => {
           console.error('Erro ao obter localização:', err);
           this.locationStatus.set('denied');
-          this.toast.error('Permissão de localização negada ou indisponível.');
+          if (err.code === GeolocationPositionError.PERMISSION_DENIED) {
+            this.toast.error(
+              'Acesso à localização bloqueado. Permita a localização nas configurações do navegador para este site e tente novamente.',
+              8000
+            );
+          } else if (err.code === GeolocationPositionError.TIMEOUT) {
+            this.toast.error(
+              'A localização está demorando para responder. Verifique o GPS ou a localização do dispositivo e tente novamente.',
+              8000
+            );
+          } else {
+            this.toast.error(
+              'O dispositivo não conseguiu determinar sua localização. Ative os serviços de localização e tente novamente.',
+              8000
+            );
+          }
         },
-        { enableHighAccuracy: true, timeout: 10000 }
+        { enableHighAccuracy: false, timeout: 30000, maximumAge: 30000 }
       );
     } else {
       this.locationStatus.set('unsupported');
