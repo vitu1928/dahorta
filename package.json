@@ -1,0 +1,7 @@
+{
+  "name": "dahorta",
+  "private": true,
+  "scripts": {
+    "start": "bash scripts/start-dev.sh"
+  }
+}

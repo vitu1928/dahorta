@@ -101,6 +101,12 @@ export const routes: Routes = [
         title: 'DaHorta | Fornecedores'
       },
       {
+        path: 'financeiro',
+        loadComponent: () => import('@domain/owner/feature-financeiro/financeiro.component')
+          .then(m => m.FinanceiroComponent),
+        title: 'DaHorta | Compras e despesas'
+      },
+      {
         path: 'settings',
         loadComponent: () => import('@domain/owner/feature-settings/settings.component')
           .then(m => m.SettingsComponent),

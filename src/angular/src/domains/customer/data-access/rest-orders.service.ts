@@ -4,6 +4,8 @@ import { EMPTY, Observable, catchError, firstValueFrom, map, of, switchMap, tap,
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../../auth/data-access/auth.service';
 import { OrdersService } from './orders.service';
+import { JwtTokenStore } from '../../../shared/data-access/jwt-token.store';
+import { NotificationService } from './notification.service';
 import {
   Address,
   CartItem,
@@ -41,6 +43,8 @@ interface ProdutoCatalogoApi {
 export class RestOrdersService extends OrdersService {
   private readonly http = inject(HttpClient);
   private readonly authService = inject(AuthService);
+  private readonly tokenStore = inject(JwtTokenStore);
+  private readonly notificationService = inject(NotificationService);
   private readonly baseUrl = `${environment.apiUrl}/pedidos`;
 
   override readonly orders = signal<Order[]>([]);
@@ -159,22 +163,79 @@ export class RestOrdersService extends OrdersService {
 
   override subscribeToOrder(orderId: string): Observable<Order | null> {
     const id = this.parseOrderId(orderId);
-    return timer(0, 5000).pipe(
-      switchMap(() => this.http.get<PedidoResponseDTO>(`${this.baseUrl}/${id}`).pipe(
-        map(dto => this.toOrder(dto)),
-        catchError(error => {
-          if (error instanceof HttpErrorResponse && error.status === 404) {
-            return [null];
+    return new Observable<Order | null>(subscriber => {
+      const controller = new AbortController();
+      const token = this.tokenStore.get();
+      if (!token) {
+        subscriber.error(new Error('É necessário estar autenticado para acompanhar o pedido.'));
+        return;
+      }
+
+      const readStream = async (): Promise<void> => {
+        let delay = 1000;
+        let lastEventStatus: OrderStatus | undefined;
+        while (!controller.signal.aborted && !subscriber.closed) {
+          try {
+            const response = await fetch(`${this.baseUrl}/${id}/eventos`, {
+              headers: { Authorization: `Bearer ${token}`, Accept: 'text/event-stream' },
+              signal: controller.signal
+            });
+            if (!response.ok || !response.body) {
+              throw new Error(`SSE do pedido respondeu HTTP ${response.status}.`);
+            }
+            delay = 1000;
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+            while (!controller.signal.aborted && !subscriber.closed) {
+              const { value, done } = await reader.read();
+              if (done) break;
+              buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, '\n');
+              const blocks = buffer.split('\n\n');
+              buffer = blocks.pop() ?? '';
+              for (const block of blocks) {
+                const data = block.split('\n')
+                  .filter(line => line.startsWith('data:'))
+                  .map(line => line.slice(5).trim())
+                  .join('\n');
+                if (!data) continue;
+                const event = JSON.parse(data) as { pedidoId: number };
+                const dto = await firstValueFrom(this.http.get<PedidoResponseDTO>(`${this.baseUrl}/${event.pedidoId}`));
+                const order = this.toOrder(dto);
+                this.mergeOrder(order);
+                subscriber.next(order);
+                if (lastEventStatus && lastEventStatus !== order.status) {
+                  this.notifyStatusChange(order);
+                }
+                lastEventStatus = order.status;
+              }
+            }
+            await reader.cancel().catch(() => undefined);
+          } catch (error) {
+            if (controller.signal.aborted || subscriber.closed) return;
+            console.error('Conexão SSE do pedido interrompida; tentando reconectar:', error);
           }
-          throw error;
-        })
-      )),
-      tap(order => {
-        if (order) {
-          this.mergeOrder(order);
+          await new Promise(resolve => setTimeout(resolve, delay));
+          delay = Math.min(delay * 2, 15000);
         }
-      })
-    );
+      };
+
+      void readStream();
+      return () => controller.abort();
+    });
+  }
+
+  private notifyStatusChange(order: Order): void {
+    const messages: Partial<Record<OrderStatus, { title: string; body: string }>> = {
+      preparing: { title: 'Pedido em preparo', body: `Seu pedido #${order.id} está sendo preparado.` },
+      ready: { title: 'Pedido pronto', body: `Seu pedido #${order.id} está pronto para entrega.` },
+      delivering: { title: 'Pedido a caminho', body: `Seu pedido #${order.id} saiu para entrega.` },
+      delivered: { title: 'Pedido entregue', body: `Seu pedido #${order.id} foi entregue. Bom apetite!` }
+    };
+    const message = messages[order.status];
+    if (message) {
+      this.notificationService.sendNotification(order.customerId, message.title, message.body, 'orderStatus');
+    }
   }
 
   override updateMotoboyLocation(_motoboyId: string, lat: number, lng: number): void {

@@ -22,7 +22,7 @@
 
 O **DaHorta - Comanda Digital** é um ecossistema focado na eficiência operacional de uma *Dark Kitchen* especializada em bowls e pratos saudáveis. O sistema resolve o gargalo de comunicação e sincronia unindo quatro pontas cruciais do modelo de negócios em uma única plataforma reativa: o **Cliente**, a **Cozinha**, a **Logística de Entrega (Motoboy)** e a **Administração Estratégica**. 
 
-Este projeto foi gerado utilizando o **Angular CLI** na versão **19.2.27**. Graças à reatividade do Firebase Firestore, as comandas fluem instantaneamente por toda a linha de produção sem a necessidade de atualizações manuais de página (*page refreshes*), garantindo comida fresca e entregas no menor tempo possível.
+O frontend foi gerado com **Angular CLI 19.2.27** e usa uma API Spring Boot com MySQL para autenticação, catálogo, pedidos, avaliações e operações administrativas.
 
 ---
 
@@ -33,10 +33,10 @@ O sistema está dividido em 4 módulos principais, cada um projetado para atende
 ### 1. 🛒 Painel do Cliente (E-commerce / Menu Interativo)
 * **Cardápio Digital Responsivo:** Visualização fluida de pratos e bowls saudáveis, com foco em imagens atraentes e detalhes de ingredientes.
 * **Carrinho Inteligente:** Adição, remoção e personalização de itens de forma totalmente intuitiva antes da finalização.
-* **Acompanhamento Real-Time:** Linha do tempo interativa que exibe o status atual do pedido (`Recebido` ➔ `Em Preparo` ➔ `Saiu para Entrega` ➔ `Entregue`).
+* **Acompanhamento de pedidos:** Linha do tempo de status (`Recebido` ➔ `Em Preparo` ➔ `Saiu para Entrega` ➔ `Entregue`), carregada pela API local.
 
 ### 2. 🍳 Painel da Cozinha (Gestão de Comandas)
-* **Comandas em Tempo Real:** Recebimento instantâneo de novos pedidos na tela via escuta ativa do Firebase Firestore.
+* **Comandas:** Pedidos e mudanças de status são persistidos pela API local; o frontend atualiza a fila periodicamente e acompanha pedidos do cliente por SSE autenticado.
 * **Fila de Produção Otimizada:** Alteração do status do pedido com apenas um clique (ex: mover de *Em Preparo* para *Pronto para Entrega*).
 * **Controle de Estoque:** Painel dedicado para gerenciamento preventivo e atualização de insumos, evitando a venda de pratos sem ingredientes disponíveis.
 
@@ -46,117 +46,80 @@ O sistema está dividido em 4 módulos principais, cada um projetado para atende
 * **Fluxo de Entrega Facilitado:** Opção rápida para assumir a corrida e mudar o status para *"Saiu para Entrega"*, além do botão de confirmação que notifica imediatamente o cliente e o painel administrativo.
 
 ### 4. 📊 Dashboard do Administrador (Painel do Dono)
-* **Gestão Financeira:** Métricas gerenciais de faturamento, lucros e gráficos consolidados, além do módulo para cadastro e controle de custos fixos/variáveis.
-* **CRUD de Cardápio:** Gerenciamento total de pratos, permitindo criar, ler, atualizar e deletar itens, preços e composições de ingredientes.
-* **Controle de Acesso Seguro (RBAC):** Proteção de rotas e separação rígida de privilégios usando perfis customizados vinculados ao *Firebase Authentication*.
+* **Gestão operacional:** Estoque, fornecedores, histórico de preços, compras, despesas, fichas técnicas, cupons e equipe usam a API local.
+* **Cardápio:** Catálogo público, categorias, prato do dia e informações adicionais do restaurante são lidos e gravados pela API local.
+* **Controle de acesso (RBAC):** A API local autentica com JWT e controla os perfis ADMIN, COZINHA, MOTOBOY e CLIENTE.
 
 ---
 
 ## 🛠️ Tecnologias Utilizadas
 
-Este projeto foi construído utilizando as melhores práticas do ecossistema front-end moderno e infraestrutura Serverless:
+Tecnologias atuais:
 
 * **[Angular v19.2.27](https://angular.io/):** Framework robusto para a construção da Single Page Application (SPA), garantindo componentização, tipagem estática com TypeScript e performance ideal.
-* **[Firebase Firestore](https://firebase.google.com/docs/firestore):** Banco de dados NoSQL flexível e escalável que mantém os dados sincronizados entre os clientes em tempo real através de WebSockets nativos.
-* **[Firebase](https://firebase.google.com/):** Continua atendendo módulos ainda não migrados; autenticação e pedidos já usam a API Spring Boot com JWT.
+* **Java 17, Spring Boot 3 e Spring Data JPA:** API REST local com autenticação JWT e regras de pedidos/estoque.
+* **MySQL 8:** Persistência relacional para catálogo, pedidos, avaliações, estoque, compras e despesas.
 * **HTML5 & CSS3:** Estruturação semântica e estilização customizada focada em uma UI limpa, orgânica e que remete ao conceito de alimentação saudável.
 
 ---
 
 ## 🧩 Backend Java
 
-O início da API em Java 17, Spring Boot 3 e MySQL está em [`src/backend`](src/backend/README.md).
-O módulo documenta configuração, autenticação JWT, pedidos, estoque, cupons e eventos SSE.
-A aplicação Angular aponta para `http://localhost:8080/api/v1` em desenvolvimento e
-envia o JWT nas chamadas à API. Em produção, `/api/v1` deve ser encaminhado ao backend
-por um proxy reverso. Configure a origem CORS no backend para `http://localhost:4200`.
+No Codespace, o devcontainer Ubuntu 24.04 executa o frontend e a API; Docker-in-Docker
+executa o container MySQL. O fluxo local é `navegador → Angular (4200) → API Spring
+Boot (8080) → MySQL (3306)`. O Angular encaminha `/api` à API pelo proxy de
+desenvolvimento e envia o JWT nas chamadas autenticadas. O estado atual da migração,
+os dados demonstrativos e as rotas estão em [`src/backend/README.md`](src/backend/README.md).
 
 ---
 
 ## 📦 Como Rodar o Projeto
 
-### Pré-requisitos
-Antes de começar, certifique-se de ter instalado em sua máquina:
-* [Node.js](https://nodejs.org/) (Versão LTS recomendada)
-* [Angular CLI v19.2.27](https://angular.io/cli)
+### Executar no Codespace
 
-### Passo a Passo
+O devcontainer instala Node.js 22, Java 17, Maven e Docker-in-Docker.
+O arquivo `.env.codespace` é local e ignorado pelo Git; configure nele apenas
+as credenciais usadas pelo backend. Não copie credenciais backend para o código
+Angular.
 
-**1. Clonar o Repositório:**
+**1. Iniciar MySQL e API** (terminal em `src/backend`):
+
 ```bash
-git clone [https://github.com/seu-usuario/dahorta-comanda-digital.git](https://github.com/seu-usuario/dahorta-comanda-digital.git)
-cd dahorta-comanda-digital
+docker compose --env-file ../../.env.codespace up -d
+set -a
+. ../../.env.codespace
+set +a
+mvn spring-boot:run
 ```
 
-**2. Instalar as Dependências:**
+O backend cria o administrador com `OWNER_EMAIL`/`OWNER_PASSWORD` (ou
+`ADMIN_EMAIL`/`ADMIN_PASSWORD`) e a equipe com os pares `EMPLOYEE_*` e
+`MOTOBOY_*`. Clientes podem se cadastrar pela aplicação.
+
+**Atalho para iniciar tudo:** na raiz do repositório, execute:
+
 ```bash
+npm start
+```
+
+O comando inicia o MySQL, aguarda a API Spring Boot e depois inicia o Angular.
+Ao ficar pronto, imprime os links de acesso do frontend e da API. Use `Ctrl+C`
+para parar API e Angular; o MySQL permanece em execução e conserva os dados.
+
+**2. Iniciar Angular manualmente** (outro terminal):
+
+```bash
+cd src/angular
 npm install
+npm start
 ```
 
-**3. Configurar o Firebase:**
+Acesse `http://localhost:4200`. O MySQL fica na porta `3306`, a API na `8080`;
+o devcontainer encaminha essas portas, além da `4200`.
 
-Crie um projeto no Firebase Console e habilite os seguintes serviços:
-
-- Firebase Authentication
-- Cloud Firestore
-- Firebase Hosting (opcional para deploy)
-
-Em seguida, copie as credenciais do projeto e configure o arquivo:
-
-```typescript
-// src/environments/environment.ts
-
-export const environment = {
-  production: false,
-  firebase: {
-    apiKey: "SUA_API_KEY",
-    authDomain: "SEU_PROJETO.firebaseapp.com",
-    projectId: "SEU_PROJETO",
-    storageBucket: "SEU_PROJETO.appspot.com",
-    messagingSenderId: "XXXXXXXXXXX",
-    appId: "X:XXXXXXXX:web:XXXXXXXXXXXX"
-  }
-};
-```
-
-**4. Iniciar o Servidor de Desenvolvimento:**
-
-```bash
-ng serve
-```
-
-Após a compilação, acesse:
-
-```text
-http://localhost:4200
-```
-
-O aplicativo será recarregado automaticamente sempre que alterações forem salvas.
-
-**5. Criar Usuários e Perfis de Acesso:**
-
-No Firebase Authentication, crie os usuários iniciais do sistema:
-
-| Perfil | Função |
-|----------|----------|
-| Admin | Controle total da plataforma |
-| Cozinha | Gestão de comandas e estoque |
-| Motoboy | Controle das entregas |
-| Cliente | Realização de pedidos |
-
-As permissões podem ser armazenadas em uma coleção do Firestore:
-
-```text
-users/
- └── uid
-      ├── nome
-      ├── email
-      └── role
-           ├── admin
-           ├── cozinha
-           ├── motoboy
-           └── cliente
-```
+Os providers Firebase antigos ainda existem como código legado, mas não são
+inicializados pela aplicação. APIs pendentes e limitações conhecidas estão
+documentadas em [`src/backend/README.md`](src/backend/README.md).
 
 ---
 
@@ -164,29 +127,9 @@ users/
 
 ```text
 src/
-│
-├── app/
-│   ├── pages/
-│   │   ├── cliente/
-│   │   ├── cozinha/
-│   │   ├── motoboy/
-│   │   └── admin/
-│   │
-│   ├── services/
-│   │   ├── auth.service.ts
-│   │   ├── pedido.service.ts
-│   │   ├── estoque.service.ts
-│   │   └── financeiro.service.ts
-│   │
-│   ├── guards/
-│   │   ├── auth.guard.ts
-│   │   └── role.guard.ts
-│   │
-│   ├── models/
-│   └── shared/
-│
-├── environments/
-└── assets/
+├── angular/       # Angular SPA, módulos de cliente, equipe e administração
+└── backend/       # API Spring Boot, entidades, serviços, testes e SQL demonstrativo
+.devcontainer/     # Ubuntu 24.04 + Node/Java + Docker-in-Docker para Codespaces
 ```
 
 ---
@@ -212,15 +155,16 @@ Saiu para Entrega (Motoboy)
 Entregue
 ```
 
-Todas as alterações são sincronizadas em tempo real pelo Firebase Firestore.
+Pedidos/status são persistidos na API local. O cliente acompanha individualmente
+seu pedido por SSE autenticado; as telas gerais de operação ainda usam polling.
 
 ---
 
 ## 🔐 Segurança
 
-O projeto utiliza Firebase Authentication, RBAC (Role Based Access Control)
-e regras de segurança do Firestore para restringir acesso aos recursos
-de acordo com o perfil do usuário.
+Os endpoints locais usam JWT e verificações de perfil no backend; o frontend
+anexa o token às chamadas autenticadas à API. As contas e dados legados do
+Firebase não são importados automaticamente.
 
 As regras completas não são divulgadas neste repositório por motivos de segurança operacional.
 

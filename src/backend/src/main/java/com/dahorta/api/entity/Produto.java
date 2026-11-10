@@ -72,7 +72,9 @@ public class Produto {
         this.categoria = categoria;
         this.preco = preco;
         this.disponivel = disponivel;
-        substituirIngredientes(ingredientes);
+        if (ingredientes != null) {
+            substituirIngredientes(ingredientes);
+        }
     }
 
     public void definirDisponivel(boolean disponivel) {

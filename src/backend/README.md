@@ -1,13 +1,18 @@
-# DaHorta API
+# DaHorta API local
 
 Backend independente em Java 17, Spring Boot 3, Spring Data JPA e MySQL 8.
+No Codespace, o MySQL roda em um container Docker e a API roda no devcontainer.
+O frontend Angular continua sendo um aplicativo separado.
 
 ## Configuração
 
 O MySQL de desenvolvimento é iniciado via Docker Compose:
 
 ```bash
-docker compose --env-file ../.env.codespace up -d
+docker compose --env-file ../../.env.codespace up -d
+set -a
+. ../../.env.codespace
+set +a
 mvn spring-boot:run
 ```
 
@@ -17,43 +22,53 @@ credenciais locais padrão são `dahorta`/`dahorta`; defina `DB_USERNAME`,
 para substituí-las. A aplicação usa `DB_URL`, `DB_USERNAME` e `DB_PASSWORD`;
 a URL padrão aponta para `localhost:3306/dahorta`.
 
+Ao iniciar a API, `OWNER_EMAIL`/`OWNER_PASSWORD` provisionam o perfil `ADMIN`,
+`EMPLOYEE_EMAIL`/`EMPLOYEE_PASSWORD` provisionam `COZINHA`, e
+`MOTOBOY_EMAIL`/`MOTOBOY_PASSWORD` provisionam `MOTOBOY`. As senhas são
+armazenadas com BCrypt. Contas já existentes não têm senha nem perfil alterados;
+se um e-mail de equipe já pertencer a outro perfil, a inicialização falha
+explicitamente.
+O cadastro público cria usuários `CLIENTE`. A API local assina JWT; ela não usa
+Firebase Authentication. Mantenha essas credenciais apenas no arquivo local
+ignorado pelo Git, nunca em SQL, commits ou no frontend.
+
+### Carga demonstrativa local
+
+Com o backend iniciado e o schema criado, aplique [demo-seed.sql](./data/demo-seed.sql)
+a partir de `src/backend`:
+
+```bash
+docker compose --env-file ../../.env.codespace exec -T mysql \
+  sh -c 'exec mysql -uroot -p"$MYSQL_ROOT_PASSWORD"' < data/demo-seed.sql
+```
+
+A carga não altera nem recria o cardápio: associa fichas técnicas estimadas aos
+22 produtos atuais. Ela adiciona 65 insumos, 3 fornecedores fictícios e 585
+históricos de preço (65 insumos × 3 fornecedores × 3 datas). Também registra
+65 movimentos de saldo inicial e 3 cupons. Compras e despesas podem ser
+registradas pelos endpoints administrativos e não são incluídas na carga
+demonstrativa.
+Quantidades e preços são sintéticos; os preços representam a unidade cadastrada
+(kg, litro ou unidade), não uma cotação real. O SQL pode ser reaplicado sem
+apagar dados nem duplicar as linhas demonstrativas. Não use esses valores como
+ficha técnica, estoque ou custo real de produção.
+
 Para parar o banco, execute `docker compose down` (os dados permanecem no
 volume). `docker compose down -v` também remove o volume e todos os dados.
 
-### Migrar os dados de MariaDB
-
-O volume `mysql8_data` é separado para manter intacto qualquer volume anterior.
-Faça um dump consistente do banco MariaDB e importe-o uma única vez no MySQL 8
-recém-inicializado:
-
-```bash
-mariadb-dump --single-transaction --routines --events --triggers --hex-blob \
-  --default-character-set=utf8mb4 -h "$MARIADB_HOST" -P "$MARIADB_PORT" \
-  -u "$MARIADB_USER" -p dahorta > dahorta-mariadb.sql
-docker compose --env-file ../.env.codespace up -d
-docker compose exec -T mysql sh -c \
-  'exec mysql -uroot -p"$MYSQL_ROOT_PASSWORD" dahorta' < dahorta-mariadb.sql
-```
-
-O `-p` do dump solicita a senha sem colocá-la no histórico ou na linha de
-comando. Mantenha o dump protegido: ele contém dados pessoais. Após importar,
-compare as contagens das tabelas entre as bases e valide os fluxos da aplicação
-antes de direcionar o tráfego ao MySQL. Não execute a importação novamente em
-uma base já populada.
-
 `DELIVERY_FEE` define a taxa de entrega e tem padrão `15.00`. Configure um
-segredo aleatório de pelo menos 32 bytes em `JWT_SECRET`. Para provisionar o
-administrador inicial, defina `ADMIN_EMAIL` e `ADMIN_PASSWORD`; se a conta já
-existir, o bootstrap não a altera. `CORS_ALLOWED_ORIGIN` define a origem
-permitida do Angular (padrão `http://localhost:4200`).
+segredo aleatório de pelo menos 32 bytes em `JWT_SECRET`. O administrador pode
+ser configurado com `OWNER_EMAIL`/`OWNER_PASSWORD` (ou com os nomes
+`ADMIN_EMAIL`/`ADMIN_PASSWORD`). Se a conta já existir, o bootstrap não altera
+sua senha ou perfil. `CORS_ALLOWED_ORIGIN` define a origem permitida do Angular
+(padrão `http://localhost:4200`).
 
 `spring.jpa.hibernate.ddl-auto` está em `update` para desenvolvimento; use
 migrações versionadas antes de implantar em produção.
 
-Se o catálogo estiver vazio, a API cadastra os 22 produtos iniciais usados pelo
-frontend. O checkout resolve os IDs internos da API pelo nome do produto; ao
-personalizar o catálogo, mantenha os nomes consistentes até a migração completa
-do cardápio para a API.
+Se o catálogo da API estiver vazio, ela cadastra 22 produtos de demonstração.
+O catálogo público, categorias, prato do dia e informações do restaurante são
+lidos da API local. O frontend usa o ID numérico local no checkout.
 
 Endereços salvos do cliente ficam no armazenamento local do navegador, por conta
 e dispositivo; eles não são sincronizados entre dispositivos.
@@ -62,6 +77,30 @@ As rotas protegidas requerem o header `Authorization`, com `Bearer` seguido do
 campo `accessToken` retornado pelo login.
 O cadastro público cria somente contas `CLIENTE`; a equipe operacional é criada
 por um `ADMIN`. Senhas são armazenadas com BCrypt.
+
+## Migração do Firebase: estado atual
+
+O frontend usa a API local para os fluxos abaixo. Os antigos serviços Firebase
+permanecem no código como implementações legadas, mas já não são inicializados
+nem registrados como providers ativos.
+
+| Área | Estado local | Ainda depende de Firebase ou falta migrar |
+|---|---|---|
+| Login, cadastro e perfis | API local, JWT e contas MySQL; inicialização opcional de ADMIN, COZINHA e MOTOBOY pelo `.env.codespace`. | Login social ainda não está disponível na API local. |
+| Pedidos e checkout | API local e MySQL; estoque, cupom, totais e pedido são processados no backend. O acompanhamento de pedido usa SSE autenticado. | A lista geral de pedidos ainda atualiza por polling de 5 s. |
+| Cozinha e motoboy | A equipe e o estoque usam a API local; estados de pedido passam pela API local. | Rastreamento/localização é volátil em memória no backend e não persiste. Notificações são do navegador em primeiro plano; Web Push em segundo plano requer service worker e VAPID, ainda não configurados. |
+| Insumos, movimentações e fichas técnicas | MySQL e API local; o painel administrativo lê/escreve pela API. | Dados existentes no Firestore não foram importados automaticamente; o seed é fictício. |
+| Fornecedores, compras e preços | API local e MySQL; o painel `/owner/financeiro` registra recebimentos com vários insumos e cada compra atualiza estoque, movimentações e preços. | Dados legados do Firestore não foram importados. |
+| Despesas | CRUD administrativo na API local e persistência MySQL; cadastro e listagem no painel `/owner/financeiro`. | A edição direta de despesa ainda é feita pela API, não pela tela. |
+| Cardápio público e categorias | Catálogo de demonstração e CRUD de produtos pela API local; categorias derivadas dos produtos disponíveis. | A API ainda não persiste campos extras não suportados pelo modelo, como alérgenos e tempo de preparo. |
+| Configurações do restaurante | API local para prato do dia e informações adicionais do restaurante; estado da loja permanece local. | O formulário do prato do dia ainda depende de IDs numéricos de produto. |
+| Avaliações | API e tabela MySQL; só permite avaliar pedido entregue do próprio cliente, uma vez por pedido. | A listagem administrativa de avaliações não tem interface integrada. |
+| Endereços e carrinho | Guardados no `localStorage` do navegador. | Não são dados do Firebase nem do MySQL; ficam neste dispositivo. |
+| Notificações e relatórios | O browser pode exibir notificações locais; relatórios combinam dados disponíveis no frontend. | Não há envio Web Push centralizado. |
+
+Os dados legados do Firebase não são copiados ou sincronizados automaticamente
+com a API local. O Angular não precisa inicializar Firebase para os providers
+ativos atuais.
 
 ## Pedidos
 
@@ -100,6 +139,15 @@ não consomem estoque.
 - `/api/v1/admin/equipe`: CRUD de contas `COZINHA` e `MOTOBOY`.
 - `/api/v1/admin/fornecedores`: CRUD de fornecedores, restrito a ADMIN.
 - `/api/v1/admin/historico-precos`: CRUD do histórico de preços por insumo e fornecedor, restrito a ADMIN.
+- `GET/POST /api/v1/admin/compras`: lista e registra recebimentos. O recebimento
+  aumenta o estoque e registra movimentos e preços na mesma transação.
+- `GET/POST/PUT/DELETE /api/v1/admin/despesas`: CRUD de despesas, restrito a ADMIN.
+- `POST /api/v1/avaliacoes` e `GET /api/v1/avaliacoes/pedido/{pedidoId}`:
+  avaliação única de pedido entregue, somente pelo cliente dono.
+- `GET /api/v1/categorias`, `/api/v1/prato-do-dia` e
+  `/api/v1/restaurante/detalhes`: configurações públicas do catálogo.
+- `PUT /api/v1/admin/prato-do-dia/{dia}` e
+  `PATCH /api/v1/admin/restaurante/detalhes`: edição administrativa dessas configurações.
 - `GET /api/v1/produtos` e `/api/v1/produtos/{id}`: catálogo público. Composição
   interna não é exposta ao cliente.
 - `/api/v1/admin/produtos`: CRUD administrativo do cardápio e fichas técnicas.

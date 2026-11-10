@@ -181,8 +181,8 @@ import { ToastService } from '../../../shared/data-access/toast.service';
               <!-- Browser Permission Request Banner -->
               <div class="p-4 rounded-xl mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-50 border border-slate-200">
                 <div class="flex-1">
-                  <p style="font-size: 13px; font-weight: 700; color: var(--foreground); margin: 0 0 4px 0;">Notificações Push do Navegador</p>
-                  <p style="font-size: 11px; color: var(--text-secondary); margin: 0;">Permita o envio de alertas nativos do navegador para atualizações instantâneas.</p>
+                  <p style="font-size: 13px; font-weight: 700; color: var(--foreground); margin: 0 0 4px 0;">Notificações do Navegador</p>
+                  <p style="font-size: 11px; color: var(--text-secondary); margin: 0;">Permita alertas do navegador enquanto acompanha o pedido. O envio não funciona quando o aplicativo está fechado.</p>
                 </div>
                 @if (notificationService.permissionStatus() === 'granted') {
                   <span class="text-xs font-bold text-green-600 px-3 py-1.5 rounded-lg bg-green-50 border border-green-200">Ativado ✅</span>

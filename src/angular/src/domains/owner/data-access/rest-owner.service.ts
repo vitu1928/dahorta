@@ -8,7 +8,6 @@ import { EmployeeService } from '../../employee/data-access/employee.service';
 import { ProductsService } from '../../customer/data-access/products.service';
 import { Product } from '../../customer/data-access/customer.models';
 import { environment } from '../../../environments/environment';
-import { Firestore, collection, doc, setDoc, deleteDoc, updateDoc, onSnapshot } from '@angular/fire/firestore';
 
 interface InsumoApi {
   id: number;
@@ -61,30 +60,13 @@ interface FornecedorApi {
 }
 
 @Injectable({ providedIn: 'root' })
-export class FirebaseOwnerService extends OwnerService {
-  private firestore = inject(Firestore);
+export class RestOwnerService extends OwnerService {
   private authService = inject(AuthService);
   private employeeService = inject(EmployeeService);
   private http = inject(HttpClient);
   private productsService = inject(ProductsService);
   private readonly apiUrl = environment.apiUrl;
   private apiProducts: ProdutoApi[] = [];
-
-  private sanitizeObject(obj: any): any {
-    if (obj === undefined) return null;
-    if (Array.isArray(obj)) {
-      return obj.map((item: any) => this.sanitizeObject(item));
-    } else if (obj !== null && typeof obj === 'object' && !(obj instanceof Date)) {
-      const clean: any = {};
-      for (const key of Object.keys(obj)) {
-        if (obj[key] !== undefined) {
-          clean[key] = this.sanitizeObject(obj[key]);
-        }
-      }
-      return clean;
-    }
-    return obj;
-  }
 
   override readonly suppliers = signal<Supplier[]>([]);
   override readonly insumos = signal<Insumo[]>([]);
@@ -99,8 +81,7 @@ export class FirebaseOwnerService extends OwnerService {
     super();
 
     let unsubscribeRestData: Subscription | null = null;
-    let unsubscribePlate: any = null;
-    let unsubscribeRestaurant: any = null;
+    let unsubscribeSettings: Subscription | null = null;
 
     // Dynamically manage listeners based on authenticated user role to prevent unauthorized client console warnings
     effect(() => {
@@ -108,9 +89,7 @@ export class FirebaseOwnerService extends OwnerService {
       
       // Cleanup previous subscriptions
       if (unsubscribeRestData) { unsubscribeRestData.unsubscribe(); unsubscribeRestData = null; }
-      if (unsubscribePlate) { unsubscribePlate(); unsubscribePlate = null; }
-      if (unsubscribeRestaurant) { unsubscribeRestaurant(); unsubscribeRestaurant = null; }
-
+      if (unsubscribeSettings) { unsubscribeSettings.unsubscribe(); unsubscribeSettings = null; }
       if (user) {
         const isStaff = user.role === 'owner' || user.role === 'employee';
         
@@ -132,31 +111,17 @@ export class FirebaseOwnerService extends OwnerService {
           this.apiProducts = [];
         }
 
-        // 3. Listen to plate of day settings (available to all)
-        const plateDocRef = doc(this.firestore, 'settings/plateOfDay');
-        unsubscribePlate = onSnapshot(plateDocRef, (snap) => {
-          if (snap.exists()) {
-            this.plateOfDay.set(snap.data()['config'] || {});
-          } else {
-            if (isStaff) {
-              setDoc(plateDocRef, { config: {} }).catch(err => console.error(err));
-            }
-            this.plateOfDay.set({});
-          }
-        }, (err) => {
-          console.error('Erro ao ouvir configuração de prato do dia:', err);
-        });
-
-        // 3.5 Listen to restaurant settings (available to all)
-        const restaurantDocRef = doc(this.firestore, 'settings/restaurant');
-        unsubscribeRestaurant = onSnapshot(restaurantDocRef, (snap) => {
-          if (snap.exists()) {
-            this.restaurantInfo.set(snap.data() as RestaurantInfo);
-          } else {
-            this.restaurantInfo.set(null);
-          }
-        }, (err) => {
-          console.error('Erro ao ouvir configuração do restaurante:', err);
+        unsubscribeSettings = timer(0, 10000).pipe(
+          switchMap(() => forkJoin({
+            plate: this.http.get<Record<number, string>>(`${this.apiUrl}/prato-do-dia`),
+            restaurant: this.http.get<RestaurantInfo | null>(`${this.apiUrl}/restaurante/detalhes`)
+          }).pipe(catchError(err => {
+            console.error('Erro ao carregar configurações pela API:', err);
+            return EMPTY;
+          })))
+        ).subscribe(({ plate, restaurant }) => {
+          this.plateOfDay.set(plate);
+          this.restaurantInfo.set(restaurant);
         });
 
       } else {
@@ -447,7 +412,7 @@ export class FirebaseOwnerService extends OwnerService {
 
   // Price Records
   override addPriceRecord(record: Omit<PriceRecord, 'id'>): void {
-    let body: ReturnType<FirebaseOwnerService['toApiPriceRecord']>;
+    let body: ReturnType<RestOwnerService['toApiPriceRecord']>;
     try {
       body = this.toApiPriceRecord(record);
     } catch (err) {
@@ -482,7 +447,7 @@ export class FirebaseOwnerService extends OwnerService {
       return;
     }
 
-    let body: ReturnType<FirebaseOwnerService['toApiPriceRecord']>;
+    let body: ReturnType<RestOwnerService['toApiPriceRecord']>;
     try {
       body = this.toApiPriceRecord({ ...existing, ...record });
     } catch (err) {
@@ -623,17 +588,21 @@ export class FirebaseOwnerService extends OwnerService {
 
   // Settings & Helpers
   override updatePlateOfDay(day: number, productId: string): void {
-    const docRef = doc(this.firestore, 'settings/plateOfDay');
-    const updatedConfig = { ...this.plateOfDay(), [day]: productId };
-    updateDoc(docRef, { config: updatedConfig }).catch(err => {
-      console.error('Erro ao atualizar prato do dia:', err);
+    const produtoId = Number(productId);
+    if (!Number.isSafeInteger(day) || day < 1 || day > 7 || !Number.isSafeInteger(produtoId)) {
+      console.error('Não foi possível salvar o prato do dia: dia ou produto inválido.');
+      return;
+    }
+    this.http.put<void>(`${this.apiUrl}/admin/prato-do-dia/${day}`, { produtoId }).subscribe({
+      next: () => this.plateOfDay.update(config => ({ ...config, [day]: productId })),
+      error: err => console.error('Erro ao atualizar prato do dia pela API:', err)
     });
   }
 
   override updateRestaurantInfo(info: RestaurantInfo): void {
-    const docRef = doc(this.firestore, 'settings/restaurant');
-    setDoc(docRef, this.sanitizeObject(info), { merge: true }).catch(err => {
-      console.error('Erro ao atualizar informações do restaurante:', err);
+    this.http.patch<RestaurantInfo>(`${this.apiUrl}/admin/restaurante/detalhes`, info).subscribe({
+      next: saved => this.restaurantInfo.set(saved),
+      error: err => console.error('Erro ao atualizar informações pela API:', err)
     });
   }
 

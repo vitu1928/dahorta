@@ -127,6 +127,9 @@ import { EmployeeService } from '@domain/employee/data-access/employee.service';
                 
                 <!-- Fornecedores -->
                 <svg *ngSwitchCase="'Fornecedores'" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 18H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h8"/><path d="M19 16h2a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2h-3"/><circle cx="7.5" cy="18.5" r="2.5"/><circle cx="16.5" cy="18.5" r="2.5"/></svg>
+
+                <!-- Compras e despesas -->
+                <svg *ngSwitchCase="'Financeiro'" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h3"/></svg>
                 
                 <!-- Equipe -->
                 <svg *ngSwitchCase="'Equipe'" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -226,6 +229,12 @@ export class OwnerLayoutComponent {
       exact: false,
       label: 'Fornecedores',
       icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="11" x="2" y="7" rx="2"/><path d="M18 18H2v-5c0-1.66 1.34-3 3-3h10c1.66 0 3 1.34 3 3v5zM16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><circle cx="7" cy="18" r="2"/><circle cx="15" cy="18" r="2"/></svg>'
+    },
+    {
+      to: '/owner/financeiro',
+      exact: false,
+      label: 'Financeiro',
+      icon: '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h3"/></svg>'
     },
     {
       to: '/owner/equipe',

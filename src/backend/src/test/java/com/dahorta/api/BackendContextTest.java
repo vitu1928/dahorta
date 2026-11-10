@@ -26,8 +26,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "spring.datasource.password=",
         "spring.jpa.hibernate.ddl-auto=create-drop",
         "dahorta.jwt.secret=test-only-secret-that-is-at-least-32-bytes-long",
-        "dahorta.admin.email=admin@dahorta.test",
-        "dahorta.admin.password=SenhaAdmin123"
+        "OWNER_EMAIL=admin@dahorta.test",
+        "OWNER_PASSWORD=SenhaAdmin123",
+        "dahorta.team.kitchen.email=cozinha@dahorta.test",
+        "dahorta.team.kitchen.password=SenhaCozinha123",
+        "dahorta.team.delivery.email=entrega@dahorta.test",
+        "dahorta.team.delivery.password=SenhaEntrega123"
 })
 @AutoConfigureMockMvc
 class BackendContextTest {
@@ -80,6 +84,21 @@ class BackendContextTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value(email))
                 .andExpect(jsonPath("$.telefone").value("11999999999"));
+    }
+
+    @Test
+    void provisionaEquipeComOsPerfisConfigurados() throws Exception {
+        String kitchenToken = login("cozinha@dahorta.test", "SenhaCozinha123");
+        mockMvc.perform(get("/api/v1/usuarios/me")
+                        .header("Authorization", "Bearer " + kitchenToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.perfil").value("COZINHA"));
+
+        String deliveryToken = login("entrega@dahorta.test", "SenhaEntrega123");
+        mockMvc.perform(get("/api/v1/usuarios/me")
+                        .header("Authorization", "Bearer " + deliveryToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.perfil").value("MOTOBOY"));
     }
 
     @Test
@@ -153,6 +172,101 @@ class BackendContextTest {
                         .content("{\"disponivel\":true}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.disponivel").value(true));
+    }
+
+    @Test
+    void persisteDespesasEExpõeConfiguracaoPublicaDoCardapio() throws Exception {
+        String adminToken = login("admin@dahorta.test", "SenhaAdmin123");
+        String descricao = "Conta de teste " + java.util.UUID.randomUUID();
+
+        String despesa = mockMvc.perform(post("/api/v1/admin/despesas")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "categoria": "Energia",
+                                  "descricao": "%s",
+                                  "valor": 125.50,
+                                  "data": "2026-01-15",
+                                  "recorrente": true,
+                                  "status": "PENDENTE"
+                                }
+                                """.formatted(descricao)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.descricao").value(descricao))
+                .andReturn().getResponse().getContentAsString();
+        long despesaId = objectMapper.readTree(despesa).get("id").asLong();
+
+        mockMvc.perform(get("/api/v1/admin/despesas")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.id == " + despesaId + ")].valor").value(125.5));
+
+        mockMvc.perform(get("/api/v1/categorias"))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/prato-do-dia"))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/restaurante/detalhes"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void recebimentoDeCompraPersisteEAtualizaEstoque() throws Exception {
+        String adminToken = login("admin@dahorta.test", "SenhaAdmin123");
+        String suffix = java.util.UUID.randomUUID().toString();
+        String fornecedor = mockMvc.perform(post("/api/v1/admin/fornecedores")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "nome": "Fornecedor %s",
+                                  "telefone": "11999999999",
+                                  "email": "%s@dahorta.test",
+                                  "endereco": "Rua de teste"
+                                }
+                                """.formatted(suffix, suffix)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        long fornecedorId = objectMapper.readTree(fornecedor).get("id").asLong();
+
+        String insumo = mockMvc.perform(post("/api/v1/estoque/insumos")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "nome": "Insumo de compra %s",
+                                  "unidade": "kg",
+                                  "quantidadeInicial": 1,
+                                  "quantidadeMinima": 0.5
+                                }
+                                """.formatted(suffix)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        long insumoId = objectMapper.readTree(insumo).get("id").asLong();
+
+        mockMvc.perform(post("/api/v1/admin/compras")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "fornecedorId": %d,
+                                  "observacao": "Compra de teste",
+                                  "itens": [{"insumoId": %d, "quantidade": 2.5, "precoUnitario": 4.20}]
+                                }
+                                """.formatted(fornecedorId, insumoId)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.total").value(10.5))
+                .andExpect(jsonPath("$.itens[0].subtotal").value(10.5));
+
+        mockMvc.perform(get("/api/v1/estoque/insumos")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.id == " + insumoId + ")].quantidadeAtual").value(3.5));
+
+        mockMvc.perform(get("/api/v1/admin/compras")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].fornecedorId").value(fornecedorId));
     }
 
     @Test
