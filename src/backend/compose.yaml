@@ -9,7 +9,7 @@ services:
     ports:
       - "3306:3306"
     volumes:
-      - mysql_data:/var/lib/mysql
+      - mysql8_data:/var/lib/mysql
     healthcheck:
       test:
         [
@@ -22,4 +22,4 @@ services:
       start_period: 30s
 
 volumes:
-  mysql_data:
+  mysql8_data:

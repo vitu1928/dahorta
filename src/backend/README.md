@@ -7,7 +7,7 @@ Backend independente em Java 17, Spring Boot 3, Spring Data JPA e MySQL 8.
 O MySQL de desenvolvimento é iniciado via Docker Compose:
 
 ```bash
-docker compose up -d
+docker compose --env-file ../.env.codespace up -d
 mvn spring-boot:run
 ```
 
@@ -19,6 +19,27 @@ a URL padrão aponta para `localhost:3306/dahorta`.
 
 Para parar o banco, execute `docker compose down` (os dados permanecem no
 volume). `docker compose down -v` também remove o volume e todos os dados.
+
+### Migrar os dados de MariaDB
+
+O volume `mysql8_data` é separado para manter intacto qualquer volume anterior.
+Faça um dump consistente do banco MariaDB e importe-o uma única vez no MySQL 8
+recém-inicializado:
+
+```bash
+mariadb-dump --single-transaction --routines --events --triggers --hex-blob \
+  --default-character-set=utf8mb4 -h "$MARIADB_HOST" -P "$MARIADB_PORT" \
+  -u "$MARIADB_USER" -p dahorta > dahorta-mariadb.sql
+docker compose --env-file ../.env.codespace up -d
+docker compose exec -T mysql sh -c \
+  'exec mysql -uroot -p"$MYSQL_ROOT_PASSWORD" dahorta' < dahorta-mariadb.sql
+```
+
+O `-p` do dump solicita a senha sem colocá-la no histórico ou na linha de
+comando. Mantenha o dump protegido: ele contém dados pessoais. Após importar,
+compare as contagens das tabelas entre as bases e valide os fluxos da aplicação
+antes de direcionar o tráfego ao MySQL. Não execute a importação novamente em
+uma base já populada.
 
 `DELIVERY_FEE` define a taxa de entrega e tem padrão `15.00`. Configure um
 segredo aleatório de pelo menos 32 bytes em `JWT_SECRET`. Para provisionar o
