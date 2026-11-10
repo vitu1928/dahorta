@@ -186,11 +186,10 @@ public class PedidoService {
         if (!pedido.getCliente().getId().equals(cliente.getId())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Você não pode alterar o código deste pedido.");
         }
-        if (pedido.getStatus() == StatusPedido.SAIU_ENTREGA
-                || pedido.getStatus() == StatusPedido.ENTREGUE
+        if (pedido.getStatus() == StatusPedido.ENTREGUE
                 || pedido.getStatus() == StatusPedido.CANCELADO) {
             throw new ResponseStatusException(
-                    HttpStatus.CONFLICT, "O código não pode ser alterado após o início da entrega.");
+                    HttpStatus.CONFLICT, "O código não pode ser alterado após a finalização do pedido.");
         }
 
         String codigo = gerarCodigoEntrega();

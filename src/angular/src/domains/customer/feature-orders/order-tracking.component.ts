@@ -431,7 +431,7 @@ export class OrderTrackingComponent {
         .pipe(takeUntilDestroyed())
         .subscribe(o => {
           this.order.set(o);
-          if (o && !o.deliveryCode && ['received', 'preparing', 'ready'].includes(o.status)
+          if (o && !o.deliveryCode && ['received', 'preparing', 'ready', 'delivering'].includes(o.status)
               && !this.deliveryCodeRequestStarted) {
             this.deliveryCodeRequestStarted = true;
             void this.solicitarCodigoEntrega();

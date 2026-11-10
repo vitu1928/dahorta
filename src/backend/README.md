@@ -48,7 +48,8 @@ por um `ADMIN`. Senhas são armazenadas com BCrypt.
 - `GET /api/v1/pedidos` e `GET /api/v1/pedidos/{id}`: consulta com escopo por
   perfil/usuário.
 - `POST /api/v1/pedidos/{id}/codigo-entrega`: cliente dono do pedido gera um novo
-  código antes de o pedido sair para entrega; apenas o hash é persistido.
+  código enquanto o pedido está ativo, inclusive durante a entrega; apenas o hash
+  é persistido. A emissão substitui o código anterior, que deixa de ser válido.
 - `PATCH /api/v1/pedidos/{id}/status`: cozinha avança
   `RECEBIDO → EM_PREPARO → PRONTO_ENTREGA`; motoboy assume o pedido como
   `SAIU_ENTREGA`.

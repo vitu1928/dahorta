@@ -173,7 +173,7 @@ class PedidoServiceTest {
     }
 
     @Test
-    void codigoDeEntregaNaoPodeSerAlteradoDepoisDaSaidaDoPedido() {
+    void clientePodeRecuperarCodigoDuranteEntregaEmAndamento() {
         Usuario cliente = mock(Usuario.class);
         when(cliente.getId()).thenReturn(7L);
         when(cliente.getPerfil()).thenReturn(PerfilUsuario.CLIENTE);
@@ -182,13 +182,13 @@ class PedidoServiceTest {
         when(pedido.getCliente()).thenReturn(cliente);
         when(pedido.getStatus()).thenReturn(StatusPedido.SAIU_ENTREGA);
         when(pedidoRepository.findForUpdateById(1L)).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.save(pedido)).thenReturn(pedido);
 
-        ResponseStatusException exception = assertThrows(
-                ResponseStatusException.class,
-                () -> pedidoService.gerarNovoCodigoEntrega(1L, authentication));
+        String codigo = pedidoService.gerarNovoCodigoEntrega(1L, authentication);
 
-        assertEquals(HttpStatus.CONFLICT, exception.getStatusCode());
-        verify(pedidoRepository, never()).save(any());
+        assertEquals(6, codigo.length());
+        verify(pedido).atualizarCodigoEntregaHash(anyString(), any());
+        verify(pedidoRepository).save(pedido);
     }
 
     @Test
