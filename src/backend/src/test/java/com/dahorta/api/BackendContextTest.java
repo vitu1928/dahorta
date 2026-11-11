@@ -1,13 +1,16 @@
 package com.dahorta.api;
 
 import com.dahorta.api.repository.ConfiguracaoRestauranteRepository;
+import com.dahorta.api.service.OptimisticLockVersionInitializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.DefaultApplicationArguments;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -44,6 +47,12 @@ class BackendContextTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private OptimisticLockVersionInitializer versionInitializer;
 
     @Test
     void iniciaAplicacaoEProvisionaConfiguracaoDaLoja() {
@@ -318,6 +327,10 @@ class BackendContextTest {
                                 }
                                 """.formatted(couponCode)))
                 .andExpect(status().isCreated());
+
+        jdbcTemplate.update("UPDATE insumos_estoque SET versao = NULL WHERE id = ?", insumoId);
+        jdbcTemplate.update("UPDATE cupons SET versao = NULL WHERE UPPER(codigo) = UPPER(?)", couponCode);
+        versionInitializer.run(new DefaultApplicationArguments(new String[0]));
 
         String clienteEmail = "checkout-" + java.util.UUID.randomUUID() + "@dahorta.test";
         String clienteJson = mockMvc.perform(post("/api/v1/auth/register")

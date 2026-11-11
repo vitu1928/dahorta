@@ -74,8 +74,8 @@ SET @demo_supplies = '[
   {"nome":"Acucar mascavo","unidade":"kg","estoque":3.000,"minimo":0.750,"preco":9.90}
 ]';
 
-INSERT INTO insumos_estoque (nome, unidade, quantidade_atual, quantidade_minima, ativo)
-SELECT seed.nome, seed.unidade, seed.estoque, seed.minimo, TRUE
+INSERT INTO insumos_estoque (nome, unidade, quantidade_atual, quantidade_minima, ativo, versao)
+SELECT seed.nome, seed.unidade, seed.estoque, seed.minimo, TRUE, 0
 FROM JSON_TABLE(@demo_supplies, '$[*]' COLUMNS (
     nome VARCHAR(120) PATH '$.nome',
     unidade VARCHAR(30) PATH '$.unidade',
@@ -265,8 +265,8 @@ WHERE ingredient.nome IN (
         AND existing.observacao = 'Saldo inicial demonstrativo; nao representa contagem fisica.'
   );
 
-INSERT INTO cupons (codigo, tipo, valor, valor_minimo, limite_usos, usos_realizados, expira_em, ativo)
-SELECT seed.codigo, seed.tipo, seed.valor, seed.valor_minimo, seed.limite_usos, 0, seed.expira_em, TRUE
+INSERT INTO cupons (codigo, tipo, valor, valor_minimo, limite_usos, usos_realizados, expira_em, ativo, versao)
+SELECT seed.codigo, seed.tipo, seed.valor, seed.valor_minimo, seed.limite_usos, 0, seed.expira_em, TRUE, 0
 FROM (
     SELECT 'BEMVINDO10' AS codigo, 'PERCENTUAL' AS tipo, 10.00 AS valor,
            35.00 AS valor_minimo, 200 AS limite_usos, TIMESTAMP('2026-12-31 23:59:59') AS expira_em
@@ -278,5 +278,10 @@ FROM (
 WHERE NOT EXISTS (
     SELECT 1 FROM cupons existing WHERE existing.codigo = seed.codigo
 );
+
+UPDATE insumos_estoque SET versao = 0 WHERE versao IS NULL;
+UPDATE cupons SET versao = 0 WHERE versao IS NULL;
+UPDATE pedidos SET versao = 0 WHERE versao IS NULL;
+UPDATE configuracao_restaurante SET versao = 0 WHERE versao IS NULL;
 
 COMMIT;
