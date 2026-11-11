@@ -20,7 +20,8 @@ public class RestauranteDetalhesService {
     public InformacaoRestauranteDTO atualizar(InformacaoRestauranteDTO dto) {
         InformacaoRestaurante info = repository.findById(1L).orElseGet(InformacaoRestaurante::new);
         info.atualizar(dto.name(), dto.tagline(), dto.phone(), dto.whatsapp(), dto.email(), dto.address(),
-                dto.city(), dto.deliveryFee(), dto.deliveryTime(), dto.minOrder(), dto.instagram(), dto.website());
+                dto.city(), dto.deliveryFee(), dto.deliveryTime(), dto.minOrder(), dto.instagram(), dto.website(),
+                dto.priceValidityDays());
         return dto(repository.save(info));
     }
 
@@ -28,6 +29,6 @@ public class RestauranteDetalhesService {
         return new InformacaoRestauranteDTO(info.getNome(), info.getSlogan(), info.getTelefone(),
                 info.getWhatsapp(), info.getEmail(), info.getEndereco(), info.getCidade(),
                 info.getTaxaEntrega(), info.getTempoEntrega(), info.getPedidoMinimo(),
-                info.getInstagram(), info.getWebsite());
+                info.getInstagram(), info.getWebsite(), info.getPriceValidityDays());
     }
 }

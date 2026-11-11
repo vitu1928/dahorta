@@ -1,11 +1,12 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, effect, inject, signal } from '@angular/core';
-import { EMPTY, Observable, catchError, firstValueFrom, map, of, switchMap, tap, timer } from 'rxjs';
+import { EMPTY, Observable, Subscription, catchError, firstValueFrom, map, of, shareReplay, switchMap, tap, timer } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../../auth/data-access/auth.service';
 import { OrdersService } from './orders.service';
 import { JwtTokenStore } from '../../../shared/data-access/jwt-token.store';
 import { NotificationService } from './notification.service';
+import { ToastService } from '../../../shared/data-access/toast.service';
 import {
   Address,
   CartItem,
@@ -45,6 +46,7 @@ export class RestOrdersService extends OrdersService {
   private readonly authService = inject(AuthService);
   private readonly tokenStore = inject(JwtTokenStore);
   private readonly notificationService = inject(NotificationService);
+  private readonly toastService = inject(ToastService);
   private readonly baseUrl = `${environment.apiUrl}/pedidos`;
 
   override readonly orders = signal<Order[]>([]);
@@ -53,6 +55,10 @@ export class RestOrdersService extends OrdersService {
     const id = this.activeOrderId();
     return id ? this.orders().find(order => order.id === id) ?? null : null;
   });
+  private readonly pendingStatuses = new Map<string, { status: OrderStatus; previousStatus: OrderStatus }>();
+  private readonly orderEventSubscriptions = new Map<string, Subscription>();
+  private readonly orderEventStreams = new Map<string, Observable<Order | null>>();
+  private readonly lastEventStatuses = new Map<string, OrderStatus>();
 
   constructor() {
     super();
@@ -71,9 +77,22 @@ export class RestOrdersService extends OrdersService {
             return EMPTY;
           })
         ))
-      ).subscribe(orders => this.orders.set(orders));
+      ).subscribe(orders => {
+        this.orders.set(orders.map(order => {
+          const pending = this.pendingStatuses.get(order.id);
+          return pending ? { ...order, status: pending.status } : order;
+        }));
+        if (user.role === 'customer') {
+          this.syncOrderEventSubscriptions(this.orders());
+        } else {
+          this.clearOrderEventSubscriptions();
+        }
+      });
 
-      onCleanup(() => subscription.unsubscribe());
+      onCleanup(() => {
+        subscription.unsubscribe();
+        this.clearOrderEventSubscriptions();
+      });
     });
   }
 
@@ -124,17 +143,37 @@ export class RestOrdersService extends OrdersService {
     const order = this.toOrder(response);
     this.activeOrderId.set(order.id);
     this.mergeOrder(order);
+    this.syncOrderEventSubscriptions(this.orders());
+    this.notifyStatusChange(order);
     return order;
   }
 
   override updateStatus(orderId: string, status: OrderStatus): void {
     const id = this.parseOrderId(orderId);
+    const current = this.orders().find(order => order.id === orderId);
+    if (!current || this.pendingStatuses.has(orderId)) return;
+    this.pendingStatuses.set(orderId, { status, previousStatus: current.status });
+    this.orders.update(orders => orders.map(order =>
+      order.id === orderId ? { ...order, status, updatedAt: new Date() } : order
+    ));
     this.http.patch<PedidoResponseDTO>(`${this.baseUrl}/${id}/status`, {
       status: STATUS_TO_API[status]
     }).pipe(
-      tap(response => this.mergeOrder(this.toOrder(response)))
+      tap(response => {
+        this.pendingStatuses.delete(orderId);
+        this.mergeOrder(this.toOrder(response));
+      })
     ).subscribe({
-      error: error => console.error('Não foi possível atualizar o status do pedido:', error)
+      error: error => {
+        this.pendingStatuses.delete(orderId);
+        this.orders.update(orders => orders.map(order =>
+          order.id === orderId && order.status === status
+            ? { ...order, status: current.status, updatedAt: current.updatedAt }
+            : order
+        ));
+        console.error('Não foi possível atualizar o status do pedido:', error);
+        this.toastService.error('Não foi possível atualizar o pedido. O status anterior foi restaurado.');
+      }
     });
   }
 
@@ -162,8 +201,11 @@ export class RestOrdersService extends OrdersService {
   }
 
   override subscribeToOrder(orderId: string): Observable<Order | null> {
+    const existingStream = this.orderEventStreams.get(orderId);
+    if (existingStream) return existingStream;
+
     const id = this.parseOrderId(orderId);
-    return new Observable<Order | null>(subscriber => {
+    const stream = new Observable<Order | null>(subscriber => {
       const controller = new AbortController();
       const token = this.tokenStore.get();
       if (!token) {
@@ -173,7 +215,6 @@ export class RestOrdersService extends OrdersService {
 
       const readStream = async (): Promise<void> => {
         let delay = 1000;
-        let lastEventStatus: OrderStatus | undefined;
         while (!controller.signal.aborted && !subscriber.closed) {
           try {
             const response = await fetch(`${this.baseUrl}/${id}/eventos`, {
@@ -204,10 +245,6 @@ export class RestOrdersService extends OrdersService {
                 const order = this.toOrder(dto);
                 this.mergeOrder(order);
                 subscriber.next(order);
-                if (lastEventStatus && lastEventStatus !== order.status) {
-                  this.notifyStatusChange(order);
-                }
-                lastEventStatus = order.status;
               }
             }
             await reader.cancel().catch(() => undefined);
@@ -222,11 +259,14 @@ export class RestOrdersService extends OrdersService {
 
       void readStream();
       return () => controller.abort();
-    });
+    }).pipe(shareReplay({ bufferSize: 1, refCount: true }));
+    this.orderEventStreams.set(orderId, stream);
+    return stream;
   }
 
   private notifyStatusChange(order: Order): void {
     const messages: Partial<Record<OrderStatus, { title: string; body: string }>> = {
+      received: { title: 'Pedido confirmado', body: `Seu pedido #${order.id} foi recebido.` },
       preparing: { title: 'Pedido em preparo', body: `Seu pedido #${order.id} está sendo preparado.` },
       ready: { title: 'Pedido pronto', body: `Seu pedido #${order.id} está pronto para entrega.` },
       delivering: { title: 'Pedido a caminho', body: `Seu pedido #${order.id} saiu para entrega.` },
@@ -341,5 +381,53 @@ export class RestOrdersService extends OrdersService {
       order,
       ...orders.filter(existing => existing.id !== order.id)
     ]);
+  }
+
+  private syncOrderEventSubscriptions(orders: Order[]): void {
+    for (const order of orders) {
+      const previousStatus = this.lastEventStatuses.get(order.id);
+      if (previousStatus && previousStatus !== order.status) {
+        this.notifyStatusChange(order);
+      }
+      this.lastEventStatuses.set(order.id, order.status);
+    }
+
+    const activeOrders = orders.filter(order => order.status !== 'delivered');
+    const activeIds = new Set(activeOrders.map(order => order.id));
+
+    for (const [orderId, subscription] of this.orderEventSubscriptions) {
+      if (!activeIds.has(orderId)) {
+        subscription.unsubscribe();
+        this.orderEventSubscriptions.delete(orderId);
+        this.orderEventStreams.delete(orderId);
+      }
+    }
+    for (const orderId of this.lastEventStatuses.keys()) {
+      if (!activeIds.has(orderId)) this.lastEventStatuses.delete(orderId);
+    }
+
+    for (const order of activeOrders) {
+      if (this.orderEventSubscriptions.has(order.id)) continue;
+
+      const subscription = this.subscribeToOrder(order.id).subscribe({
+        next: updatedOrder => {
+          if (!updatedOrder) return;
+          const previousStatus = this.lastEventStatuses.get(updatedOrder.id);
+          if (previousStatus && previousStatus !== updatedOrder.status) {
+            this.notifyStatusChange(updatedOrder);
+          }
+          this.lastEventStatuses.set(updatedOrder.id, updatedOrder.status);
+        },
+        error: error => console.error(`Não foi possível acompanhar o pedido #${order.id}:`, error)
+      });
+      this.orderEventSubscriptions.set(order.id, subscription);
+    }
+  }
+
+  private clearOrderEventSubscriptions(): void {
+    this.orderEventSubscriptions.forEach(subscription => subscription.unsubscribe());
+    this.orderEventSubscriptions.clear();
+    this.orderEventStreams.clear();
+    this.lastEventStatuses.clear();
   }
 }

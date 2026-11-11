@@ -49,12 +49,6 @@ import { AllergenIconComponent } from '../ui/allergen-icon.component';
                 </svg>
                 <span>{{ product().prepTime }} min</span>
               </div>
-              <div class="flex items-center gap-1.5 text-accent text-sm font-bold">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: var(--accent, #F4A261);">
-                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                </svg>
-                <span>4.9</span>
-              </div>
             </div>
 
             <!-- Allergens in Modal -->
@@ -143,12 +137,11 @@ import { AllergenIconComponent } from '../ui/allergen-icon.component';
 
             <button 
               (click)="handleAdd()"
-              [disabled]="adding()"
               class="flex-1 h-14 rounded-2xl flex items-center justify-center gap-3 px-6 transition-all border-none cursor-pointer"
               style="background: var(--primary); color: white; font-weight: 700; font-size: 16px; box-shadow: 0 10px 20px -10px var(--primary)"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-              {{ adding() ? 'Adicionando...' : 'Adicionar • R$ ' + (product().price * qty).toFixed(2) }}
+              {{ 'Adicionar • R$ ' + (product().price * qty).toFixed(2) }}
             </button>
           </div>
         </div>
@@ -165,7 +158,6 @@ export class ProductModalComponent {
 
   quantity = signal(1);
   qty = 1;
-  adding = signal(false);
 
   // Combo states
   selections = signal<Record<string, string>>({});
@@ -234,14 +226,13 @@ export class ProductModalComponent {
   handleAdd() {
     if (this.product().isCombo) {
       const prod = this.product();
-      const allSelected = prod.comboSlots?.every(slot => this.selections()[slot.id]);
+      const allSelected = !!prod.comboSlots?.length
+        && prod.comboSlots.every(slot => slot.products.length > 0 && this.selections()[slot.id]);
       if (!allSelected) {
-        alert("Por favor, selecione todos os itens do combo.");
+        alert('Este combo não possui opções configuradas ou faltam itens selecionados.');
         return;
       }
     }
-
-    this.adding.set(true);
 
     const subItems = this.product().isCombo ? this.product().comboSlots?.map(slot => {
       const selectedId = this.selections()[slot.id];
@@ -253,14 +244,10 @@ export class ProductModalComponent {
       };
     }) : undefined;
 
-    setTimeout(() => {
-      this.add.emit({
-        product: this.product(),
-        quantity: this.qty,
-        subItems: subItems
-      });
-      this.adding.set(false);
-    }, 400);
+    this.add.emit({
+      product: this.product(),
+      quantity: this.qty,
+      subItems
+    });
   }
 }
-

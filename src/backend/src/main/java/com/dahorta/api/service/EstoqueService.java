@@ -66,14 +66,16 @@ public class EstoqueService {
     public InsumoResponseDTO criar(InsumoRequestDTO request) {
         var insumo = insumoRepository.save(new InsumoEstoque(
                 request.nome().trim(), request.unidade().trim(),
-                request.quantidadeInicial(), request.quantidadeMinima()));
+                request.quantidadeInicial(), request.quantidadeMinima(),
+                request.categoria(), request.observacoes()));
         return paraResposta(insumo);
     }
 
     @Transactional
     public InsumoResponseDTO atualizar(Long id, InsumoRequestDTO request, Authentication authentication) {
         InsumoEstoque insumo = carregarComBloqueio(id);
-        insumo.atualizar(request.nome().trim(), request.unidade().trim(), request.quantidadeMinima());
+        insumo.atualizar(request.nome().trim(), request.unidade().trim(), request.quantidadeMinima(),
+                request.categoria(), request.observacoes());
         BigDecimal diferenca = request.quantidadeInicial().subtract(insumo.getQuantidadeAtual());
         if (diferenca.signum() != 0) {
             registrarMovimentacao(insumo, usuarioAtual(authentication), null, TipoMovimentacaoEstoque.AJUSTE,
@@ -146,6 +148,7 @@ public class EstoqueService {
 
     private InsumoResponseDTO paraResposta(InsumoEstoque insumo) {
         return new InsumoResponseDTO(insumo.getId(), insumo.getNome(), insumo.getUnidade(),
-                insumo.getQuantidadeAtual(), insumo.getQuantidadeMinima(), insumo.isAtivo());
+                insumo.getQuantidadeAtual(), insumo.getQuantidadeMinima(), insumo.isAtivo(),
+                insumo.getCategoria(), insumo.getObservacoes());
     }
 }

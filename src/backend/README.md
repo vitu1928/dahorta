@@ -42,6 +42,9 @@ docker compose --env-file ../../.env.codespace exec -T mysql \
   sh -c 'exec mysql -uroot -p"$MYSQL_ROOT_PASSWORD"' < data/demo-seed.sql
 ```
 
+O atalho `npm start` na raiz aplica essa carga automaticamente depois que a API
+cria o schema e antes de iniciar o Angular. A carga é segura para reaplicar.
+
 A carga não altera nem recria o cardápio: associa fichas técnicas estimadas aos
 22 produtos atuais. Ela adiciona 65 insumos, 3 fornecedores fictícios e 585
 históricos de preço (65 insumos × 3 fornecedores × 3 datas). Também registra
@@ -52,6 +55,8 @@ Quantidades e preços são sintéticos; os preços representam a unidade cadastr
 (kg, litro ou unidade), não uma cotação real. O SQL pode ser reaplicado sem
 apagar dados nem duplicar as linhas demonstrativas. Não use esses valores como
 ficha técnica, estoque ou custo real de produção.
+As três datas do histórico de preços são relativas ao dia em que a carga roda,
+para que a demonstração não apresente datas futuras ou antigas fixas.
 
 Para parar o banco, execute `docker compose down` (os dados permanecem no
 volume). `docker compose down -v` também remove o volume e todos os dados.
@@ -89,11 +94,11 @@ nem registrados como providers ativos.
 | Login, cadastro e perfis | API local, JWT e contas MySQL; inicialização opcional de ADMIN, COZINHA e MOTOBOY pelo `.env.codespace`. | Login social ainda não está disponível na API local. |
 | Pedidos e checkout | API local e MySQL; estoque, cupom, totais e pedido são processados no backend. O acompanhamento de pedido usa SSE autenticado. | A lista geral de pedidos ainda atualiza por polling de 5 s. |
 | Cozinha e motoboy | A equipe e o estoque usam a API local; estados de pedido passam pela API local. | Rastreamento/localização é volátil em memória no backend e não persiste. Notificações são do navegador em primeiro plano; Web Push em segundo plano requer service worker e VAPID, ainda não configurados. |
-| Insumos, movimentações e fichas técnicas | MySQL e API local; o painel administrativo lê/escreve pela API. | Dados existentes no Firestore não foram importados automaticamente; o seed é fictício. |
+| Insumos, movimentações e fichas técnicas | MySQL e API local; o painel administrativo lê/escreve pela API. Categoria e observações do insumo também são persistidas. | Dados existentes no Firestore não foram importados automaticamente; o seed é fictício. |
 | Fornecedores, compras e preços | API local e MySQL; o painel `/owner/financeiro` registra recebimentos com vários insumos e cada compra atualiza estoque, movimentações e preços. | Dados legados do Firestore não foram importados. |
 | Despesas | CRUD administrativo na API local e persistência MySQL; cadastro e listagem no painel `/owner/financeiro`. | A edição direta de despesa ainda é feita pela API, não pela tela. |
-| Cardápio público e categorias | Catálogo de demonstração e CRUD de produtos pela API local; categorias derivadas dos produtos disponíveis. | A API ainda não persiste campos extras não suportados pelo modelo, como alérgenos e tempo de preparo. |
-| Configurações do restaurante | API local para prato do dia e informações adicionais do restaurante; estado da loja permanece local. | O formulário do prato do dia ainda depende de IDs numéricos de produto. |
+| Cardápio público e categorias | Catálogo de demonstração e CRUD de produtos pela API local; categorias derivadas dos produtos disponíveis; combos, opções, tempo de preparo e alérgenos persistidos pela API. | Produtos e preços do seed são demonstrativos, não dados comerciais reais. |
+| Configurações do restaurante | API local para prato do dia e informações do restaurante; validade do histórico de preços fica persistida junto às configurações. O estado da loja também é salvo pela API. | O formulário do prato do dia ainda depende de IDs numéricos de produto. |
 | Avaliações | API e tabela MySQL; só permite avaliar pedido entregue do próprio cliente, uma vez por pedido. | A listagem administrativa de avaliações não tem interface integrada. |
 | Endereços e carrinho | Guardados no `localStorage` do navegador. | Não são dados do Firebase nem do MySQL; ficam neste dispositivo. |
 | Notificações e relatórios | O browser pode exibir notificações locais; relatórios combinam dados disponíveis no frontend. | Não há envio Web Push centralizado. |
@@ -134,6 +139,8 @@ não consomem estoque.
 ## Outros módulos
 
 - `POST /api/v1/auth/register` e `POST /api/v1/auth/login`: cadastro e autenticação.
+- `GET/POST /api/v1/enderecos` e `PUT/DELETE /api/v1/enderecos/{id}`: CRUD de
+  endereços salvos, restrito ao cliente autenticado e isolado por usuário.
 - `/api/v1/usuarios/me`: consultar/editar perfil e alterar senha; ao editar e-mail,
   a resposta inclui um novo JWT.
 - `/api/v1/admin/equipe`: CRUD de contas `COZINHA` e `MOTOBOY`.

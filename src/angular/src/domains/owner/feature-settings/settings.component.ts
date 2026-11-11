@@ -257,6 +257,7 @@ export class SettingsComponent {
     minOrder: 20.00,
     instagram: "@dahorta",
     website: "dahorta.com",
+    priceValidityDays: 60,
   };
 
   schedule: Record<string, Schedule> = {
@@ -289,8 +290,13 @@ export class SettingsComponent {
   }
 
   handleSave() {
-    this.ownerService.pricePeriodDays.set(this.selectedPeriod());
-    this.ownerService.updateRestaurantInfo({ ...this.restaurantInfo });
+    const info = {
+      ...this.restaurantInfo,
+      priceValidityDays: this.selectedPeriod()
+    };
+    this.restaurantInfo = info;
+    this.ownerService.pricePeriodDays.set(info.priceValidityDays);
+    this.ownerService.updateRestaurantInfo(info);
     this.saved.set(true);
     setTimeout(() => this.saved.set(false), 2000);
   }

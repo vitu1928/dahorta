@@ -163,11 +163,6 @@ export const ALLERGEN_TYPES = [
   'Glúten', 'Soja', 'Nozes', 'Ovo', 'Peixe', 'Crustáceos', 'Leite'
 ] as const;
 
-export const getAllergensByProductId = (productId: string): string[] => {
-  // Será implementado com dados reais ou mock
-  return [];
-};
-
 export interface Insumo {
   id: string;
   name: string;
@@ -215,6 +210,7 @@ export interface RestaurantInfo {
   minOrder: number;
   instagram: string;
   website: string;
+  priceValidityDays: number;
 }
 
 export type StockItem = Insumo;

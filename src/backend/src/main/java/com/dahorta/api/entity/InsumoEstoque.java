@@ -33,6 +33,12 @@ public class InsumoEstoque {
     @Column(nullable = false)
     private boolean ativo = true;
 
+    @Column(length = 80)
+    private String categoria;
+
+    @Column(length = 1000)
+    private String observacoes;
+
     @Version
     private Long versao;
 
@@ -40,16 +46,26 @@ public class InsumoEstoque {
     }
 
     public InsumoEstoque(String nome, String unidade, BigDecimal quantidadeAtual, BigDecimal quantidadeMinima) {
+        this(nome, unidade, quantidadeAtual, quantidadeMinima, null, null);
+    }
+
+    public InsumoEstoque(String nome, String unidade, BigDecimal quantidadeAtual, BigDecimal quantidadeMinima,
+                         String categoria, String observacoes) {
         this.nome = nome;
         this.unidade = unidade;
         this.quantidadeAtual = quantidadeAtual;
         this.quantidadeMinima = quantidadeMinima;
+        this.categoria = categoria;
+        this.observacoes = observacoes;
     }
 
-    public void atualizar(String nome, String unidade, BigDecimal quantidadeMinima) {
+    public void atualizar(String nome, String unidade, BigDecimal quantidadeMinima,
+                          String categoria, String observacoes) {
         this.nome = nome;
         this.unidade = unidade;
         this.quantidadeMinima = quantidadeMinima;
+        this.categoria = categoria;
+        this.observacoes = observacoes;
     }
 
     public void definirQuantidade(BigDecimal quantidade) {
@@ -67,4 +83,6 @@ public class InsumoEstoque {
     public BigDecimal getQuantidadeMinima() { return quantidadeMinima; }
     public boolean isAtivo() { return ativo; }
     public Long getVersao() { return versao; }
+    public String getCategoria() { return categoria; }
+    public String getObservacoes() { return observacoes; }
 }

@@ -14,6 +14,15 @@ interface ProdutoApi {
   categoria: string;
   preco: number;
   disponivel: boolean;
+  tempoPreparo: number;
+  alergicos: string[];
+  comboSlots?: {
+    id: string;
+    name: string;
+    type?: 'fixed' | 'selectable';
+    products: string[];
+    allowSwap?: boolean;
+  }[];
 }
 
 @Injectable({ providedIn: 'root' })
@@ -42,7 +51,7 @@ export class RestProductsService extends ProductsService {
       ).subscribe(({ products, categories, plate }) => {
         this.products.set(products.map(product => this.fromApi(product)));
         this.categories.set(categories);
-        this.plateOfDay.set(plate);
+        this.plateOfDay.set(this.fromApiPlateOfDay(plate));
       });
       onCleanup(() => subscription.unsubscribe());
     });
@@ -57,9 +66,22 @@ export class RestProductsService extends ProductsService {
       price: product.preco,
       category: product.categoria ?? '',
       available: product.disponivel,
-      prepTime: 0,
-      allergens: []
+      prepTime: product.tempoPreparo,
+      isCombo: !!product.comboSlots?.length || product.categoria === 'combos',
+      comboSlots: product.comboSlots?.map(slot => ({
+        ...slot,
+        type: slot.type ?? 'selectable'
+      })),
+      allergens: product.alergicos ?? []
     };
+  }
+
+  private fromApiPlateOfDay(config: Record<number, string>): Record<number, string> {
+    const normalized: Record<number, string> = {};
+    for (const [apiDay, productId] of Object.entries(config)) {
+      normalized[Number(apiDay) % 7] = productId;
+    }
+    return normalized;
   }
 
   override getByCategory(category: string): Signal<Product[]> {
@@ -121,7 +143,13 @@ export class RestProductsService extends ProductsService {
       imagem: product.image,
       categoria: product.category,
       preco: product.price,
-      disponivel: product.available
+      disponivel: product.available,
+      tempoPreparo: product.prepTime,
+      alergicos: product.allergens ?? [],
+      comboSlots: product.comboSlots?.map(slot => ({
+        ...slot,
+        type: slot.type ?? 'selectable'
+      }))
     };
   }
 

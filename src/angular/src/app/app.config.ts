@@ -17,7 +17,7 @@ import { RestAuthService } from '../domains/auth/data-access/rest-auth.service';
 import { RestProductsService } from '../domains/customer/data-access/rest-products.service';
 import { RestOrdersService } from '../domains/customer/data-access/rest-orders.service';
 import { RestEmployeeService } from '../domains/employee/data-access/rest-employee.service';
-import { LocalAddressService } from '../domains/customer/data-access/local-address.service';
+import { RestAddressService } from '../domains/customer/data-access/rest-address.service';
 import { RestOwnerService } from '../domains/owner/data-access/rest-owner.service';
 import { RestReviewsService } from '../domains/customer/data-access/rest-reviews.service';
 
@@ -36,7 +36,7 @@ export const appConfig: ApplicationConfig = {
     { provide: ProductsService, useClass: RestProductsService },
     { provide: OrdersService, useClass: RestOrdersService },
     { provide: EmployeeService, useClass: RestEmployeeService },
-    { provide: AddressService, useClass: LocalAddressService },
+    { provide: AddressService, useClass: RestAddressService },
     { provide: OwnerService, useClass: RestOwnerService },
     { provide: ReviewsService, useClass: RestReviewsService },
     { provide: NotificationService, useClass: BrowserNotificationService }

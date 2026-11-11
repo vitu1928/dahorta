@@ -30,13 +30,15 @@ if [[ ! -r "$ENV_FILE" ]]; then
   exit 1
 fi
 
-if [[ ! -d "$ANGULAR/node_modules" ]]; then
-  echo "Dependências Angular não encontradas. Execute 'npm install' em src/angular e tente novamente." >&2
-  exit 1
-fi
+for command_name in curl java mvn node npm docker; do
+  if ! command -v "$command_name" >/dev/null 2>&1; then
+    echo "Pré-requisito ausente: '$command_name'. Instale-o no Codespace e tente novamente." >&2
+    exit 1
+  fi
+done
 
-if ! command -v docker >/dev/null 2>&1 || ! docker compose version >/dev/null 2>&1; then
-  echo "Docker e Docker Compose precisam estar disponíveis neste Codespace." >&2
+if ! docker compose version >/dev/null 2>&1; then
+  echo "Docker Compose precisa estar disponível neste Codespace." >&2
   exit 1
 fi
 
@@ -44,6 +46,11 @@ set -a
 # shellcheck disable=SC1090
 source "$ENV_FILE"
 set +a
+
+if [[ ! -x "$ANGULAR/node_modules/.bin/ng" ]]; then
+  echo "Instalando dependências Angular..."
+  npm --prefix "$ANGULAR" install --legacy-peer-deps --no-package-lock
+fi
 
 echo "Iniciando MySQL..."
 docker compose --env-file "$ENV_FILE" -f "$BACKEND/compose.yaml" up -d --wait mysql
@@ -73,6 +80,10 @@ if [[ "$api_ready" != true ]]; then
   echo "A API não respondeu em http://127.0.0.1:8080 após 6 minutos." >&2
   exit 1
 fi
+
+echo "Aplicando dados demonstrativos..."
+docker compose --env-file "$ENV_FILE" -f "$BACKEND/compose.yaml" exec -T mysql \
+  sh -c 'exec mysql -uroot -p"$MYSQL_ROOT_PASSWORD"' < "$BACKEND/data/demo-seed.sql"
 
 echo "Iniciando Angular..."
 (

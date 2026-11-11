@@ -1,5 +1,6 @@
 package com.dahorta.api.service;
 
+import com.dahorta.api.dto.ComboSlotDTO;
 import com.dahorta.api.dto.IngredienteProdutoResponseDTO;
 import com.dahorta.api.dto.ProdutoRequestDTO;
 import com.dahorta.api.dto.ProdutoResponseDTO;
@@ -8,6 +9,9 @@ import com.dahorta.api.entity.InsumoEstoque;
 import com.dahorta.api.entity.Produto;
 import com.dahorta.api.repository.InsumoEstoqueRepository;
 import com.dahorta.api.repository.ProdutoRepository;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,10 +25,17 @@ public class ProdutoService {
 
     private final ProdutoRepository produtoRepository;
     private final InsumoEstoqueRepository insumoRepository;
+    private final ObjectMapper objectMapper;
 
-    public ProdutoService(ProdutoRepository produtoRepository, InsumoEstoqueRepository insumoRepository) {
+    public ProdutoService(ProdutoRepository produtoRepository, InsumoEstoqueRepository insumoRepository,
+                          ObjectMapper objectMapper) {
         this.produtoRepository = produtoRepository;
         this.insumoRepository = insumoRepository;
+        this.objectMapper = objectMapper;
+    }
+
+    private int tempoPreparo(ProdutoRequestDTO request) {
+        return request.tempoPreparo() == null ? 15 : request.tempoPreparo();
     }
 
     @Transactional(readOnly = true)
@@ -58,7 +69,9 @@ public class ProdutoService {
     @Transactional
     public ProdutoResponseDTO criar(ProdutoRequestDTO request) {
         Produto produto = new Produto(request.nome().trim(), request.descricao(), request.imagem(),
-                request.categoria(), request.preco(), request.disponivel(), carregarIngredientes(request));
+                request.categoria(), request.preco(), request.disponivel(), carregarIngredientes(request),
+                serializarComboSlots(request.comboSlots()), tempoPreparo(request),
+                serializarAlergicos(request.alergicos()));
         return paraResposta(produtoRepository.save(produto), true);
     }
 
@@ -67,7 +80,9 @@ public class ProdutoService {
         Produto produto = produtoRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Produto não encontrado."));
         produto.atualizar(request.nome().trim(), request.descricao(), request.imagem(), request.categoria(),
-                request.preco(), request.disponivel(), carregarIngredientes(request));
+                request.preco(), request.disponivel(), carregarIngredientes(request),
+                serializarComboSlots(request.comboSlots()), tempoPreparo(request),
+                serializarAlergicos(request.alergicos()));
         return paraResposta(produto, true);
     }
 
@@ -111,6 +126,52 @@ public class ProdutoService {
                 : List.of();
         return new ProdutoResponseDTO(produto.getId(), produto.getNome(), produto.getDescricao(),
                 produto.getImagem(), produto.getCategoria(), produto.getPreco(),
-                produto.isDisponivel(), ingredientes);
+                produto.isDisponivel(), ingredientes, desserializarComboSlots(produto.getComboSlotsJson()),
+                produto.getTempoPreparo() > 0 ? produto.getTempoPreparo() : 15,
+                desserializarAlergicos(produto.getAlergicosJson()));
+    }
+
+    private String serializarAlergicos(List<String> alergicos) {
+        if (alergicos == null || alergicos.isEmpty()) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(alergicos);
+        } catch (JsonProcessingException exception) {
+            throw new IllegalStateException("Não foi possível serializar os alergênicos do produto.", exception);
+        }
+    }
+
+    private List<String> desserializarAlergicos(String alergicosJson) {
+        if (alergicosJson == null || alergicosJson.isBlank()) {
+            return List.of();
+        }
+        try {
+            return objectMapper.readValue(alergicosJson, new TypeReference<List<String>>() {});
+        } catch (JsonProcessingException exception) {
+            throw new IllegalStateException("Não foi possível ler os alergênicos salvos do produto.", exception);
+        }
+    }
+
+    private String serializarComboSlots(List<ComboSlotDTO> comboSlots) {
+        if (comboSlots == null || comboSlots.isEmpty()) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(comboSlots);
+        } catch (JsonProcessingException exception) {
+            throw new IllegalStateException("Não foi possível serializar os slots do combo.", exception);
+        }
+    }
+
+    private List<ComboSlotDTO> desserializarComboSlots(String comboSlotsJson) {
+        if (comboSlotsJson == null || comboSlotsJson.isBlank()) {
+            return List.of();
+        }
+        try {
+            return objectMapper.readValue(comboSlotsJson, new TypeReference<List<ComboSlotDTO>>() {});
+        } catch (JsonProcessingException exception) {
+            throw new IllegalStateException("Não foi possível ler os slots do combo salvo.", exception);
+        }
     }
 }

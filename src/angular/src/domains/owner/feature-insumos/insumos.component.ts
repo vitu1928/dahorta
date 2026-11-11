@@ -5,7 +5,7 @@ import { OwnerService } from '../data-access/owner.service';
 import { Insumo, InsumoUnit, PriceRecord, Supplier } from '../data-access/owner.models';
 
 const UNITS: InsumoUnit[] = ["g", "kg", "ml", "l", "un", "fatia", "folha", "colher", "porção"];
-const CATEGORIES = ["Carnes", "Panificação", "Laticínios", "Hortifruti", "Congelados", "Molhos", "Bebidas", "Outros"];
+const CATEGORIES = ["Carnes", "Panificação", "Laticínios", "Hortifruti", "Congelados", "Molhos", "Bebidas", "Outros", "Não classificado"];
 
 const supplierColors = ["#d4745f", "#3b82f6", "#22c55e", "#a855f7"];
 
@@ -62,7 +62,7 @@ const supplierColors = ["#d4745f", "#3b82f6", "#22c55e", "#a855f7"];
                   [style.background]="getCategoryBgColor(insumo.category)" 
                   [style.color]="getCategoryColor(insumo.category)"
                 >
-                  {{ insumo.category ?? 'Outros' }}
+                  {{ insumo.category || 'Não classificado' }}
                 </span>
                 <h4 class="text-xs font-bold text-foreground mt-1.5 truncate leading-tight">{{ insumo.name }}</h4>
                 <p class="text-[10px] text-muted-foreground mt-0.5">Unidade: {{ insumo.unit }}</p>
@@ -670,7 +670,7 @@ export class InsumosComponent {
     this.insumoFormState = {
       name: insumo.name,
       unit: insumo.unit as InsumoUnit,
-      category: insumo.category ?? 'Outros',
+      category: insumo.category || 'Não classificado',
       observations: insumo.observations ?? ''
     };
     this.showFormModal.set(true);

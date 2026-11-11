@@ -465,7 +465,7 @@ export class CheckoutComponent {
     number: '',
     complement: '',
     neighborhood: '',
-    city: 'São Paulo',
+    city: '',
     zipCode: '',
   };
   paymentMethod = signal<PaymentMethod>('pix');
@@ -512,7 +512,7 @@ export class CheckoutComponent {
         number: '',
         complement: '',
         neighborhood: '',
-        city: 'São Paulo',
+        city: '',
         zipCode: '',
       };
     } else {
@@ -590,7 +590,7 @@ export class CheckoutComponent {
 
   goToPayment() {
     this.error.set('');
-    if (!this.address.street || !this.address.number || !this.address.neighborhood) {
+    if (!this.address.street || !this.address.number || !this.address.neighborhood || !this.address.city) {
       this.error.set('Preencha os campos obrigatórios (*).');
       return;
     }
@@ -607,7 +607,7 @@ export class CheckoutComponent {
 
   async handlePlaceOrder() {
     this.error.set('');
-    if (!this.address.street || !this.address.number || !this.address.neighborhood) {
+    if (!this.address.street || !this.address.number || !this.address.neighborhood || !this.address.city) {
       this.error.set('Preencha o endereço completo.');
       this.step.set('address');
       return;
@@ -618,7 +618,7 @@ export class CheckoutComponent {
     try {
       if (this.selectedAddressId() === 'custom' && this.saveNewAddress()) {
         const label = this.customAddressLabel.trim() || `Endereço #${this.savedAddresses().length + 1}`;
-        const added = this.addressService.addAddress({
+        const added = await this.addressService.addAddress({
           label,
           street: this.address.street,
           number: this.address.number,

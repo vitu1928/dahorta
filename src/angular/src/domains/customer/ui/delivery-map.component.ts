@@ -18,8 +18,10 @@ import { Address } from '../data-access/customer.models';
         style="border-bottom: 1px solid var(--border); background: var(--card);"
       >
         <div class="flex items-center gap-2">
-          <span class="h-2 w-2 animate-pulse rounded-full bg-[#22c55e]"></span>
-          <span class="text-[13px] font-semibold text-foreground">Rastreamento ao Vivo</span>
+          <span class="h-2 w-2 rounded-full" [class.animate-pulse]="freshMotoboyLocation()" [style.background]="freshMotoboyLocation() ? '#22c55e' : '#9ca3af'"></span>
+          <span class="text-[13px] font-semibold text-foreground">
+            {{ freshMotoboyLocation() ? 'Rastreamento ao Vivo' : 'Aguardando localização' }}
+          </span>
         </div>
         <div
           class="flex items-center gap-1.5 rounded-lg px-2.5 py-1"
@@ -31,12 +33,24 @@ import { Address } from '../data-access/customer.models';
             <circle cx="15" cy="5" r="1" />
             <path d="M12 17.5V14l-3-3 4-3 2 3h2" />
           </svg>
-          <span class="text-xs font-semibold text-primary">Tempo Real</span>
+          <span class="text-xs font-semibold text-primary">{{ freshMotoboyLocation() ? 'Tempo Real' : 'Sem sinal GPS' }}</span>
         </div>
       </header>
 
       <div class="relative bg-muted h-[300px]">
         <div #mapContainer class="w-full h-full"></div>
+        <p
+          *ngIf="address() && !customerLocationAvailable()"
+          class="absolute left-3 right-3 top-3 rounded-lg bg-white/95 px-3 py-2 text-center text-xs text-muted-foreground shadow"
+        >
+          Endereço não localizado; o mapa não exibirá um destino aproximado.
+        </p>
+        <p
+          *ngIf="freshMotoboyLocation() && customerLocationAvailable()"
+          class="absolute bottom-2 left-2 rounded bg-white/90 px-2 py-1 text-[10px] text-muted-foreground"
+        >
+          Linha direta entre as posições, não é uma rota pelas ruas.
+        </p>
       </div>
 
       <footer
@@ -48,7 +62,7 @@ import { Address } from '../data-access/customer.models';
             🛵
           </div>
           <div>
-            <p class="text-xs font-semibold text-foreground">{{ motoboyName() }}</p>
+            <p class="text-xs font-semibold text-foreground">{{ motoboyName() || 'Entregador' }}</p>
             <p class="text-[11px] text-muted-foreground">Motoboy</p>
           </div>
         </div>
@@ -108,7 +122,7 @@ import { Address } from '../data-access/customer.models';
 export class DeliveryMapComponent implements AfterViewInit, OnDestroy, OnInit {
   @ViewChild('mapContainer', { static: true }) mapContainer!: ElementRef;
 
-  readonly motoboyName = input('Diego');
+  readonly motoboyName = input<string | undefined>();
   readonly customerAddress = input<string | undefined>();
   readonly address = input<Address | undefined>();
   readonly motoboyLocation = input<{ lat: number; lng: number } | null>(null);
@@ -124,7 +138,7 @@ export class DeliveryMapComponent implements AfterViewInit, OnDestroy, OnInit {
     return Math.floor((this._now() - ts) / 1000);
   });
 
-  private readonly freshMotoboyLocation = computed(() => {
+  readonly freshMotoboyLocation = computed(() => {
     const location = this.motoboyLocation();
     const updatedAt = this.lastLocationUpdate();
     if (!location || updatedAt === null || this._now() - updatedAt > 120_000) {
@@ -162,72 +176,43 @@ export class DeliveryMapComponent implements AfterViewInit, OnDestroy, OnInit {
   });
 
   private map?: L.Map;
-  private restaurantMarker?: L.Marker;
   private customerMarker?: L.Marker;
   private motoboyMarker?: L.Marker;
   private routeLine?: L.Polyline;
-
-  // São Paulo — coordenadas do restaurante DaHorta
-  private readonly RESTAURANT_LAT = -23.5615;
-  private readonly RESTAURANT_LNG = -46.6559;
-  private readonly RESTAURANT_COORDS: L.LatLngExpression = [this.RESTAURANT_LAT, this.RESTAURANT_LNG];
-
-  // Writable signal updated when address changes
-  private readonly resolvedCustomerCoords = signal<L.LatLngExpression>([-23.5505, -46.6333]);
-
-  /**
-   * Posicionamento deterministico: converte o endereço em coordenadas
-   * dentro de um raio de ~1.2km em relação ao restaurante.
-   * Garante consistência (mesmo endereço = mesmo ponto) sem API externa.
-   */
-  private coordsFromAddress(addr: Address): L.LatLngExpression {
-    const str = `${(addr.street || '').trim().toLowerCase()} ${(addr.number || '').trim()} ${(addr.neighborhood || '').trim()}`;
-    let hash = 5381;
-    for (let i = 0; i < str.length; i++) {
-      hash = (hash * 33) ^ str.charCodeAt(i);
-      hash = hash & hash; // keep 32-bit
-    }
-    // Map hash to offsets: -0.012..+0.012 degrees (~1.3 km)
-    const h1 = Math.abs(hash);
-    const h2 = Math.abs(hash >> 8);
-    // Use circular distribution to avoid clustering in one quadrant
-    const angle = ((h1 % 360) * Math.PI) / 180;
-    const radius = 0.004 + ((h2 % 80) / 80) * 0.010; // 0.004..0.014 degrees
-    const latOffset = Math.sin(angle) * radius;
-    const lngOffset = Math.cos(angle) * radius;
-    return [this.RESTAURANT_LAT + latOffset, this.RESTAURANT_LNG + lngOffset];
-  }
+  private readonly resolvedCustomerCoords = signal<L.LatLngExpression | null>(null);
+  readonly customerLocationAvailable = computed(() => this.resolvedCustomerCoords() !== null);
+  private geocodeRequestId = 0;
+  private readonly customerIcon = L.divIcon({
+    html: `<div style="background-color:#22c55e;color:white;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;border:2px solid white;box-shadow:0 2px 5px rgba(0,0,0,0.3);">🏠</div>`,
+    className: '',
+    iconSize: [32, 32],
+    iconAnchor: [16, 16]
+  });
 
   private async geocodeAddress(addr: Address) {
+    const requestId = ++this.geocodeRequestId;
     const query = `${addr.street}, ${addr.number}, ${addr.neighborhood}, ${addr.city}, Brasil`;
     try {
       const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`);
+      if (!response.ok) throw new Error(`Geocoding request failed with status ${response.status}`);
       const data = await response.json();
+      if (requestId !== this.geocodeRequestId) return;
       if (data && data.length > 0) {
         const lat = parseFloat(data[0].lat);
         const lon = parseFloat(data[0].lon);
+        if (!Number.isFinite(lat) || lat < -90 || lat > 90 || !Number.isFinite(lon) || lon < -180 || lon > 180) {
+          throw new Error('Geocoding returned invalid coordinates.');
+        }
         const coords: L.LatLngExpression = [lat, lon];
-        this.resolvedCustomerCoords.set(coords);
-        if (this.customerMarker && this.map) {
-          this.customerMarker.setLatLng(coords);
-          this.updateRoute();
-        }
+        this.setCustomerCoords(coords);
       } else {
-        const coords = this.coordsFromAddress(addr);
-        this.resolvedCustomerCoords.set(coords);
-        if (this.customerMarker && this.map) {
-          this.customerMarker.setLatLng(coords);
-          this.updateRoute();
-        }
+        console.warn('Não foi possível localizar o endereço de entrega no mapa.');
+        this.setCustomerCoords(null);
       }
     } catch (error) {
+      if (requestId !== this.geocodeRequestId) return;
       console.error('Geocoding error:', error);
-      const coords = this.coordsFromAddress(addr);
-      this.resolvedCustomerCoords.set(coords);
-      if (this.customerMarker && this.map) {
-        this.customerMarker.setLatLng(coords);
-        this.updateRoute();
-      }
+      this.setCustomerCoords(null);
     }
   }
 
@@ -244,8 +229,8 @@ export class DeliveryMapComponent implements AfterViewInit, OnDestroy, OnInit {
       if (addr) {
         this.geocodeAddress(addr);
       } else {
-        // No address: put customer slightly south-east of restaurant
-        this.resolvedCustomerCoords.set([this.RESTAURANT_LAT - 0.008, this.RESTAURANT_LNG + 0.008]);
+        this.geocodeRequestId++;
+        this.setCustomerCoords(null);
       }
     });
   }
@@ -277,7 +262,12 @@ export class DeliveryMapComponent implements AfterViewInit, OnDestroy, OnInit {
       dragging: true,
       touchZoom: true,
       scrollWheelZoom: false
-    }).setView(this.RESTAURANT_COORDS, 14);
+    }).setView(
+      this.freshMotoboyLocation()
+        ? [this.freshMotoboyLocation()!.lat, this.freshMotoboyLocation()!.lng]
+        : [-23.5505, -46.6333],
+      12
+    );
 
     // Load OpenStreetMap tiles
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -285,33 +275,7 @@ export class DeliveryMapComponent implements AfterViewInit, OnDestroy, OnInit {
       attribution: '© OpenStreetMap'
     }).addTo(this.map);
 
-    // Custom CSS/HTML markers for customer
-    const customerIcon = L.divIcon({
-      html: `
-        <div style="
-          background-color: #22c55e;
-          color: white;
-          width: 32px;
-          height: 32px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 16px;
-          border: 2px solid white;
-          box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-        ">🏠</div>
-      `,
-      className: '',
-      iconSize: [32, 32],
-      iconAnchor: [16, 16]
-    });
-
-    const dest = this.resolvedCustomerCoords();
-    this.customerMarker = L.marker(dest, { icon: customerIcon })
-      .bindPopup('<b>Destino da Entrega</b>')
-      .addTo(this.map);
-
+    this.updateCustomerMarker(this.resolvedCustomerCoords());
     this.updateRoute();
 
     // Apply address-based coords if address is already available
@@ -330,13 +294,14 @@ export class DeliveryMapComponent implements AfterViewInit, OnDestroy, OnInit {
     if (!this.map) return;
 
     const loc = this.freshMotoboyLocation();
-    if (!loc) {
+    const destination = this.resolvedCustomerCoords();
+    if (!loc || !destination) {
       this.routeLine?.remove();
       this.routeLine = undefined;
       return;
     }
     const start = [loc.lat, loc.lng] as L.LatLngExpression;
-    const end = this.resolvedCustomerCoords();
+    const end = destination;
 
     if (this.routeLine) {
       this.routeLine.setLatLngs([start, end]);
@@ -352,6 +317,29 @@ export class DeliveryMapComponent implements AfterViewInit, OnDestroy, OnInit {
     // Adjust bounds to keep everything in view
     const bounds = L.latLngBounds([start, end]);
     this.map.fitBounds(bounds, { padding: [40, 40] });
+  }
+
+  private setCustomerCoords(coords: L.LatLngExpression | null) {
+    this.resolvedCustomerCoords.set(coords);
+    this.updateCustomerMarker(coords);
+    this.updateRoute();
+  }
+
+  private updateCustomerMarker(coords: L.LatLngExpression | null) {
+    if (!this.map) return;
+    if (!coords) {
+      this.customerMarker?.remove();
+      this.customerMarker = undefined;
+      return;
+    }
+
+    if (this.customerMarker) {
+      this.customerMarker.setLatLng(coords);
+    } else {
+      this.customerMarker = L.marker(coords, { icon: this.customerIcon })
+        .bindPopup('<b>Destino da Entrega</b>')
+        .addTo(this.map);
+    }
   }
 
   private updateMotoboyPosition(loc: { lat: number; lng: number } | null) {
@@ -405,7 +393,7 @@ export class DeliveryMapComponent implements AfterViewInit, OnDestroy, OnInit {
           .addTo(this.map);
       }
 
-      this.motoboyMarker.bindTooltip(`<b>${this.motoboyName()}</b>`, {
+      this.motoboyMarker.bindTooltip(`<b>${this.motoboyName() || 'Entregador'}</b>`, {
         permanent: true,
         direction: 'top',
         className: 'motoboy-tooltip'

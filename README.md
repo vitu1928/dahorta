@@ -102,15 +102,18 @@ O backend cria o administrador com `OWNER_EMAIL`/`OWNER_PASSWORD` (ou
 npm start
 ```
 
-O comando inicia o MySQL, aguarda a API Spring Boot e depois inicia o Angular.
-Ao ficar pronto, imprime os links de acesso do frontend e da API. Use `Ctrl+C`
-para parar API e Angular; o MySQL permanece em execução e conserva os dados.
+O comando instala as dependências Angular caso necessário, inicia o MySQL,
+aguarda a API Spring Boot, aplica o seed demonstrativo idempotente e inicia o
+Angular. Ao ficar pronto, imprime os links de acesso do frontend e da API.
+Use `Ctrl+C` para parar API e Angular; o MySQL permanece em execução e conserva
+os dados. O Codespace precisa ter Java 17, Maven, Node.js, npm e Docker Compose,
+e o arquivo local `.env.codespace` precisa estar configurado.
 
 **2. Iniciar Angular manualmente** (outro terminal):
 
 ```bash
 cd src/angular
-npm install
+npm install --legacy-peer-deps --no-package-lock
 npm start
 ```
 

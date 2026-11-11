@@ -140,14 +140,19 @@ import { ToastService } from '../../../shared/data-access/toast.service';
                       <input [(ngModel)]="newAddrZip" (ngModelChange)="onCepChange($event)" placeholder="01234-567" class="input-field" />
                     </div>
                   </div>
+                  <div>
+                    <label class="label-text">Cidade *</label>
+                    <input [(ngModel)]="newAddrCity" placeholder="São Paulo" class="input-field" />
+                  </div>
                   
                   <div class="flex gap-2">
                     <button
                       (click)="addAddress()"
+                      [disabled]="addressSaving()"
                       class="flex-1 py-3 rounded-xl font-bold text-xs text-white border-none cursor-pointer transition-all shadow-sm"
                       style="background: var(--primary);"
                     >
-                      {{ editingAddressId() ? 'Atualizar Endereço' : 'Salvar Endereço' }}
+                      {{ addressSaving() ? 'Salvando...' : editingAddressId() ? 'Atualizar Endereço' : 'Salvar Endereço' }}
                     </button>
                     @if (editingAddressId()) {
                       <button
@@ -442,12 +447,14 @@ export class ProfileComponent {
   showNotifications = signal(false);
   editingAddressId = signal<string | null>(null);
   addressError = signal<string>('');
+  addressSaving = signal(false);
 
   newAddrLabel = '';
   newAddrStreet = '';
   newAddrNumber = '';
   newAddrComplement = '';
   newAddrNeighborhood = '';
+  newAddrCity = '';
   newAddrZip = '';
 
   formName = '';
@@ -493,6 +500,7 @@ export class ProfileComponent {
         if (!data.erro) {
           this.newAddrStreet = data.logradouro || '';
           this.newAddrNeighborhood = data.bairro || '';
+          this.newAddrCity = data.localidade || '';
         } else {
           this.addressError.set('CEP não encontrado.');
         }
@@ -529,7 +537,7 @@ export class ProfileComponent {
     }
   }
 
-  addAddress() {
+  async addAddress() {
     this.addressError.set('');
     
     const label = String(this.newAddrLabel || '').trim();
@@ -537,6 +545,7 @@ export class ProfileComponent {
     const number = String(this.newAddrNumber ?? '').trim();
     const complement = String(this.newAddrComplement || '').trim();
     const neighborhood = String(this.newAddrNeighborhood || '').trim();
+    const city = String(this.newAddrCity || '').trim();
     const zip = String(this.newAddrZip || '').trim();
 
     // Validations
@@ -556,6 +565,10 @@ export class ProfileComponent {
       this.addressError.set('O bairro é obrigatório.');
       return;
     }
+    if (!city) {
+      this.addressError.set('A cidade é obrigatória.');
+      return;
+    }
     const cepRegex = /^\d{5}-?\d{3}$/;
     if (zip && !cepRegex.test(zip)) {
       this.addressError.set('O CEP informado é inválido (formato esperado: 00000-000).');
@@ -568,18 +581,27 @@ export class ProfileComponent {
       number,
       complement,
       neighborhood,
-      city: 'São Paulo',
-      zipCode: zip || '00000-000',
+      city,
+      zipCode: zip,
     };
 
-    if (this.editingAddressId()) {
-      this.addressService.updateAddress(this.editingAddressId()!, payload);
-      this.editingAddressId.set(null);
-    } else {
-      this.addressService.addAddress(payload);
+    this.addressSaving.set(true);
+    try {
+      const editingId = this.editingAddressId();
+      if (editingId) {
+        await this.addressService.updateAddress(editingId, payload);
+        this.editingAddressId.set(null);
+      } else {
+        await this.addressService.addAddress(payload);
+      }
+      this.resetAddressForm();
+      this.toastService.success('Endereço salvo com sucesso.');
+    } catch (error) {
+      console.error('Não foi possível salvar o endereço:', error);
+      this.addressError.set('Não foi possível salvar o endereço. Tente novamente.');
+    } finally {
+      this.addressSaving.set(false);
     }
-
-    this.resetAddressForm();
   }
 
   startEditAddress(addr: Address) {
@@ -589,6 +611,7 @@ export class ProfileComponent {
     this.newAddrNumber = addr.number;
     this.newAddrComplement = addr.complement || '';
     this.newAddrNeighborhood = addr.neighborhood;
+    this.newAddrCity = addr.city;
     this.newAddrZip = addr.zipCode;
     this.addressError.set('');
   }
@@ -604,6 +627,7 @@ export class ProfileComponent {
     this.newAddrNumber = '';
     this.newAddrComplement = '';
     this.newAddrNeighborhood = '';
+    this.newAddrCity = '';
     this.newAddrZip = '';
     this.addressError.set('');
   }
@@ -617,6 +641,7 @@ export class ProfileComponent {
         if (!data.erro) {
           this.newAddrStreet = data.logradouro || '';
           this.newAddrNeighborhood = data.bairro || '';
+          this.newAddrCity = data.localidade || '';
         }
       } catch (err) {
         console.error('Erro ao consultar CEP:', err);
@@ -624,11 +649,17 @@ export class ProfileComponent {
     }
   }
 
-  removeAddress(id: string) {
+  async removeAddress(id: string) {
     if (this.editingAddressId() === id) {
       this.cancelEditAddress();
     }
-    this.addressService.removeAddress(id);
+    try {
+      await this.addressService.removeAddress(id);
+      this.toastService.success('Endereço removido.');
+    } catch (error) {
+      console.error('Não foi possível remover o endereço:', error);
+      this.addressError.set('Não foi possível remover o endereço. Tente novamente.');
+    }
   }
 
   getOrderSummary(order: Order): string {

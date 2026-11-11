@@ -17,7 +17,7 @@ export class LocalAddressService extends AddressService {
     });
   }
 
-  override addAddress(address: Omit<Address, 'id'>): Address {
+  override async addAddress(address: Omit<Address, 'id'>): Promise<Address> {
     const user = this.authService.currentUser();
     if (!user) {
       throw new Error('Não é possível adicionar endereço: Usuário não autenticado.');
@@ -30,7 +30,7 @@ export class LocalAddressService extends AddressService {
     return newAddress;
   }
 
-  override removeAddress(id: string): void {
+  override async removeAddress(id: string): Promise<void> {
     const user = this.authService.currentUser();
     if (!user) return;
 
@@ -39,15 +39,18 @@ export class LocalAddressService extends AddressService {
     this.storedAddresses.set(addresses);
   }
 
-  override updateAddress(id: string, address: Omit<Address, 'id'>): void {
+  override async updateAddress(id: string, address: Omit<Address, 'id'>): Promise<Address> {
     const user = this.authService.currentUser();
-    if (!user) return;
+    if (!user) {
+      throw new Error('Não é possível atualizar endereço: Usuário não autenticado.');
+    }
 
     const addresses = this.storedAddresses().map(savedAddress =>
       savedAddress.id === id ? { id, ...address } : savedAddress
     );
     this.persistAddresses(user.id, addresses);
     this.storedAddresses.set(addresses);
+    return addresses.find(savedAddress => savedAddress.id === id)!;
   }
 
   private storageKey(userId: string): string {

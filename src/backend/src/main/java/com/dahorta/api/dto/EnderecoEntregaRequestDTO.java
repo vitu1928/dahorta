@@ -10,6 +10,6 @@ public record EnderecoEntregaRequestDTO(
         @Size(max = 100) String complemento,
         @NotBlank @Size(max = 100) String bairro,
         @NotBlank @Size(max = 100) String cidade,
-        @NotBlank @Size(max = 9) String cep
+        @Size(max = 9) String cep
 ) {
 }

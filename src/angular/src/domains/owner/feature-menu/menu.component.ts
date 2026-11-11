@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ProductsService } from '../../customer/data-access/products.service';
 import { OwnerService } from '../data-access/owner.service';
 import { Product, TechnicalSheet, TechnicalSheetIngredient, InsumoUnit, ComboSlot } from '../data-access/owner.models';
+import { ALLERGEN_TYPES } from '../../customer/data-access/customer.models';
 
 const DAYS_OF_WEEK = [
   { id: 0, name: "Domingo" },
@@ -127,6 +128,15 @@ const DAYS_OF_WEEK = [
                     {{ product.available ? 'Ativo' : 'Pausado' }}
                   </div>
                 </div>
+                <fieldset class="space-y-2">
+                  <legend class="text-xs font-bold text-muted-foreground">Alergênicos</legend>
+                  <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <label *ngFor="let allergen of allergenOptions" class="flex items-center gap-2 text-xs text-foreground">
+                      <input type="checkbox" [checked]="formState.allergens.includes(allergen)" (change)="toggleAllergen(allergen)" />
+                      {{ allergen }}
+                    </label>
+                  </div>
+                </fieldset>
               </div>
 
               <!-- Product Details -->
@@ -314,7 +324,7 @@ const DAYS_OF_WEEK = [
               <div class="grid grid-cols-2 gap-4">
                 <div class="space-y-1">
                   <label class="text-xs font-bold text-muted-foreground">Preparo (minutos)</label>
-                  <input type="number" [(ngModel)]="formState.prepTime" class="w-full px-4 py-2.5 rounded-xl border border-border bg-white text-foreground outline-none focus:border-primary text-sm" />
+                  <input type="number" min="1" max="300" [(ngModel)]="formState.prepTime" class="w-full px-4 py-2.5 rounded-xl border border-border bg-white text-foreground outline-none focus:border-primary text-sm" />
                 </div>
                 <div class="flex items-end h-full">
                   <div class="w-full flex items-center justify-between px-4 py-2.5 rounded-xl bg-muted border border-border">
@@ -473,12 +483,14 @@ const DAYS_OF_WEEK = [
             </button>
             <button 
               (click)="saveCombo()"
+              [disabled]="comboSaving()"
               class="px-5 py-2.5 rounded-xl font-bold text-xs text-white border-none cursor-pointer"
               style="background: var(--primary);"
             >
-              Salvar Combo
+              {{ comboSaving() ? 'Salvando...' : 'Salvar Combo' }}
             </button>
           </div>
+          <p *ngIf="comboError()" class="mt-3 text-xs font-semibold text-destructive">{{ comboError() }}</p>
         </div>
 
         <!-- Confirm Delete Combo Dialog -->
@@ -489,7 +501,7 @@ const DAYS_OF_WEEK = [
           </div>
           <div class="flex items-center gap-2 flex-shrink-0">
             <button (click)="deleteConfirmCombo.set(false)" class="px-3 py-1.5 rounded-lg bg-muted border border-border text-foreground font-bold cursor-pointer hover:bg-muted/80">Cancelar</button>
-            <button (click)="executeDeleteCombo()" class="px-3 py-1.5 rounded-lg bg-destructive text-white font-bold cursor-pointer border-none">Sim, Excluir</button>
+            <button (click)="executeDeleteCombo()" [disabled]="comboSaving()" class="px-3 py-1.5 rounded-lg bg-destructive text-white font-bold cursor-pointer border-none">Sim, Excluir</button>
           </div>
         </div>
 
@@ -596,6 +608,8 @@ export class MenuComponent {
   readonly showComboModal = signal(false);
   readonly editCombo = signal<Product | undefined>(undefined);
   readonly deleteConfirmCombo = signal(false);
+  readonly comboSaving = signal(false);
+  readonly comboError = signal('');
 
   readonly tabs: { id: 'menu' | 'plateOfDay' | 'combos'; label: string }[] = [
     { id: 'menu', label: 'Lista de Produtos' },
@@ -605,6 +619,7 @@ export class MenuComponent {
 
   readonly units: InsumoUnit[] = ["g", "kg", "ml", "l", "un", "fatia", "folha", "colher", "porção"];
   readonly weekDays = DAYS_OF_WEEK;
+  readonly allergenOptions = ALLERGEN_TYPES;
 
   // Form State variables
   formState = {
@@ -616,6 +631,7 @@ export class MenuComponent {
     category: '',
     available: true,
     prepTime: 15,
+    allergens: [] as string[],
     featured: false,
     desiredMargin: 40
   };
@@ -716,6 +732,12 @@ export class MenuComponent {
     this.formDesiredMargin.set(val);
   }
 
+  toggleAllergen(allergen: string) {
+    this.formState.allergens = this.formState.allergens.includes(allergen)
+      ? this.formState.allergens.filter(item => item !== allergen)
+      : [...this.formState.allergens, allergen];
+  }
+
   // Actions
   openCreateForm() {
     this.editProduct.set(undefined);
@@ -729,6 +751,7 @@ export class MenuComponent {
       category: this.categories()[0]?.id || '',
       available: true,
       prepTime: 15,
+      allergens: [],
       featured: false,
       desiredMargin: 45
     };
@@ -750,6 +773,7 @@ export class MenuComponent {
       category: product.category,
       available: product.available,
       prepTime: product.prepTime || 15,
+      allergens: product.allergens ?? [],
       featured: product.featured || false,
       desiredMargin: product.desiredMargin || 45
     };
@@ -790,6 +814,7 @@ export class MenuComponent {
       category: this.formState.category,
       available: this.formState.available,
       prepTime: this.formState.prepTime,
+      allergens: this.formState.allergens,
       featured: this.formState.featured,
       desiredMargin: this.formState.desiredMargin
     };
@@ -850,6 +875,7 @@ export class MenuComponent {
       description: ''
     };
     this.comboSlots = [];
+    this.comboError.set('');
     this.showComboModal.set(true);
   }
 
@@ -863,6 +889,7 @@ export class MenuComponent {
       description: product.description
     };
     this.comboSlots = product.comboSlots ? product.comboSlots.map(s => ({ ...s })) : [];
+    this.comboError.set('');
     this.showComboModal.set(true);
   }
 
@@ -894,11 +921,18 @@ export class MenuComponent {
     });
   }
 
-  saveCombo() {
-    if (!this.comboState.name || this.comboState.price <= 0) return;
+  async saveCombo() {
+    this.comboError.set('');
+    if (!this.comboState.name.trim() || this.comboState.price <= 0 ||
+        this.comboSlots.length === 0 || this.comboSlots.some(slot =>
+          !slot.name.trim() || slot.products.length === 0
+        )) {
+      this.comboError.set('Informe nome e preço e configure ao menos um item em cada slot.');
+      return;
+    }
 
     const data: Omit<Product, 'id'> = {
-      name: this.comboState.name,
+      name: this.comboState.name.trim(),
       description: this.comboState.description,
       price: this.comboState.price,
       image: this.comboState.image,
@@ -910,20 +944,36 @@ export class MenuComponent {
     };
 
     const editing = this.editCombo();
-    if (editing) {
-      this.products.update(list => list.map(p => p.id === editing.id ? { ...p, ...data } as Product : p));
-    } else {
-      this.products.update(list => [...list, { ...data, id: `p${Date.now()}` }]);
+    this.comboSaving.set(true);
+    try {
+      if (editing) {
+        await this.productsService.updateProduct(editing.id, data);
+      } else {
+        await this.productsService.addProduct(data);
+      }
+      this.closeCombo();
+    } catch (error) {
+      console.error('Erro ao salvar combo pela API:', error);
+      this.comboError.set('Não foi possível salvar o combo. Confira a conexão e tente novamente.');
+    } finally {
+      this.comboSaving.set(false);
     }
-    this.closeCombo();
   }
 
-  executeDeleteCombo() {
+  async executeDeleteCombo() {
     const editing = this.editCombo();
     if (editing) {
-      this.products.update(list => list.filter(p => p.id !== editing.id));
+      this.comboSaving.set(true);
+      try {
+        await this.productsService.deleteProduct(editing.id);
+        this.closeCombo();
+      } catch (error) {
+        console.error('Erro ao excluir combo pela API:', error);
+        this.comboError.set('Não foi possível excluir o combo. Tente novamente.');
+      } finally {
+        this.comboSaving.set(false);
+      }
     }
-    this.closeCombo();
   }
 
   // Plate of the Day

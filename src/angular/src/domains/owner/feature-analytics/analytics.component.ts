@@ -68,10 +68,6 @@ type Tab = 'overview' | 'costs' | 'ratings';
               <div class="icon-wrap bg-[#d4745f]/15 text-[#d4745f]">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
               </div>
-              <span class="change-tag bg-[#4CAF50]/10 text-[#4CAF50]">
-                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
-                12.5%
-              </span>
             </div>
             <div class="metric-val">{{ formatCurrency(totalFaturamento()) }}</div>
             <div class="metric-label">Total Faturado</div>
@@ -82,12 +78,8 @@ type Tab = 'overview' | 'costs' | 'ratings';
               <div class="icon-wrap bg-[#75B044]/15 text-[#75B044]">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
               </div>
-              <span class="change-tag bg-[#4CAF50]/10 text-[#4CAF50]">
-                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
-                8.2%
-              </span>
             </div>
-            <div class="metric-val">{{ todayOrders().length || orders().length }}</div>
+            <div class="metric-val">{{ todayOrders().length }}</div>
             <div class="metric-label">Pedidos Hoje</div>
           </div>
 
@@ -96,10 +88,6 @@ type Tab = 'overview' | 'costs' | 'ratings';
               <div class="icon-wrap bg-[#4CAF50]/15 text-[#4CAF50]">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" x2="18" y1="20" y2="10"/><line x1="12" x2="12" y1="20" y2="4"/><line x1="6" x2="6" y1="20" y2="14"/></svg>
               </div>
-              <span class="change-tag bg-[#4CAF50]/10 text-[#4CAF50]">
-                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
-                5.7%
-              </span>
             </div>
             <div class="metric-val">{{ formatCurrency(ticketMedio()) }}</div>
             <div class="metric-label">Ticket Médio</div>
@@ -158,7 +146,6 @@ type Tab = 'overview' | 'costs' | 'ratings';
               <g *ngIf="salesPeriod() === 'month'">
                 <path [attr.d]="monthlyChartPaths().fatArea" fill="url(#areaGradMonthly)"/>
                 <path [attr.d]="monthlyChartPaths().fatLine" fill="none" stroke="#d4745f" stroke-width="2.5"/>
-                <path [attr.d]="monthlyChartPaths().lucLine" fill="none" stroke="#4CAF50" stroke-width="2" stroke-dasharray="4,4"/>
               </g>
             </svg>
             
@@ -212,7 +199,7 @@ type Tab = 'overview' | 'costs' | 'ratings';
                 <div class="h-1.5 rounded-full bg-[#152415]">
                   <div 
                     class="h-full rounded-full transition-all duration-1000" 
-                    [style.width.%]="(item.pedidos / topProducts[0].pedidos) * 100" 
+                    [style.width.%]="topProducts[0].pedidos ? (item.pedidos / topProducts[0].pedidos) * 100 : 0"
                     [style.background]="item.color"
                   ></div>
                 </div>
@@ -230,9 +217,8 @@ type Tab = 'overview' | 'costs' | 'ratings';
               <div class="icon-wrap bg-[#d4745f]/15 text-[#d4745f]">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
               </div>
-              <span class="change-tag bg-[#4CAF50]/10 text-[#4CAF50]">-3.2%</span>
             </div>
-            <div class="metric-val text-xl">{{ formatCurrency(avgCost) }}</div>
+            <div class="metric-val text-xl">{{ costedProducts().length ? formatCurrency(avgCost) : '—' }}</div>
             <div class="metric-label">Custo Médio/Produto</div>
           </div>
 
@@ -241,10 +227,9 @@ type Tab = 'overview' | 'costs' | 'ratings';
               <div class="icon-wrap bg-[#75B044]/15 text-[#75B044]">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
               </div>
-              <span class="change-tag bg-[#4CAF50]/10 text-[#4CAF50]">+11.4%</span>
             </div>
             <div class="metric-val text-xl">{{ formatCurrency(totalFaturamentoProducts) }}</div>
-            <div class="metric-label">Faturamento Total</div>
+            <div class="metric-label">Subtotal dos pedidos</div>
           </div>
 
           <div class="metric-card" [style.background]="cardStyle.background" [style.border]="cardStyle.border">
@@ -252,10 +237,9 @@ type Tab = 'overview' | 'costs' | 'ratings';
               <div class="icon-wrap bg-[#4CAF50]/15 text-[#4CAF50]">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
               </div>
-              <span class="change-tag bg-[#4CAF50]/10 text-[#4CAF50]">+8.9%</span>
             </div>
-            <div class="metric-val text-xl">{{ formatCurrency(totalLucro) }}</div>
-            <div class="metric-label">Lucro Estimado</div>
+            <div class="metric-val text-xl">{{ hasCostedSales() ? formatCurrency(grossContribution) : '—' }}</div>
+            <div class="metric-label">Contribuição bruta estimada (custos atuais)</div>
           </div>
 
           <div class="metric-card" [style.background]="cardStyle.background" [style.border]="cardStyle.border">
@@ -263,10 +247,9 @@ type Tab = 'overview' | 'costs' | 'ratings';
               <div class="icon-wrap bg-[#a855f7]/15 text-[#a855f7]">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
               </div>
-              <span class="change-tag bg-[#4CAF50]/10 text-[#4CAF50]">+2.1%</span>
             </div>
-            <div class="metric-val text-xl">{{ (totalLucro / totalFaturamentoProducts * 100).toFixed(1) }}%</div>
-            <div class="metric-label">Margem Média</div>
+            <div class="metric-val text-xl">{{ costedSalesRevenue() ? (grossContribution / costedSalesRevenue() * 100).toFixed(1) + '%' : '—' }}</div>
+            <div class="metric-label">Margem bruta estimada dos itens com ficha técnica</div>
           </div>
         </div>
 
@@ -274,44 +257,55 @@ type Tab = 'overview' | 'costs' | 'ratings';
           <div class="rounded-2xl p-5 text-white" style="background: #1b2e1b; border: 1px solid rgba(76,175,80,0.2)">
             <div class="flex items-center gap-2 mb-3">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4CAF50" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/></svg>
-              <span style="color: #4CAF50; font-size: 13px; font-weight: 700;">Produto Mais Lucrativo</span>
+              <span style="color: #4CAF50; font-size: 13px; font-weight: 700;">Maior Margem Teórica</span>
             </div>
-            <h3 class="text-xl font-bold text-white mb-3">{{ bestProduct.name }}</h3>
-            <div class="flex gap-6 mt-3">
-              <div><p class="text-[10px] text-white/50 font-bold uppercase mb-0.5">Margem</p><p style="color: #4CAF50; font-size: 16px; font-weight: 800;">{{ bestProduct.margem.toFixed(1) }}%</p></div>
-              <div><p class="text-[10px] text-white/50 font-bold uppercase mb-0.5">Preço</p><p class="text-sm font-bold text-white">{{ formatCurrency(bestProduct.preco) }}</p></div>
-              <div><p class="text-[10px] text-white/50 font-bold uppercase mb-0.5">Custo</p><p class="text-sm font-bold text-[#d4745f]">{{ formatCurrency(bestProduct.custo) }}</p></div>
-            </div>
+            <ng-container *ngIf="bestProduct as product">
+              <ng-container *ngIf="product.hasCost; else noBestProductCost">
+                <h3 class="text-xl font-bold text-white mb-3">{{ product.name }}</h3>
+                <div class="flex gap-6 mt-3">
+                  <div><p class="text-[10px] text-white/50 font-bold uppercase mb-0.5">Margem</p><p style="color: #4CAF50; font-size: 16px; font-weight: 800;">{{ product.margem.toFixed(1) }}%</p></div>
+                  <div><p class="text-[10px] text-white/50 font-bold uppercase mb-0.5">Preço</p><p class="text-sm font-bold text-white">{{ formatCurrency(product.preco) }}</p></div>
+                  <div><p class="text-[10px] text-white/50 font-bold uppercase mb-0.5">Custo</p><p class="text-sm font-bold text-[#d4745f]">{{ formatCurrency(product.custo) }}</p></div>
+                </div>
+              </ng-container>
+            </ng-container>
+            <ng-template #noBestProductCost><p class="text-sm text-white/60">Cadastre fichas técnicas para calcular margens reais.</p></ng-template>
           </div>
 
           <div class="rounded-2xl p-5 text-white" style="background: #1b2e1b; border: 1px solid rgba(230,57,70,0.2)">
             <div class="flex items-center gap-2 mb-3">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D64545" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-              <span style="color: #D64545; font-size: 13px; font-weight: 700;">Produto Menos Lucrativo</span>
+              <span style="color: #D64545; font-size: 13px; font-weight: 700;">Menor Margem Teórica</span>
             </div>
-            <h3 class="text-xl font-bold text-white mb-3">{{ worstProduct.name }}</h3>
-            <div class="flex gap-6 mt-3">
-              <div><p class="text-[10px] text-white/50 font-bold uppercase mb-0.5">Margem</p><p style="color: #D64545; font-size: 16px; font-weight: 800;">{{ worstProduct.margem.toFixed(1) }}%</p></div>
-              <div><p class="text-[10px] text-white/50 font-bold uppercase mb-0.5">Preço</p><p class="text-sm font-bold text-white">{{ formatCurrency(worstProduct.preco) }}</p></div>
-              <div><p class="text-[10px] text-white/50 font-bold uppercase mb-0.5">Custo</p><p class="text-sm font-bold text-[#d4745f]">{{ formatCurrency(worstProduct.custo) }}</p></div>
-            </div>
+            <ng-container *ngIf="worstProduct as product">
+              <ng-container *ngIf="product.hasCost; else noWorstProductCost">
+                <h3 class="text-xl font-bold text-white mb-3">{{ product.name }}</h3>
+                <div class="flex gap-6 mt-3">
+                  <div><p class="text-[10px] text-white/50 font-bold uppercase mb-0.5">Margem</p><p style="color: #D64545; font-size: 16px; font-weight: 800;">{{ product.margem.toFixed(1) }}%</p></div>
+                  <div><p class="text-[10px] text-white/50 font-bold uppercase mb-0.5">Preço</p><p class="text-sm font-bold text-white">{{ formatCurrency(product.preco) }}</p></div>
+                  <div><p class="text-[10px] text-white/50 font-bold uppercase mb-0.5">Custo</p><p class="text-sm font-bold text-[#d4745f]">{{ formatCurrency(product.custo) }}</p></div>
+                </div>
+              </ng-container>
+            </ng-container>
+            <ng-template #noWorstProductCost><p class="text-sm text-white/60">Cadastre fichas técnicas para calcular margens reais.</p></ng-template>
           </div>
         </div>
 
         <div class="rounded-2xl p-6 text-white" [style.background]="cardStyle.background" [style.border]="cardStyle.border">
-          <h3 class="text-sm font-bold text-white tracking-wide mb-6" style="font-family: 'Space Grotesk', sans-serif">Margem Real por Produto</h3>
+          <h3 class="text-sm font-bold text-white tracking-wide mb-6" style="font-family: 'Space Grotesk', sans-serif">Margem teórica por produto (custos atuais)</h3>
           <div class="space-y-4">
             <div *ngFor="let item of productCostsSorted">
               <div class="flex items-center justify-between mb-1 text-xs">
                 <span class="text-white/80 font-semibold">{{ item.name }}</span>
                 <div class="flex items-center gap-3">
-                  <span class="text-white/40">Custo: {{ formatCurrency(item.custo) }}</span>
-                  <span class="font-bold" [style.color]="item.margem >= 50 ? '#4CAF50' : item.margem >= 35 ? '#F4A261' : '#D64545'">
+                  <span *ngIf="item.hasCost; else missingProductCost" class="text-white/40">Custo: {{ formatCurrency(item.custo) }}</span>
+                  <ng-template #missingProductCost><span class="text-white/40">Sem ficha técnica</span></ng-template>
+                  <span *ngIf="item.hasCost" class="font-bold" [style.color]="item.margem >= 50 ? '#4CAF50' : item.margem >= 35 ? '#F4A261' : '#D64545'">
                     {{ item.margem.toFixed(1) }}%
                   </span>
                 </div>
               </div>
-              <div class="h-2 rounded-full bg-[#152415]">
+              <div *ngIf="item.hasCost" class="h-2 rounded-full bg-[#152415]">
                 <div 
                   class="h-full rounded-full transition-all duration-800" 
                   [style.width.%]="item.margem"
@@ -322,28 +316,40 @@ type Tab = 'overview' | 'costs' | 'ratings';
           </div>
         </div>
 
-        <!-- Insumo Price Trend Chart -->
         <div class="rounded-2xl p-6 text-white" [style.background]="cardStyle.background" [style.border]="cardStyle.border">
           <h3 class="text-sm font-bold text-white tracking-wide mb-6" style="font-family: 'Space Grotesk', sans-serif">Variação de Preço de Insumos</h3>
-          <div class="relative w-full h-52 pt-2">
-            <svg class="w-full h-full" viewBox="0 0 500 180" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-              <line x1="0" y1="45" x2="500" y2="45" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
-              <line x1="0" y1="90" x2="500" y2="90" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
-              <line x1="0" y1="135" x2="500" y2="135" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
-
-              <path [attr.d]="priceTrendPaths().proteinas" fill="none" stroke="#D64545" stroke-width="2"/>
-              <path [attr.d]="priceTrendPaths().graos" fill="none" stroke="#d4745f" stroke-width="2"/>
-              <path [attr.d]="priceTrendPaths().hortifruti" fill="none" stroke="#75B044" stroke-width="2"/>
-            </svg>
-            <div class="flex justify-between text-[10px] text-white/40 mt-2 font-bold px-1">
-              <span *ngFor="let d of insumoTrend">{{ d.month }}</span>
-            </div>
-            <!-- Legend -->
-            <div class="flex justify-center gap-6 mt-4 text-[10px] font-bold text-white/60">
-              <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-[#D64545]"></div>Proteínas (/g)</div>
-              <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-[#d4745f]"></div>Grãos (/g)</div>
-              <div class="flex items-center gap-1.5"><div class="w-2.5 h-2.5 rounded-full bg-[#75B044]"></div>Hortifruti (/folha)</div>
-            </div>
+          <label class="block text-xs font-semibold text-white/60 mb-2" for="analytics-price-supply">Insumo</label>
+          <select
+            id="analytics-price-supply"
+            [ngModel]="selectedPriceSupply() || (insumos().length ? insumos()[0].id : '')"
+            (ngModelChange)="selectedPriceSupply.set($event)"
+            class="mb-4 rounded-lg border border-white/10 bg-[#152415] px-3 py-2 text-sm text-white"
+          >
+            <option value="">Selecione um insumo</option>
+            <option *ngFor="let supply of insumos()" [value]="supply.id">{{ supply.name }} ({{ supply.unit }})</option>
+          </select>
+          <p *ngIf="!priceHistoryRows().length" class="text-sm text-white/60">
+            Não há registros de preço para este insumo.
+          </p>
+          <div *ngIf="priceHistoryRows().length" class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="text-white/50">
+                <tr>
+                  <th class="py-2 pr-3">Data</th>
+                  <th class="py-2 pr-3">Fornecedor</th>
+                  <th class="py-2 pr-3">Preço / unidade</th>
+                  <th class="py-2">Origem</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let row of priceHistoryRows()" class="border-t border-white/10">
+                  <td class="py-2 pr-3">{{ row.date | date:'dd/MM/yyyy' }}</td>
+                  <td class="py-2 pr-3">{{ row.supplier }}</td>
+                  <td class="py-2 pr-3">{{ formatCurrency(row.value) }}</td>
+                  <td class="py-2">{{ row.observation?.includes('Demonstracao') ? 'Demonstração' : 'Registrado' }}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -518,11 +524,13 @@ export class AnalyticsComponent {
 
   readonly activeTab = signal<Tab>('overview');
   readonly salesPeriod = signal<'week' | 'month'>('week');
+  readonly selectedPriceSupply = signal('');
 
   // Global Signals
   readonly orders = this.ordersService.orders;
   readonly reviews = this.reviewsService.reviews;
   readonly restaurantOpen = this.employeeService.restaurantOpen;
+  readonly insumos = this.ownerService.insumos;
 
   readonly tabs: { id: Tab; label: string }[] = [
     { id: 'overview', label: 'Visão Geral' },
@@ -585,10 +593,10 @@ export class AnalyticsComponent {
   });
   get topProducts() { return this._topProducts(); }
 
-  // 3. Monthly Sales and estimated profit for the last 6 months
+  // Monthly revenue for the last 6 months.
   private readonly _monthlyData = computed(() => {
     const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-    const data: Record<string, { month: string; faturamento: number; lucro: number; orderCount: number; monthNum: number; year: number }> = {};
+    const data: Record<string, { month: string; faturamento: number; orderCount: number; monthNum: number; year: number }> = {};
 
     for (let i = 5; i >= 0; i--) {
       const d = new Date();
@@ -599,14 +607,11 @@ export class AnalyticsComponent {
       data[key] = {
         month: monthNames[mNum],
         faturamento: 0,
-        lucro: 0,
         orderCount: 0,
         monthNum: mNum,
         year: yr
       };
     }
-
-    const sheets = this.ownerService.technicalSheets();
 
     this.orders().forEach(o => {
       const date = new Date(o.createdAt);
@@ -618,15 +623,6 @@ export class AnalyticsComponent {
         const orderTotal = o.total || o.totalAmount || 0;
         data[key].faturamento += orderTotal;
         data[key].orderCount++;
-
-        let orderCost = 0;
-        o.items.forEach((item: any) => {
-          const sheet = sheets.find(s => s.productId === item.productId);
-          const itemCost = sheet ? this.ownerService.calculateSheetCost(sheet) : item.price * 0.4;
-          orderCost += itemCost * item.quantity;
-        });
-
-        data[key].lucro += Math.max(0, orderTotal - orderCost);
       }
     });
 
@@ -634,8 +630,7 @@ export class AnalyticsComponent {
       .sort((a, b) => (a.year !== b.year ? a.year - b.year : a.monthNum - b.monthNum))
       .map(d => ({
         month: d.month,
-        faturamento: d.faturamento,
-        lucro: d.lucro
+        faturamento: d.faturamento
       }));
   });
   get monthlyData() { return this._monthlyData(); }
@@ -654,97 +649,20 @@ export class AnalyticsComponent {
 
     return prods.map(p => {
       const sheet = sheets.find(s => s.productId === p.id);
-      const custo = sheet ? this.ownerService.calculateSheetCost(sheet) : p.price * 0.4;
+      const hasCost = !!sheet;
+      const custo = sheet ? this.ownerService.calculateSheetCost(sheet) : 0;
       const margem = p.price > 0 ? ((p.price - custo) / p.price) * 100 : 0;
       return {
         name: p.name,
         custo,
         preco: p.price,
         margem,
-        vendas: salesCount[p.id] || 0
+        vendas: salesCount[p.id] || 0,
+        hasCost
       };
     });
   });
   get productCosts() { return this._productCosts(); }
-
-  // 5. Insumos price trend over the last 6 months grouped by category
-  private readonly _insumoTrend = computed(() => {
-    const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-    const trends: Record<string, { month: string; proteinas: number; graos: number; hortifruti: number; monthNum: number; year: number; counts: Record<string, { sum: number; count: number }> }> = {};
-
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date();
-      d.setMonth(d.getMonth() - i);
-      const mNum = d.getMonth();
-      const yr = d.getFullYear();
-      const key = `${yr}-${mNum}`;
-      trends[key] = {
-        month: monthNames[mNum],
-        proteinas: 0,
-        graos: 0,
-        hortifruti: 0,
-        monthNum: mNum,
-        year: yr,
-        counts: {
-          proteinas: { sum: 0, count: 0 },
-          graos: { sum: 0, count: 0 },
-          hortifruti: { sum: 0, count: 0 }
-        }
-      };
-    }
-
-    const records = this.ownerService.priceRecords();
-    const insumosList = this.ownerService.insumos();
-
-    records.forEach(r => {
-      const date = new Date(r.date);
-      const mNum = date.getMonth();
-      const yr = date.getFullYear();
-      const key = `${yr}-${mNum}`;
-
-      if (trends[key]) {
-        const ins = insumosList.find(i => i.id === r.insumoId);
-        if (ins) {
-          const category = ins.category.toLowerCase();
-          let targetKey = '';
-          if (category.includes('protein')) {
-            targetKey = 'proteinas';
-          } else if (category.includes('grao') || category.includes('grão')) {
-            targetKey = 'graos';
-          } else if (category.includes('horti')) {
-            targetKey = 'hortifruti';
-          }
-
-          if (targetKey) {
-            trends[key].counts[targetKey].sum += r.value;
-            trends[key].counts[targetKey].count++;
-          }
-        }
-      }
-    });
-
-    const defaultMocks = [
-      { proteinas: 0.052, graos: 0.038, hortifruti: 0.025 },
-      { proteinas: 0.055, graos: 0.040, hortifruti: 0.028 },
-      { proteinas: 0.058, graos: 0.042, hortifruti: 0.026 },
-      { proteinas: 0.062, graos: 0.045, hortifruti: 0.032 },
-      { proteinas: 0.057, graos: 0.041, hortifruti: 0.024 },
-      { proteinas: 0.055, graos: 0.042, hortifruti: 0.028 },
-    ];
-
-    return Object.values(trends)
-      .sort((a, b) => (a.year !== b.year ? a.year - b.year : a.monthNum - b.monthNum))
-      .map((d, index) => {
-        const defaultMock = defaultMocks[index % defaultMocks.length];
-        return {
-          month: d.month,
-          proteinas: d.counts['proteinas'].count > 0 ? d.counts['proteinas'].sum / d.counts['proteinas'].count : defaultMock.proteinas,
-          graos: d.counts['graos'].count > 0 ? d.counts['graos'].sum / d.counts['graos'].count : defaultMock.graos,
-          hortifruti: d.counts['hortifruti'].count > 0 ? d.counts['hortifruti'].sum / d.counts['hortifruti'].count : defaultMock.hortifruti
-        };
-      });
-  });
-  get insumoTrend() { return this._insumoTrend(); }
 
   // Calculations
   readonly totalFaturamento = computed(() => 
@@ -766,21 +684,40 @@ export class AnalyticsComponent {
   });
 
   // Cost metrics
-  private readonly _avgCost = computed(() => {
-    const list = this._productCosts();
+  readonly costedProducts = computed(() => this._productCosts().filter(product => product.hasCost));
+
+  readonly _avgCost = computed(() => {
+    const list = this.costedProducts();
     return list.length ? list.reduce((s: number, p: any) => s + p.custo, 0) / list.length : 0;
   });
   get avgCost() { return this._avgCost(); }
 
   private readonly _totalFaturamentoProducts = computed(() => 
-    this.productCosts.reduce((s: number, p: any) => s + p.preco * p.vendas, 0)
+    this.orders().reduce((sum, order) => sum + (order.subtotal ?? order.total ?? order.totalAmount ?? 0), 0)
   );
   get totalFaturamentoProducts() { return this._totalFaturamentoProducts(); }
 
-  private readonly _totalLucro = computed(() => 
-    this.productCosts.reduce((s: number, p: any) => s + (p.preco - p.custo) * p.vendas, 0)
+  private readonly _grossContribution = computed(() =>
+    this.orders().reduce((sum, order) => sum + order.items.reduce((orderProfit, item) => {
+      const sheet = this.ownerService.technicalSheets().find(value => value.productId === item.productId);
+      if (!sheet) return orderProfit;
+      return orderProfit + (item.price - this.ownerService.calculateSheetCost(sheet)) * item.quantity;
+    }, 0), 0)
   );
-  get totalLucro() { return this._totalLucro(); }
+  get grossContribution() { return this._grossContribution(); }
+
+  readonly costedSalesRevenue = computed(() =>
+    this.orders().reduce((sum, order) => sum + order.items.reduce((orderRevenue, item) => {
+      const hasSheet = this.ownerService.technicalSheets().some(sheet => sheet.productId === item.productId);
+      return hasSheet ? orderRevenue + item.price * item.quantity : orderRevenue;
+    }, 0), 0)
+  );
+
+  readonly hasCostedSales = computed(() =>
+    this.orders().some(order => order.items.some(item =>
+      this.ownerService.technicalSheets().some(sheet => sheet.productId === item.productId)
+    ))
+  );
   
   private readonly _productCostsSorted = computed(() => 
     [...this.productCosts].sort((a, b) => b.margem - a.margem)
@@ -788,16 +725,30 @@ export class AnalyticsComponent {
   get productCostsSorted() { return this._productCostsSorted(); }
 
   private readonly _bestProduct = computed(() => {
-    const sorted = this.productCostsSorted;
-    return sorted.length ? sorted[0] : { name: 'Nenhum', margem: 0, preco: 0, custo: 0 };
+    const sorted = this.costedProducts().sort((a, b) => b.margem - a.margem);
+    return sorted[0] ?? { name: 'Sem ficha técnica', margem: 0, preco: 0, custo: 0, vendas: 0, hasCost: false };
   });
   get bestProduct() { return this._bestProduct(); }
 
   private readonly _worstProduct = computed(() => {
-    const sorted = this.productCostsSorted;
-    return sorted.length ? sorted[sorted.length - 1] : { name: 'Nenhum', margem: 0, preco: 0, custo: 0 };
+    const sorted = this.costedProducts().sort((a, b) => a.margem - b.margem);
+    return sorted[0] ?? { name: 'Sem ficha técnica', margem: 0, preco: 0, custo: 0, vendas: 0, hasCost: false };
   });
   get worstProduct() { return this._worstProduct(); }
+
+  readonly priceHistoryRows = computed(() => {
+    const supplyId = this.selectedPriceSupply() || this.ownerService.insumos()[0]?.id;
+    if (!supplyId) return [];
+
+    return this.ownerService.priceRecords()
+      .filter(record => record.insumoId === supplyId)
+      .sort((a, b) => b.date.getTime() - a.date.getTime())
+      .map(record => ({
+        ...record,
+        supplier: this.ownerService.suppliers().find(supplier => supplier.id === record.supplierId)?.name
+          ?? 'Fornecedor removido'
+      }));
+  });
 
   // SVG Area Paths calculations
   readonly weeklyChartPath = computed(() => {
@@ -828,39 +779,10 @@ export class AnalyticsComponent {
       return { x, y };
     });
 
-    const pointsLuc = data.map((d: any, i: number) => {
-      const x = (i / (data.length - 1)) * width;
-      const y = height - (d.lucro / maxVal) * height;
-      return { x, y };
-    });
-
     const fatLine = pointsFat.map((p: any, i: number) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
     const fatArea = `M 0 ${height} ` + pointsFat.map((p: any) => `L ${p.x} ${p.y}`).join(' ') + ` L ${width} ${height} Z`;
-    const lucLine = pointsLuc.map((p: any, i: number) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
     
-    return { fatLine, fatArea, lucLine };
-  });
-
-  readonly priceTrendPaths = computed(() => {
-    const data = this.insumoTrend;
-    const width = 500;
-    const height = 180;
-    const allVals = data.flatMap((d: any) => [d.proteinas, d.graos, d.hortifruti]);
-    const maxVal = Math.max(...allVals) * 1.1 || 0.1;
-
-    const makePath = (key: 'proteinas' | 'graos' | 'hortifruti') => {
-      return data.map((d: any, i: number) => {
-        const x = (i / (data.length - 1)) * width;
-        const y = height - (d[key] / maxVal) * height;
-        return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
-      }).join(' ');
-    };
-
-    return {
-      proteinas: makePath('proteinas'),
-      graos: makePath('graos'),
-      hortifruti: makePath('hortifruti')
-    };
+    return { fatLine, fatArea };
   });
 
   // Helpers

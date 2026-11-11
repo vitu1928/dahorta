@@ -18,6 +18,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
@@ -96,6 +98,79 @@ class BackendContextTest {
     }
 
     @Test
+    void persisteEnderecosEIsolaOsDadosPorCliente() throws Exception {
+        String sufixo = java.util.UUID.randomUUID().toString();
+        String primeiroEmail = "endereco-a-" + sufixo + "@dahorta.test";
+        String segundoEmail = "endereco-b-" + sufixo + "@dahorta.test";
+        String primeiroToken = registrarCliente(primeiroEmail);
+        String segundoToken = registrarCliente(segundoEmail);
+
+        String endereco = mockMvc.perform(post("/api/v1/enderecos")
+                        .header("Authorization", "Bearer " + primeiroToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "rotulo": "Casa",
+                                  "rua": "Rua das Flores",
+                                  "numero": "123",
+                                  "complemento": "Apto 2",
+                                  "bairro": "Centro",
+                                  "cidade": "Campinas",
+                                  "cep": "13000-000"
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.cidade").value("Campinas"))
+                .andReturn().getResponse().getContentAsString();
+        long enderecoId = objectMapper.readTree(endereco).get("id").asLong();
+
+        mockMvc.perform(get("/api/v1/enderecos")
+                        .header("Authorization", "Bearer " + primeiroToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(enderecoId));
+        mockMvc.perform(get("/api/v1/enderecos")
+                        .header("Authorization", "Bearer " + segundoToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isEmpty());
+
+        mockMvc.perform(put("/api/v1/enderecos/{id}", enderecoId)
+                        .header("Authorization", "Bearer " + segundoToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "rotulo": "Outro",
+                                  "rua": "Rua do Centro",
+                                  "numero": "9",
+                                  "bairro": "Centro",
+                                  "cidade": "Campinas",
+                                  "cep": ""
+                                }
+                                """))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(delete("/api/v1/enderecos/{id}", enderecoId)
+                        .header("Authorization", "Bearer " + segundoToken))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(put("/api/v1/enderecos/{id}", enderecoId)
+                        .header("Authorization", "Bearer " + primeiroToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "rotulo": "Casa",
+                                  "rua": "Rua das Flores",
+                                  "numero": "321",
+                                  "bairro": "Centro",
+                                  "cidade": "Campinas",
+                                  "cep": ""
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.numero").value("321"));
+        mockMvc.perform(delete("/api/v1/enderecos/{id}", enderecoId)
+                        .header("Authorization", "Bearer " + primeiroToken))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
     void provisionaEquipeComOsPerfisConfigurados() throws Exception {
         String kitchenToken = login("cozinha@dahorta.test", "SenhaCozinha123");
         mockMvc.perform(get("/api/v1/usuarios/me")
@@ -142,10 +217,14 @@ class BackendContextTest {
                                   "nome": "%s",
                                   "unidade": "un",
                                   "quantidadeInicial": 0,
-                                  "quantidadeMinima": 1
+                                  "quantidadeMinima": 1,
+                                  "categoria": "Hortifruti",
+                                  "observacoes": "Origem demonstrativa"
                                 }
                                 """.formatted(insumoName)))
-                .andExpect(status().isCreated());
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.categoria").value("Hortifruti"))
+                .andExpect(jsonPath("$.observacoes").value("Origem demonstrativa"));
 
         String belowMinimum = mockMvc.perform(get("/api/v1/estoque/insumos/abaixo-minimo")
                         .header("Authorization", "Bearer " + adminToken))
@@ -161,10 +240,14 @@ class BackendContextTest {
                                   "nome": "Produto disponibilidade %s",
                                   "preco": 10.00,
                                   "disponivel": true,
-                                  "ingredientes": []
+                                  "ingredientes": [],
+                                  "tempoPreparo": 12,
+                                  "alergicos": ["Glúten"]
                                 }
                                 """.formatted(java.util.UUID.randomUUID())))
                 .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.tempoPreparo").value(12))
+                .andExpect(jsonPath("$.alergicos[0]").value("Glúten"))
                 .andReturn().getResponse().getContentAsString();
         long productId = objectMapper.readTree(productResponse).get("id").asLong();
 
@@ -215,8 +298,30 @@ class BackendContextTest {
                 .andExpect(status().isOk());
         mockMvc.perform(get("/api/v1/prato-do-dia"))
                 .andExpect(status().isOk());
-        mockMvc.perform(get("/api/v1/restaurante/detalhes"))
+        mockMvc.perform(patch("/api/v1/admin/restaurante/detalhes")
+                        .header("Authorization", "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "DaHorta Teste",
+                                  "tagline": "Configuração persistida",
+                                  "phone": "11999999999",
+                                  "whatsapp": "11999999999",
+                                  "email": "teste@dahorta.test",
+                                  "address": "Rua de teste, 1",
+                                  "city": "Campinas",
+                                  "deliveryFee": 15,
+                                  "deliveryTime": "35-50",
+                                  "minOrder": 20,
+                                  "instagram": "@dahorta",
+                                  "website": "dahorta.test",
+                                  "priceValidityDays": 90
+                                }
+                                """))
                 .andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/restaurante/detalhes"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.priceValidityDays").value(90));
     }
 
     @Test
@@ -430,6 +535,17 @@ class BackendContextTest {
                                 {"email":"%s","senha":"%s"}
                                 """.formatted(email, senha)))
                 .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        return objectMapper.readTree(resposta).get("accessToken").asText();
+    }
+
+    private String registrarCliente(String email) throws Exception {
+        String resposta = mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"nome":"Cliente","email":"%s","senha":"SenhaForte123"}
+                                """.formatted(email)))
+                .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
         return objectMapper.readTree(resposta).get("accessToken").asText();
     }

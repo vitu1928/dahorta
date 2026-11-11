@@ -34,12 +34,14 @@ public class InformacaoRestaurante {
     private String instagram;
     @Column(nullable = false, length = 250)
     private String website;
+    @Column(name = "price_validity_days", nullable = false, columnDefinition = "integer not null default 60")
+    private int priceValidityDays = 60;
 
     public InformacaoRestaurante() {}
 
     public void atualizar(String nome, String slogan, String telefone, String whatsapp, String email,
                           String endereco, String cidade, double taxaEntrega, String tempoEntrega,
-                          double pedidoMinimo, String instagram, String website) {
+                          double pedidoMinimo, String instagram, String website, Integer priceValidityDays) {
         this.id = 1L;
         this.nome = nome;
         this.slogan = slogan;
@@ -53,6 +55,7 @@ public class InformacaoRestaurante {
         this.pedidoMinimo = pedidoMinimo;
         this.instagram = instagram;
         this.website = website;
+        this.priceValidityDays = priceValidityDays == null ? 60 : priceValidityDays;
     }
 
     public Long getId() { return id; }
@@ -68,4 +71,5 @@ public class InformacaoRestaurante {
     public double getPedidoMinimo() { return pedidoMinimo; }
     public String getInstagram() { return instagram; }
     public String getWebsite() { return website; }
+    public int getPriceValidityDays() { return priceValidityDays; }
 }

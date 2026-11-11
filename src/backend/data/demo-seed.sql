@@ -125,11 +125,12 @@ CROSS JOIN (
 ) AS supplier_seed
 JOIN fornecedores supplier ON supplier.email = supplier_seed.email
 CROSS JOIN (
-    SELECT TIMESTAMP('2026-09-10 12:00:00') AS observado_em, 0.94 AS fator, 'set/2026' AS periodo
+    SELECT TIMESTAMP(DATE_SUB(CURRENT_DATE, INTERVAL 2 MONTH), '12:00:00') AS observado_em,
+           0.94 AS fator, 'dois meses antes' AS periodo
     UNION ALL
-    SELECT TIMESTAMP('2026-10-10 12:00:00'), 1.00, 'out/2026'
+    SELECT TIMESTAMP(DATE_SUB(CURRENT_DATE, INTERVAL 1 MONTH), '12:00:00'), 1.00, 'um mes antes'
     UNION ALL
-    SELECT TIMESTAMP('2026-11-10 12:00:00'), 1.05, 'nov/2026'
+    SELECT TIMESTAMP(CURRENT_DATE, '12:00:00'), 1.05, 'mes atual'
 ) AS history
 WHERE NOT EXISTS (
     SELECT 1
@@ -248,7 +249,7 @@ WHERE NOT EXISTS (
 
 INSERT INTO movimentacoes_estoque
     (criado_em, observacao, quantidade, tipo, insumo_id, pedido_id, usuario_id)
-SELECT TIMESTAMP('2026-11-10 15:00:00'),
+SELECT TIMESTAMP(CURRENT_DATE, '15:00:00'),
        'Saldo inicial demonstrativo; nao representa contagem fisica.',
        ingredient.quantidade_atual, 'ENTRADA', ingredient.id, NULL, admin.id
 FROM insumos_estoque ingredient

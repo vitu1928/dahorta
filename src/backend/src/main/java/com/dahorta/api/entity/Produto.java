@@ -44,6 +44,15 @@ public class Produto {
     @CollectionTable(name = "ficha_tecnica_produto", joinColumns = @JoinColumn(name = "produto_id"))
     private List<IngredienteProduto> ingredientes = new ArrayList<>();
 
+    @Column(name = "combo_slots_json", columnDefinition = "TEXT")
+    private String comboSlotsJson;
+
+    @Column(name = "tempo_preparo", nullable = false, columnDefinition = "integer not null default 15")
+    private int tempoPreparo = 15;
+
+    @Column(name = "alergicos_json", columnDefinition = "TEXT")
+    private String alergicosJson;
+
     protected Produto() {
     }
 
@@ -54,24 +63,42 @@ public class Produto {
     }
 
     public Produto(String nome, String descricao, String imagem, String categoria, BigDecimal preco,
-                   boolean disponivel, List<IngredienteProduto> ingredientes) {
+                   boolean disponivel, List<IngredienteProduto> ingredientes, String comboSlotsJson) {
+        this(nome, descricao, imagem, categoria, preco, disponivel, ingredientes, comboSlotsJson, 15, null);
+    }
+
+    public Produto(String nome, String descricao, String imagem, String categoria, BigDecimal preco,
+                   boolean disponivel, List<IngredienteProduto> ingredientes, String comboSlotsJson,
+                   int tempoPreparo, String alergicosJson) {
         this.nome = nome;
         this.descricao = descricao;
         this.imagem = imagem;
         this.categoria = categoria;
         this.preco = preco;
         this.disponivel = disponivel;
+        this.comboSlotsJson = comboSlotsJson;
+        this.tempoPreparo = tempoPreparo;
+        this.alergicosJson = alergicosJson;
         substituirIngredientes(ingredientes);
     }
 
+    public Produto(String nome, String descricao, String imagem, String categoria, BigDecimal preco,
+                   boolean disponivel, List<IngredienteProduto> ingredientes) {
+        this(nome, descricao, imagem, categoria, preco, disponivel, ingredientes, null);
+    }
+
     public void atualizar(String nome, String descricao, String imagem, String categoria,
-                          BigDecimal preco, boolean disponivel, List<IngredienteProduto> ingredientes) {
+                          BigDecimal preco, boolean disponivel, List<IngredienteProduto> ingredientes,
+                          String comboSlotsJson, int tempoPreparo, String alergicosJson) {
         this.nome = nome;
         this.descricao = descricao;
         this.imagem = imagem;
         this.categoria = categoria;
         this.preco = preco;
         this.disponivel = disponivel;
+        this.comboSlotsJson = comboSlotsJson;
+        this.tempoPreparo = tempoPreparo;
+        this.alergicosJson = alergicosJson;
         if (ingredientes != null) {
             substituirIngredientes(ingredientes);
         }
@@ -108,4 +135,7 @@ public class Produto {
     public String getImagem() { return imagem; }
     public String getCategoria() { return categoria; }
     public List<IngredienteProduto> getIngredientes() { return ingredientes; }
+    public String getComboSlotsJson() { return comboSlotsJson; }
+    public int getTempoPreparo() { return tempoPreparo; }
+    public String getAlergicosJson() { return alergicosJson; }
 }

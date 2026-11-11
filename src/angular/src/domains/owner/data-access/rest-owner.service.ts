@@ -16,6 +16,8 @@ interface InsumoApi {
   quantidadeAtual: number;
   quantidadeMinima: number;
   ativo: boolean;
+  categoria: string | null;
+  observacoes: string | null;
 }
 
 interface ProdutoApi {
@@ -26,7 +28,10 @@ interface ProdutoApi {
   categoria: string;
   preco: number;
   disponivel: boolean;
+  tempoPreparo: number;
+  alergicos: string[];
   ingredientes: { insumoId: number; nome: string; unidade: string; quantidade: number }[];
+  comboSlots?: Product['comboSlots'];
 }
 
 interface MovimentacaoApi {
@@ -90,6 +95,7 @@ export class RestOwnerService extends OwnerService {
       // Cleanup previous subscriptions
       if (unsubscribeRestData) { unsubscribeRestData.unsubscribe(); unsubscribeRestData = null; }
       if (unsubscribeSettings) { unsubscribeSettings.unsubscribe(); unsubscribeSettings = null; }
+      this.pricePeriodDays.set(60);
       if (user) {
         const isStaff = user.role === 'owner' || user.role === 'employee';
         
@@ -120,8 +126,9 @@ export class RestOwnerService extends OwnerService {
             return EMPTY;
           })))
         ).subscribe(({ plate, restaurant }) => {
-          this.plateOfDay.set(plate);
+          this.plateOfDay.set(this.fromApiPlateOfDay(plate));
           this.restaurantInfo.set(restaurant);
+          if (restaurant) this.pricePeriodDays.set(restaurant.priceValidityDays);
         });
 
       } else {
@@ -194,7 +201,8 @@ export class RestOwnerService extends OwnerService {
       id: String(item.id),
       name: item.nome,
       unit: item.unidade,
-      category: 'Outros',
+      category: item.categoria ?? 'Não classificado',
+      observations: item.observacoes ?? undefined,
       currentQuantity: Number(item.quantidadeAtual),
       maxCapacity: Math.max(Number(item.quantidadeAtual), 1000),
       minAlert: Number(item.quantidadeMinima)
@@ -270,17 +278,29 @@ export class RestOwnerService extends OwnerService {
     return value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLocaleLowerCase('pt-BR');
   }
 
+  private fromApiPlateOfDay(config: Record<number, string>): Record<number, string> {
+    const normalized: Record<number, string> = {};
+    for (const [apiDay, productId] of Object.entries(config)) {
+      normalized[Number(apiDay) % 7] = productId;
+    }
+    return normalized;
+  }
+
   private toApiInsumoRequest(item: Insumo): {
     nome: string;
     unidade: string;
     quantidadeInicial: number;
     quantidadeMinima: number;
+    categoria: string;
+    observacoes: string | null;
   } {
     return {
       nome: item.name,
       unidade: item.unit,
       quantidadeInicial: Number(item.currentQuantity ?? 0),
-      quantidadeMinima: Number(item.minAlert ?? 0)
+      quantidadeMinima: Number(item.minAlert ?? 0),
+      categoria: item.category,
+      observacoes: item.observations?.trim() || null
     };
   }
 
@@ -307,7 +327,10 @@ export class RestOwnerService extends OwnerService {
       categoria: product.categoria,
       preco: product.preco,
       disponivel: product.disponivel,
-      ingredientes: apiIngredients
+      tempoPreparo: product.tempoPreparo,
+      alergicos: product.alergicos ?? [],
+      ingredientes: apiIngredients,
+      comboSlots: product.comboSlots ?? []
     }).subscribe({
       next: updated => {
         this.apiProducts = this.apiProducts.map(item => item.id === updated.id ? updated : item);
@@ -589,11 +612,13 @@ export class RestOwnerService extends OwnerService {
   // Settings & Helpers
   override updatePlateOfDay(day: number, productId: string): void {
     const produtoId = Number(productId);
-    if (!Number.isSafeInteger(day) || day < 1 || day > 7 || !Number.isSafeInteger(produtoId)) {
+    if (!Number.isSafeInteger(day) || day < 0 || day > 6 ||
+        !Number.isSafeInteger(produtoId) || produtoId <= 0) {
       console.error('Não foi possível salvar o prato do dia: dia ou produto inválido.');
       return;
     }
-    this.http.put<void>(`${this.apiUrl}/admin/prato-do-dia/${day}`, { produtoId }).subscribe({
+    const apiDay = day === 0 ? 7 : day;
+    this.http.put<void>(`${this.apiUrl}/admin/prato-do-dia/${apiDay}`, { produtoId }).subscribe({
       next: () => this.plateOfDay.update(config => ({ ...config, [day]: productId })),
       error: err => console.error('Erro ao atualizar prato do dia pela API:', err)
     });
@@ -601,7 +626,10 @@ export class RestOwnerService extends OwnerService {
 
   override updateRestaurantInfo(info: RestaurantInfo): void {
     this.http.patch<RestaurantInfo>(`${this.apiUrl}/admin/restaurante/detalhes`, info).subscribe({
-      next: saved => this.restaurantInfo.set(saved),
+      next: saved => {
+        this.restaurantInfo.set(saved);
+        this.pricePeriodDays.set(saved.priceValidityDays);
+      },
       error: err => console.error('Erro ao atualizar informações pela API:', err)
     });
   }

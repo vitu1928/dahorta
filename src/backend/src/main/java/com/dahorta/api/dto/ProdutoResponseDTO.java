@@ -11,6 +11,9 @@ public record ProdutoResponseDTO(
         String categoria,
         BigDecimal preco,
         boolean disponivel,
-        List<IngredienteProdutoResponseDTO> ingredientes
+        List<IngredienteProdutoResponseDTO> ingredientes,
+        List<ComboSlotDTO> comboSlots,
+        int tempoPreparo,
+        List<String> alergicos
 ) {
 }
